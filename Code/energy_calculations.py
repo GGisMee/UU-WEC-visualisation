@@ -1,5 +1,6 @@
 import numpy as np
 import datetime
+from scipy.special import gamma
 
 class InputData:
     """Class for storing input data. Partially inputed (diam, height), partially generated from SSN
@@ -53,7 +54,7 @@ class InputData:
         Creates; k-factor, Avg wind speed at 10 m height [m/s], Roughness [mm], Downtime [%]
         Does so using SSN info"""
         self.k_factor = int(11+self.M)/10
-        self.avg_U10 = round(6+self.D, -1)-self.height/50
+        self.avg_U10 = int((6+self.D/10)*10)/10-self.height/50
         self.roughness:int = self.M*self.D 
         self.downtime = abs(2000-self.Y)+1
 
@@ -70,20 +71,25 @@ class EnergyCalculations:
         self.z0 = self.input_data.roughness/1000
         self.wind_nacelle = (
             self.input_data.avg_U10* 
-            np.log(self.input_data/self.z0)/
+            np.log(self.input_data.height/self.z0)/
             np.log(10/self.z0)
         ) # From formula
 
-    @staticmethod
-    def calculate():
-        wind_speeds = np.arange(1, 60)
+    def calculate(self):
+        h = 1 # step value. Increase for better resolution
+        wind_speeds = np.arange(1, 61, h)
 
-        P()
-
+        # C constant gives characteristic windspeed 
+        k = self.input_data.k_factor
+        C = self.wind_nacelle/ gamma(1+1/k)
+        f_weibull = (k/C)* (wind_speeds/C)**(k-1)*np.exp(-(wind_speeds/C)**k)
+        print(f_weibull[0:5])
 
 
 if __name__ == "__main__":
 
     input_data = InputData(name="Hans Bernhoff", SSN="199903151234", diam=37, height=44)
+    energy_calculations = EnergyCalculations(input_data)
+    energy_calculations.calculate()
 
 
