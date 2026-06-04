@@ -1,0 +1,23 @@
+# Sheet 1 (energy calculations)
+C6 = födelsedat
+D6 = SSN PIN
+E6 = Y
+F6 = Month
+G6 = Day
+
+
+
+
+# Sheet 2 (economics)
+C2 = Diam
+C3 = Tower_H
+C4 = Rat_Power
+C5 = terrain_z0gr
+C6 = road_pos
+C7 = grid_pos
+
+AO3 = n_param
+AP3 = e_param
+AQ3 = wo_param
+
+W21 = number_of_turbines
