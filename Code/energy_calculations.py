@@ -6,18 +6,18 @@ from dataclasses import dataclass
 @dataclass
 class CalculationResults:
     """Output data from energy calculations"""
-    rated_speed: float
-    cut_out: float
-    rated_power: float
-    cut_in: float
-    generated_energy: float
-    average_power: float
-    full_load_hours: float
-    aerodynamical_load: float
-    solidity: float
-    storm_load: float
-    wall_thickness_operation: float
-    wall_thickness_storm: float
+    rated_speed: float # [m/s] minimum speed when rated power reached
+    cut_out: float # [m/s] speeds above -> turn off
+    rated_power: float # [kW] maximum power 
+    cut_in: float # [m/s] speeds beneith -> turn off
+    generated_energy: float # [MWh] total generated power
+    average_power: float # [kWh] average won power
+    full_load_hours: float # [h] comparison number (how often under fully load)
+    aerodynamical_load: float # [kN] force under full load
+    solidity: float # [%] blades area / swept area
+    storm_load: float # [kN] load under storm
+    wall_thickness_operation: float  # [m] wall thickness required for normal operations
+    wall_thickness_storm: float # [m] wall thickness required for storm
 
 class EnergyCalculations:
     """Calculates energy data from input_data"""
@@ -86,8 +86,9 @@ class EnergyCalculations:
         
         swept_area = np.pi*(self.input_data.diam/2)**2
 
-        cut_in = int(rated_speed * 0.01**(1/3)*10)/10
-        rated_power = 0.62*rated_speed**3*swept_area*self.input_data.capture_efficiency*self.input_data.efficiency_drivetrain/1000
+        cut_in = int(rated_speed * 0.01**(1/3)*10)/10 # [m/s] speeds below are to slow
+        # [kW] the maximum power reached 
+        rated_power = 0.62*rated_speed**3*swept_area*self.input_data.capture_efficiency*self.input_data.efficiency_drivetrain/1000 
 
         conditions = [
             wind_speeds <= cut_in, # values below cut_in, therefore set to 0 below
@@ -107,16 +108,27 @@ class EnergyCalculations:
 
         generated_energy = np.sum(generated_energies)/1000 # Total energy per year in MWh
 
+
+        # C_T=8/9, 1.2 from dencity of air.
+        aerodynamical_load = 1/2*1.2*8/9*swept_area*rated_speed**2/1000 # [kN] force excerted on tower from wind
+
+
+        solidity = 3 #! [%] antal blad * bladens bredd / rotorns radie Hur ändra denna? Ska den vara output eller input? 
+        storm_load = 1/2*1.2*1.5*solidity/100*swept_area*60**2/1000 #  @60 [kN], max at 60 kN. load under storm
+
+        wall_thickness_operation = aerodynamical_load*self.input_data.height/(np.pi*(self.input_data.height/40)**2*160)*2
+        wall_thickness_storm=storm_load*self.input_data.height/(np.pi*(self.input_data.height/40)**2*160)*2
+
         # Set values to remember
         self.output_data = CalculationResults(
             rated_speed, cut_out, rated_power, cut_in, generated_energy, 
             average_power = generated_energy/8.76, # [KWh], 8.76 from hours in year / 1000
             full_load_hours = generated_energy/rated_power*1000, # [h], energy produced relative to maximum capacity
-            aerodynamical_load = 1/2*1.2*8/9*swept_area*rated_speed**2/1000,
-            solidity = 3, #! [%] antal blad * bladens bredd / rotorns radie Hur ändra denna? Ska den vara output eller input? 
-            storm_load = 1/2*1.2*1.5*self.solidity/100*swept_area*60**2/1000, #  @60 [kN], max at 60 kN. load under storm
-            wall_thickness_operation = self.aerodynamical_load*self.input_data.height/(np.pi*(self.input_data.height/40)**2*160)*2,
-            wall_thickness_storm= self.storm_load*self.input_data.height/(np.pi*(self.input_data.height/40)**2*160)*2
+            aerodynamical_load = aerodynamical_load,
+            solidity = solidity, #! [%] antal blad * bladens bredd / rotorns radie Hur ändra denna? Ska den vara output eller input? 
+            storm_load = storm_load, #  @60 [kN], max at 60 kN. load under storm
+            wall_thickness_operation = wall_thickness_operation,
+            wall_thickness_storm = wall_thickness_storm
         )
         return self.output_data
 
@@ -124,6 +136,6 @@ if __name__ == "__main__":
     input_data = InputData(name="Kalle Kula", SSN="199903151234", diam=37, height=44)
     energy_calculations = EnergyCalculations(input_data)
     energy_calculations.calculate()
-    print(energy_calculations.storm_load)
+    print(energy_calculations.output_data.storm_load)
 
 

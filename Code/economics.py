@@ -1,23 +1,26 @@
 # import customtkinter
 import numpy as np
 from user_input import InputData
-from energy_calculations import EnergyCalculations
+from energy_calculations import EnergyCalculations, CalculationResults
 
 
 class Economics:
-    def __init__(self, input_data: InputData) -> None:
-        self.input_data= input_data
+    def __init__(self, user_input_data: InputData, energy_output_data: CalculationResults) -> None:
+        self.input_data= user_input_data
+        self.output_data = energy_output_data
+        self.turbine_count = 1
+        self.PRICE_ELECTRICITY = 29 # euro / MWh
+        self.GREEN_CERTIFICATE = 1 # euro / MWh
 
     def capital_costs(self):
         """Permit and Wind energy conversion system costs (k€)"""
-        rated_power = 2.8  # MW
-        diam = 95  # m
-        tower_H = 105  # m
-        turbine_count = 16
+        rated_power = self.output_data.rated_power/1000 # MW
+        diam = self.input_data.diam # m
+        tower_H = self.input_data.height # m
 
         # PP = Part rated Power
         # proportional to sqrt(PP)
-        permits = 4000 * (rated_power * turbine_count / 80) ** 0.5
+        permits = 4000 * (rated_power * self.turbine_count / 80) ** 0.5
         PROJECTS = 1200  # Fixed
 
         ### Costs WECs (Wind energy conversion system)
@@ -48,55 +51,54 @@ class Economics:
     def grid_connections(self):
         """Calculates costs for grid connections (k€)"""
 
-        turbine_count = 16
-        rated_power = 2.8
+        rated_power = self.output_data.rated_power
 
-        substation = rated_power * turbine_count * 50
+        substation = rated_power * self.turbine_count * 50
         site_installations = 1000
         print(substation)
         return substation + site_installations
 
     def operational_maintenence(self):
         """Operational and maintenence costs per year (k€/year)"""
-        rated_power = 2.8
-        turbine_count = 16
+        rated_power = self.output_data.rated_power
         # prop to PP
-        maintenance = 600 * (rated_power * turbine_count / 84)
+        maintenance = 600 * (rated_power * self.turbine_count / 84)
         PR = (
-            20 * (rated_power * turbine_count / 84) ** 0.3
+            20 * (rated_power * self.turbine_count / 84) ** 0.3
         )  # local icehockey club sponsoring
         # prop to sqrt(PP)
-        insurance = 100*(rated_power*turbine_count/84)**0.5
+        insurance = 100*(rated_power*self.turbine_count/84)**0.5
         # prop to number of WECs
-        land_cost = 360 * turbine_count / 28
-        fund_decomissioning = 200*rated_power*turbine_count/84
+        land_cost = 360 * self.turbine_count / 28
+        fund_decomissioning = 200*rated_power*self.turbine_count/84
         
         return maintenance+PR+insurance+land_cost+fund_decomissioning
 
     def annual_savings(self):
         """Calculates savings per year, by taking annual income - operatiol_maintanence costs
         In k€ / year"""
-        generated_power = 124,706 # I9*turbine_count*0.95 # MWh, ask if it should be connected to sheet 2 or sheet 1
-        PRICE_ELECTRICITY = 29 # euro / MWh
-        GREEN_CERTIFICATE = 1 # euro / MWh
-        annual_income = generated_power* (PRICE_ELECTRICITY+GREEN_CERTIFICATE) / 1000 # k€/MWh
+        generated_power = self.output_data.generated_energy * 0.95*self.turbine_count # I9*turbine_count*0.95 # MWh, ask if it should be connected to sheet 2 or sheet 1
+        annual_income = generated_power* (self.PRICE_ELECTRICITY+self.GREEN_CERTIFICATE) / 1000 # k€/MWh
         return annual_income - self.operational_maintenence()
 
     def calculate_profits(self) -> tuple[float,float]:
         """Calculates total profit and margin for the windturbine park
         Returns: profits: float (k€), margin:float"""
-        total_capex = self.capital_costs()+self.grid_connections()+self.operational_maintenence()
+        capital_costs = self.capital_costs()
+        grid_connections_costs = self.grid_connections()
+        operational_maintenence_costs = self.operational_maintenence()
+        total_capex =capital_costs+grid_connections_costs+operational_maintenence_costs
         annual_savings = self.annual_savings() # k€
-        turbine_count = 16
-        proximity_number = 0.5
 
         interest = 0.03 
         inflation = 0.02
         ### calculate lifetime
         lifetime = 22 # in years
 
+
+        # proximity_number = 0.5
         # Ingen reduction då vi bara räknar på en
-        # lifetime_reduction = 7*proximity_number/turbine_count
+        # lifetime_reduction = 7*proximity_number/self.turbine_count
         # lifetime -= lifetime_reduction * min(1, self.input_data.height/self.input_data.diam) # scale depending on height
         financial_costs = 0.07*total_capex # k€
 
@@ -108,14 +110,7 @@ class Economics:
 
         profits = net_present_value-total_capex # k€
         margin = profits/total_capex 
-        return profits, margin
-
-
-
-
-
-
-
+        return profits, margin 
 
 def main():
     print("Hello from uu-proj!")
