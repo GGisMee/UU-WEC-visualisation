@@ -18,10 +18,11 @@ class Economics:
         diam = self.input_data.diam # m
         tower_H = self.input_data.height # m
 
+        # Skipped because only one WEC
         # PP = Part rated Power
         # proportional to sqrt(PP)
-        permits = 4000 * (rated_power * self.turbine_count / 80) ** 0.5
-        PROJECTS = 1200  # Fixed
+        # permits = 4000 * (rated_power * self.turbine_count / 80) ** 0.5
+        # PROJECTS = 1200  # Fixed
 
         ### Costs WECs (Wind energy conversion system)
         # prop to diam^3.5
@@ -45,50 +46,44 @@ class Economics:
         foundation_site = 300 * (diam / 90 * tower_H / 100) ** (1 / 2)
 
         return (
-            permits + PROJECTS + turbine + drivetrain_nacell + tower + foundation_site
+            turbine + drivetrain_nacell + tower + foundation_site
         )
 
     def grid_connections(self):
         """Calculates costs for grid connections (k€)"""
 
-        rated_power = self.output_data.rated_power
+        rated_power = self.output_data.rated_power/1000
 
         substation = rated_power * self.turbine_count * 50
         site_installations = 1000
         print(substation)
         return substation + site_installations
 
-    def operational_maintenence(self):
-        """Operational and maintenence costs per year (k€/year)"""
-        rated_power = self.output_data.rated_power
+    def operational_maintenance(self):
+        """Operational and maintenance costs per year (k€/year)"""
+        rated_power = self.output_data.rated_power/1000
         # prop to PP
         maintenance = 600 * (rated_power * self.turbine_count / 84)
-        PR = (
-            20 * (rated_power * self.turbine_count / 84) ** 0.3
-        )  # local icehockey club sponsoring
+        # Removed below to fount for only one
+        # PR = 20 * (rated_power * self.turbine_count / 84) ** 0.3  # local icehockey club sponsoring
         # prop to sqrt(PP)
         insurance = 100*(rated_power*self.turbine_count/84)**0.5
         # prop to number of WECs
         land_cost = 360 * self.turbine_count / 28
         fund_decomissioning = 200*rated_power*self.turbine_count/84
         
-        return maintenance+PR+insurance+land_cost+fund_decomissioning
+        return maintenance+insurance+land_cost+fund_decomissioning
 
     def annual_savings(self):
-        """Calculates savings per year, by taking annual income - operatiol_maintanence costs
+        """Calculates savings per year, by taking annual income - operational_maintenance costs
         In k€ / year"""
-        generated_power = self.output_data.generated_energy * 0.95*self.turbine_count # I9*turbine_count*0.95 # MWh, ask if it should be connected to sheet 2 or sheet 1
+        generated_power = self.output_data.generated_energy * 0.95*self.turbine_count # [MWh] I9*turbine_count*0.95 
         annual_income = generated_power* (self.PRICE_ELECTRICITY+self.GREEN_CERTIFICATE) / 1000 # k€/MWh
-        return annual_income - self.operational_maintenence()
+        return annual_income - self.operational_maintenance()
 
-    def calculate_profits(self) -> tuple[float,float]:
+    def calculate_profits(self, total_capex, annual_savings) -> tuple[float,float]:
         """Calculates total profit and margin for the windturbine park
         Returns: profits: float (k€), margin:float"""
-        capital_costs = self.capital_costs()
-        grid_connections_costs = self.grid_connections()
-        operational_maintenence_costs = self.operational_maintenence()
-        total_capex =capital_costs+grid_connections_costs+operational_maintenence_costs
-        annual_savings = self.annual_savings() # k€
 
         interest = 0.03 
         inflation = 0.02
@@ -106,19 +101,29 @@ class Economics:
 
         # Scale savings using geometrical series formula with k_factor over lifetime years
         # In k€
-        net_present_value = annual_savings*(k_factor-k_factor**(lifetime+1))/(1-k_factor)
+        net_present_value = annual_savings * (k_factor * (1 - k_factor**lifetime)) / (1 - k_factor)
 
-        profits = net_present_value-total_capex # k€
+        profits = net_present_value-total_capex-financial_costs # k€
         margin = profits/total_capex 
         return profits, margin 
 
+    def update(self):
+        capital_costs = self.capital_costs()
+        # Skippar pga en turbin
+        # grid_connections_costs = self.grid_connections()
+        total_capex =capital_costs # Removed because only on one: +grid_connections_costs
+        annual_savings = self.annual_savings() # k€
+        profits, margin = self.calculate_profits(total_capex, annual_savings)
+
+        print(profits, margin)
+
+        
 def main():
     print("Hello from uu-proj!")
-    input_data = InputData("Gustav Gamstedt", "199801281234", diam=37, height=44)
+    input_data = InputData("Gustav Gamstedt", "199801281234", diam=95, height=105)
     energy_calculations = EnergyCalculations(input_data)
     economics = Economics(input_data, energy_calculations.output_data)
-    economics.operational_maintenence()
-
+    economics.update()
 
 if __name__ == "__main__":
     main()

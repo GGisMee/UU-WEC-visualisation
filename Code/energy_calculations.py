@@ -109,7 +109,7 @@ class EnergyCalculations:
         generated_energy = np.sum(generated_energies)/1000 # Total energy per year in MWh
 
 
-        # C_T=8/9, 1.2 from dencity of air.
+        # C_T=8/9, 1.2 from density of air.
         aerodynamical_load = 1/2*1.2*8/9*swept_area*rated_speed**2/1000 # [kN] force excerted on tower from wind
 
 

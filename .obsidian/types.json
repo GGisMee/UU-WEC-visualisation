@@ -1,0 +1,23 @@
+{
+  "types": {
+    "aliases": "aliases",
+    "cssclasses": "multitext",
+    "tags": "tags",
+    "prio": "text",
+    "types": "multitext",
+    "tid": "text",
+    "completed": "checkbox",
+    "krävande": "text",
+    "område": "number",
+    "intressant": "checkbox",
+    "nivå": "text",
+    "närhet": "text",
+    "arkiverat": "checkbox",
+    "arkiverad": "checkbox",
+    "date": "date",
+    "sidor": "number",
+    "test": "number",
+    "progress": "number",
+    "kostnad": "number"
+  }
+}

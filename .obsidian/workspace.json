@@ -1,0 +1,264 @@
+{
+  "main": {
+    "id": "5324373015726ba8",
+    "type": "split",
+    "children": [
+      {
+        "id": "4509724f8bf84da7",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "e7a7b303c61786dc",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "uu proj/Tidplanering.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Tidplanering"
+            }
+          },
+          {
+            "id": "770e09a09439019c",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "43246c7e6159f172",
+    "type": "split",
+    "children": [
+      {
+        "id": "56ef42809629e063",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "7fd7ea9d4ccd300c",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "d90c9a08b22cef8d",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "duckduckgo",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "ca73feebc87bcb1a",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          },
+          {
+            "id": "c1d762c6993c0406",
+            "type": "leaf",
+            "state": {
+              "type": "recent-files",
+              "state": {},
+              "icon": "lucide-ghost",
+              "title": "recent-files"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "900f4876021e2d3b",
+    "type": "split",
+    "children": [
+      {
+        "id": "8dcee574dba91abd",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "67c719a67e975a49",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "uu proj/kostnader mm.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for kostnader mm"
+            }
+          },
+          {
+            "id": "b5966555340f4793",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "04 Planering/01 Daily Notes/26-06-02.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from 26-06-02"
+            }
+          },
+          {
+            "id": "ca7b78822ce9766c",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "0dc008abb7b16cea",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "04 Planering/01 Daily Notes/26-05-19.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of 26-05-19"
+            }
+          }
+        ]
+      },
+      {
+        "id": "3f965d126f21ae13",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "6b32287752a70170",
+            "type": "leaf",
+            "state": {
+              "type": "calendar",
+              "state": {},
+              "icon": "lucide-ghost",
+              "title": "calendar"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "command-palette:Open command palette": false,
+      "workspaces:Manage workspace layouts": false,
+      "bases:Create new base": false,
+      "obsidian-full-calendar:Open Full Calendar": false,
+      "templater-obsidian:Templater": false,
+      "homepage:Open homepage": false,
+      "obsidian-excalidraw-plugin:New drawing": false,
+      "quickadd:QuickAdd": false,
+      "obsidian-git:Open Git source control": false
+    }
+  },
+  "active": "770e09a09439019c",
+  "lastOpenFiles": [
+    "uu proj/Tidplanering.md",
+    "uu proj/kostnader mm.md",
+    "uu proj/Excel MinP1.md",
+    "uu proj/Tankar.md",
+    "uu proj/val.md",
+    "04 Planering/01 Daily Notes/26-05-25.md",
+    "05 Verktyg/Översikt/Startpage.md",
+    "04 Planering/01 Daily Notes/26-06-07.md",
+    "04 Planering/01 Daily Notes/26-06-06.md",
+    "06 Resurser/IMG_2986.jpeg",
+    "04 Planering/01 Daily Notes/26-06-04.md",
+    "04 Planering/01 Daily Notes/26-06-05.md",
+    "01 Studier/Avslutade kurser/SF1918 - Sannolikhetsteori och statistik/SF1918 - Sannolikhetsteori och statistik.md",
+    "01 Studier/Avslutade kurser/SF1918 - Sannolikhetsteori och statistik/7 - obereonde S.V, max, min.md",
+    "01 Studier/Avslutade kurser/SF1918 - Sannolikhetsteori och statistik/8 - beting förd. + väntevärde med funk..md",
+    "01 Studier/SG1115 - Partikeldynamik med projekt/Inl2.md",
+    "01 Studier/Avslutade kurser/SF1918 - Sannolikhetsteori och statistik/sanstat - formelsamling.pdf",
+    "06 Resurser/IMG_3010.jpeg",
+    "01 Studier/SG1115 - Partikeldynamik med projekt/SG1115 - Partikeldynamik med projekt.md",
+    "01 Studier/SG1115 - Partikeldynamik med projekt/partdyn - kurspm.pdf",
+    "uu proj/uu proj.md",
+    "06 Resurser/Excalidraw/Ritning app UU proj.md",
+    "uu proj",
+    "04 Planering/01 Daily Notes/26-06-03.md",
+    "06 Resurser/Pasted image 20260603091432.png",
+    "04 Planering/01 Daily Notes/26-06-02.md",
+    "03 Privat/Linux/self-hosting/Setup jellyfin.md",
+    "03 Privat/Linux/self-hosting/self-hosting.md",
+    "03 Privat/Linux/Linux.md",
+    "03 Privat/03 Privat.md",
+    "01 Studier/01 Studier.md",
+    "03 Privat/Linux/groups and users.md",
+    "06 Resurser/IMG_2999.jpeg",
+    "06 Resurser/IMG_2993.jpeg",
+    "06 Resurser/IMG_2992.jpeg",
+    "06 Resurser/IMG_3005.jpeg",
+    "03 Privat/Sparade recept/Recept base.base",
+    "01 Studier/Studier Base.base",
+    "04 Planering/03 TODO/TODO Base.base",
+    "03 Privat/Böcker/Böcker base.base",
+    "06 Resurser/Bok - sapiens.png",
+    "06 Resurser/bok - farenheit 451.png",
+    "01 Studier/SG1115 - Partikeldynamik med projekt/Formelsamling_Mekanik_I.pdf",
+    "codeforces.com/blog/entry",
+    "codeforces.com/blog",
+    "06 Resurser/IMG_2965.jpeg"
+  ]
+}

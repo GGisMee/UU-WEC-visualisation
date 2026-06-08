@@ -29,9 +29,9 @@ class InputData:
         """Delar upp SSN i Y,M,D,S
         Där S är 4 sista siffrorna"""
         if len(SSN) != 12:  # Vi vill ha YYYYMMDDSSSS format, dvs 12 tecken
-            assert NameError, "Expected SSN format with 12 characters"
+            raise ValueError("Expected SSN format with 12 characters")
         if not SSN.isdigit():
-            assert TypeError, "SSN number is not formatted as a number"
+            raise ValueError("SSN number is not formatted as a number")
         Y = int(SSN[0:4])
         M = int(SSN[4:6])
         D = int(SSN[6:8])
@@ -60,4 +60,4 @@ class InputData:
         self.capture_efficiency = 0.54-self.M/100 
         self.efficiency_drivetrain = 0.94-(self.PIN - round(self.PIN,-2))/400 # efficiency of internal mechanical system
 
-        # print(self.k_factor, self.avg_U10, self.roughness, self.downtime, self.capture_efficiency, self.efficiency_drivetrain)
+        # print(self.k_factor, self.avg_U10, self.roughness, self.downtime, self.capture_efficiency, self.efficiency_drivetrain))

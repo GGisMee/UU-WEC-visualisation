@@ -1,0 +1,36 @@
+{
+  "calendarSources": [
+    {
+      "type": "local",
+      "color": "#8a97ff",
+      "directory": "04 Planering/04 Kalender/Skola"
+    },
+    {
+      "type": "local",
+      "color": "#ff6666",
+      "directory": "04 Planering/04 Kalender/Studentliv"
+    },
+    {
+      "type": "ical",
+      "color": "#f7f99f",
+      "url": "https://calendar.google.com/calendar/ical/fysiksektionen.se_0187vbmdcivl8mtio142e23cas%40group.calendar.google.com/public/basic.ics"
+    },
+    {
+      "type": "local",
+      "color": "#56d27b",
+      "directory": "04 Planering/04 Kalender/Privat"
+    },
+    {
+      "type": "ical",
+      "color": "hsl(calc(232 - 1), calc(96% * 1.01), calc(60% * 1.075))",
+      "url": "https://cloud.timeedit.net/kth/web/stud02/ri.ics?sid=7&p=20250825.x%2C20251231.x&objects=430575.16%2C430223&l=sv&e=2509&ku=68b58beab920a06b71612ff4&k=C870008597DA517BF3F59B8E500577224C"
+    }
+  ],
+  "defaultCalendar": 0,
+  "firstDay": 1,
+  "initialView": {
+    "desktop": "timeGridWeek",
+    "mobile": "timeGrid3Days"
+  },
+  "timeFormat24h": true
+}
