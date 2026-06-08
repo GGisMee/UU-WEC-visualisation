@@ -5,6 +5,23 @@ from energy_calculations import EnergyCalculations
 from user_input import InputData
 
 class VindApp(ctk.CTk):
+    """
+    Main Application class for the Wind Power Simulator Pro.
+
+    Provides a graphical user interface (GUI) using CustomTkinter to interact
+    with the wind power simulation models.
+
+    Attributes
+    ----------
+    name_var : ctk.StringVar
+        Observable string for the user's name.
+    ssn_var : ctk.StringVar
+        Observable string for the Social Security Number.
+    diam_var : ctk.DoubleVar
+        Observable float for the turbine rotor diameter.
+    height_var : ctk.DoubleVar
+        Observable float for the turbine tower height.
+    """
     def __init__(self):
         super().__init__()
 
@@ -25,6 +42,9 @@ class VindApp(ctk.CTk):
         self.update_calculations()
 
     def create_widgets(self):
+        """
+        Initialize and arrange all UI components in the main window.
+        """
         # Main Title
         title = ctk.CTkLabel(self, text="Wind Turbine Simulator", font=("Arial", 24, "bold"))
         title.pack(pady=20)
@@ -82,6 +102,17 @@ class VindApp(ctk.CTk):
         self.lbl_margin.pack(pady=10)
 
     def update_calculations(self, *args):
+        """
+        Triggered when input variables change. 
+        
+        Runs the full simulation pipeline and updates the UI labels 
+        and visualizations.
+
+        Parameters
+        ----------
+        *args : list
+            Optional arguments passed by Tkinter events.
+        """
         try:
             name = self.name_var.get()
             ssn = self.ssn_var.get()

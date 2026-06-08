@@ -5,6 +5,32 @@ from energy_calculations import EnergyCalculations, CalculationResults
 
 
 class Economics:
+    """
+    Financial model for evaluating wind turbine profitability.
+
+    Calculates capital expenditure (CAPEX), operational expenditure (OPEX),
+    annual savings, and overall project profitability metrics.
+
+    Parameters
+    ----------
+    user_input_data : InputData
+        Object containing user-specific parameters and dimensions.
+    energy_output_data : CalculationResults
+        Results from the energy simulation (power, energy, etc.).
+
+    Attributes
+    ----------
+    input_data : InputData
+        Stored input parameters.
+    output_data : CalculationResults
+        Stored energy results.
+    turbine_count : int
+        Number of turbines in the project (default is 1).
+    PRICE_ELECTRICITY : float
+        Electricity price in Euro/MWh.
+    GREEN_CERTIFICATE : float
+        Value of green certificates in Euro/MWh.
+    """
     def __init__(self, user_input_data: InputData, energy_output_data: CalculationResults) -> None:
         self.input_data= user_input_data
         self.output_data = energy_output_data
@@ -12,8 +38,18 @@ class Economics:
         self.PRICE_ELECTRICITY = 29 # euro / MWh
         self.GREEN_CERTIFICATE = 1 # euro / MWh
 
-    def capital_costs(self):
-        """Permit and Wind energy conversion system costs (k€)"""
+    def capital_costs(self) -> float:
+        """
+        Calculate total capital expenditure (CAPEX) for the turbine.
+
+        Includes costs for the turbine, drivetrain, nacelle, tower, 
+        and foundation.
+
+        Returns
+        -------
+        float
+            Total capital costs in k€.
+        """
         rated_power = self.output_data.rated_power/1000 # MW
         diam = self.input_data.diam # m
         tower_H = self.input_data.height # m
@@ -49,18 +85,33 @@ class Economics:
             turbine + drivetrain_nacell + tower + foundation_site
         )
 
-    def grid_connections(self):
-        """Calculates costs for grid connections (k€)"""
+    def grid_connections(self) -> float:
+        """
+        Calculate costs for grid connections and site installations.
 
+        Returns
+        -------
+        float
+            Grid connection costs in k€.
+        """
         rated_power = self.output_data.rated_power/1000
 
         substation = rated_power * self.turbine_count * 50
         site_installations = 1000
-        print(substation)
+        # print(substation)
         return substation + site_installations
 
-    def operational_maintenance(self):
-        """Operational and maintenance costs per year (k€/year)"""
+    def operational_maintenance(self) -> float:
+        """
+        Calculate annual operational and maintenance (O&M) costs.
+
+        Includes maintenance, insurance, land lease, and decommissioning funds.
+
+        Returns
+        -------
+        float
+            Annual O&M costs in k€/year.
+        """
         rated_power = self.output_data.rated_power/1000
         # prop to PP
         maintenance = 600 * (rated_power * self.turbine_count / 84)
@@ -74,16 +125,45 @@ class Economics:
         
         return maintenance+insurance+land_cost+fund_decomissioning
 
-    def annual_savings(self):
-        """Calculates savings per year, by taking annual income - operational_maintenance costs
-        In k€ / year"""
+    def annual_savings(self) -> float:
+        """
+        Calculate net annual savings.
+
+        Computed as: (Generated Energy * Total Price) - O&M Costs.
+
+        Returns
+        -------
+        float
+            Annual net savings in k€/year.
+        """
         generated_power = self.output_data.generated_energy * 0.95*self.turbine_count # [MWh] I9*turbine_count*0.95 
         annual_income = generated_power* (self.PRICE_ELECTRICITY+self.GREEN_CERTIFICATE) / 1000 # k€/MWh
         return annual_income - self.operational_maintenance()
 
-    def calculate_profits(self, total_capex, annual_savings) -> tuple[float,float]:
-        """Calculates total profit and margin for the windturbine park
-        Returns: profits: float (k€), margin:float"""
+    def calculate_profits(self, total_capex: float = None, annual_savings: float = None) -> tuple[float, float]:
+        """
+        Calculate total project profit and margin over its lifetime.
+
+        Uses a Net Present Value (NPV) approach considering inflation and interest.
+
+        Parameters
+        ----------
+        total_capex : float, optional
+            Total capital costs. If None, calculated from internal state.
+        annual_savings : float, optional
+            Annual net savings. If None, calculated from internal state.
+
+        Returns
+        -------
+        profits : float
+            Total lifetime profit in k€.
+        margin : float
+            Profitability margin (Profits / CAPEX).
+        """
+        if total_capex is None:
+            total_capex = self.capital_costs()
+        if annual_savings is None:
+            annual_savings = self.annual_savings()
 
         interest = 0.03 
         inflation = 0.02
@@ -108,6 +188,9 @@ class Economics:
         return profits, margin 
 
     def update(self):
+        """
+        Perform a full economic update and print results.
+        """
         capital_costs = self.capital_costs()
         # Skippar pga en turbin
         # grid_connections_costs = self.grid_connections()
@@ -115,7 +198,7 @@ class Economics:
         annual_savings = self.annual_savings() # k€
         profits, margin = self.calculate_profits(total_capex, annual_savings)
 
-        print(profits, margin)
+        print(f"Profits: {profits:.2f} k€, Margin: {margin*100:.2f}%")
 
         
 def main():

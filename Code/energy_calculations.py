@@ -5,7 +5,36 @@ from dataclasses import dataclass
 
 @dataclass
 class CalculationResults:
-    """Output data from energy calculations"""
+    """
+    Data container for the results of the wind energy simulation.
+
+    Attributes
+    ----------
+    rated_speed : float
+        Minimum wind speed at which rated power is reached [m/s].
+    cut_out : float
+        Wind speed above which the turbine shuts down for safety [m/s].
+    rated_power : float
+        Maximum electrical power output [kW].
+    cut_in : float
+        Wind speed below which there is not enough energy to start [m/s].
+    generated_energy : float
+        Total annual energy production [MWh].
+    average_power : float
+        Average power output over the year [kW].
+    full_load_hours : float
+        Equivalent hours of operation at rated power [h].
+    aerodynamical_load : float
+        Thrust force on the rotor at rated speed [kN].
+    solidity : float
+        Ratio of blade area to swept area [%].
+    storm_load : float
+        Wind load on the stationary structure during a storm (60 m/s) [kN].
+    wall_thickness_operation : float
+        Required tower wall thickness for normal operating loads [m].
+    wall_thickness_storm : float
+        Required tower wall thickness for storm loads [m].
+    """
     rated_speed: float # [m/s] minimum speed when rated power reached
     cut_out: float # [m/s] speeds above -> turn off
     rated_power: float # [kW] maximum power 
@@ -20,12 +49,38 @@ class CalculationResults:
     wall_thickness_storm: float # [m] wall thickness required for storm
 
 class EnergyCalculations:
-    """Calculates energy data from input_data"""
+    """
+    Physics engine for calculating wind energy production and physical loads.
+
+    Parameters
+    ----------
+    input_data : InputData
+        Object containing turbine dimensions and environmental parameters.
+
+    Attributes
+    ----------
+    input_data : InputData
+        The source input data.
+    z0 : float
+        Roughness length [m].
+    wind_nacelle : float
+        Average wind speed at hub height [m/s].
+    output_data : CalculationResults
+        Stored results after calling calculate().
+    """
     def __init__(self, input_data: InputData):
         self.update(input_data)
         self.output_data: CalculationResults
 
     def update(self, input_data: InputData):
+        """
+        Update the simulation with new input data and recalculate hub-height wind.
+
+        Parameters
+        ----------
+        input_data : InputData
+            The new input data object.
+        """
         self.input_data = input_data
 
         self.z0 = self.input_data.roughness/1000
@@ -38,9 +93,17 @@ class EnergyCalculations:
         self.calculate()
 
     def calculate(self) -> CalculationResults:
-        """Calculates various variables from input_data and add to self.output_data. Also outputs output_data
-        In dataclass:
-            rated_speed, cut_out, rated_power, cut_in, generated_energy, average_power, full_load_hours, aerodynamical_load, solidity, storm_load, wall_thickness_operation, wall_thickness_storm
+        """
+        Perform the full suite of energy and load calculations.
+
+        Calculates Weibull distribution, applies Betz law approximations,
+        determines operational speeds, integrates energy production,
+        and estimates structural loads.
+
+        Returns
+        -------
+        CalculationResults
+            A dataclass containing all calculated physical and energy metrics.
         """
         h = 1 # step value. Increase for better resolution
         wind_speeds = np.arange(1, 61, h)
