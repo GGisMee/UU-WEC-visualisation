@@ -1,7 +1,7 @@
 # import customtkinter
 import numpy as np
 from user_input import InputData
-from energy_calculations import energy_calculations
+from energy_calculations import EnergyCalculations
 
 
 class Economics:
@@ -119,8 +119,9 @@ class Economics:
 
 def main():
     print("Hello from uu-proj!")
-    data = InputData("Gustav Gamstedt", "199801281234", diam=37, height=44)
-    economics = Economics(data)
+    input_data = InputData("Gustav Gamstedt", "199801281234", diam=37, height=44)
+    energy_calculations = EnergyCalculations(input_data)
+    economics = Economics(input_data, energy_calculations.output_data)
     economics.operational_maintenence()
 
 

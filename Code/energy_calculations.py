@@ -1,11 +1,29 @@
 import numpy as np
 from scipy.special import gamma
 from user_input import InputData
+from dataclasses import dataclass
+
+@dataclass
+class CalculationResults:
+    """Output data from energy calculations"""
+    rated_speed: float
+    cut_out: float
+    rated_power: float
+    cut_in: float
+    generated_energy: float
+    average_power: float
+    full_load_hours: float
+    aerodynamical_load: float
+    solidity: float
+    storm_load: float
+    wall_thickness_operation: float
+    wall_thickness_storm: float
 
 class EnergyCalculations:
     """Calculates energy data from input_data"""
     def __init__(self, input_data: InputData):
         self.update(input_data)
+        self.output_data: CalculationResults
 
     def update(self, input_data: InputData):
         self.input_data = input_data
@@ -17,10 +35,12 @@ class EnergyCalculations:
             np.log(10/self.z0)
         ) # From formula
 
-    def calculate(self):
-        """Calculates various variables from input_data.
-        Variabels appended to self:
-        rated_speed, cut_out, rated_power, cut_in, generated_energy, average_power, full_load_hours, aerodynamical_load, solidity, storm_load, wall_thickness_operation, wall_thickness_storm
+        self.calculate()
+
+    def calculate(self) -> CalculationResults:
+        """Calculates various variables from input_data and add to self.output_data. Also outputs output_data
+        In dataclass:
+            rated_speed, cut_out, rated_power, cut_in, generated_energy, average_power, full_load_hours, aerodynamical_load, solidity, storm_load, wall_thickness_operation, wall_thickness_storm
         """
         h = 1 # step value. Increase for better resolution
         wind_speeds = np.arange(1, 61, h)
@@ -88,19 +108,17 @@ class EnergyCalculations:
         generated_energy = np.sum(generated_energies)/1000 # Total energy per year in MWh
 
         # Set values to remember
-        self.rated_speed = rated_speed
-        self.cut_out = cut_out
-        self.rated_power = rated_power
-        self.cut_in = cut_in
-        self.generated_energy = generated_energy # [MWh]
-        self.average_power = generated_energy/8.76 # [KWh], 8.76 from hours in year / 1000
-        self.full_load_hours = generated_energy/rated_power*1000 # [h], energy produced relative to maximum capacity
-        self.aerodynamical_load = 1/2*1.2*8/9*swept_area*rated_speed**2/1000
-        self.solidity = 3 #! [%] antal blad * bladens bredd / rotorns radie Hur ändra denna? Ska den vara output eller input? 
-        self.storm_load = 1/2*1.2*1.5*self.solidity/100*swept_area*60**2/1000 #  @60 [kN], max at 60 kN. load under storm
-        self.wall_thickness_operation = self.aerodynamical_load*self.input_data.height/(np.pi*(self.input_data.height/40)**2*160)*2
-        self.wall_thickness_storm= self.storm_load*self.input_data.height/(np.pi*(self.input_data.height/40)**2*160)*2
-
+        self.output_data = CalculationResults(
+            rated_speed, cut_out, rated_power, cut_in, generated_energy, 
+            average_power = generated_energy/8.76, # [KWh], 8.76 from hours in year / 1000
+            full_load_hours = generated_energy/rated_power*1000, # [h], energy produced relative to maximum capacity
+            aerodynamical_load = 1/2*1.2*8/9*swept_area*rated_speed**2/1000,
+            solidity = 3, #! [%] antal blad * bladens bredd / rotorns radie Hur ändra denna? Ska den vara output eller input? 
+            storm_load = 1/2*1.2*1.5*self.solidity/100*swept_area*60**2/1000, #  @60 [kN], max at 60 kN. load under storm
+            wall_thickness_operation = self.aerodynamical_load*self.input_data.height/(np.pi*(self.input_data.height/40)**2*160)*2,
+            wall_thickness_storm= self.storm_load*self.input_data.height/(np.pi*(self.input_data.height/40)**2*160)*2
+        )
+        return self.output_data
 
 if __name__ == "__main__":
     input_data = InputData(name="Kalle Kula", SSN="199903151234", diam=37, height=44)
