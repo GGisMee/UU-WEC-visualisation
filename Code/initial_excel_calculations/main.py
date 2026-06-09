@@ -1,8 +1,8 @@
 import customtkinter as ctk
 import math
-from economics import Economics
-from energy_calculations import EnergyCalculations
-from user_input import InputData
+from initial_excel_calculations.economics import Economics
+from initial_excel_calculations.energy_calculations import EnergyCalculations
+from initial_excel_calculations.user_input import InputData
 
 class VindApp(ctk.CTk):
     """

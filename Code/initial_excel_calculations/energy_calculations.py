@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.special import gamma
-from user_input import InputData
+from initial_excel_calculations.user_input import InputData
 from dataclasses import dataclass
 
 @dataclass

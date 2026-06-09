@@ -1,8 +1,8 @@
 # import customtkinter
 from dataclasses import dataclass
 import numpy as np
-from user_input import InputData
-from energy_calculations import EnergyCalculations, CalculationResults
+from initial_excel_calculations.user_input import InputData
+from initial_excel_calculations.energy_calculations import EnergyCalculations, CalculationResults
 
 @dataclass
 class FinanceConstants:
