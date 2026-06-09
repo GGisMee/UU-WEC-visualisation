@@ -1,8 +1,19 @@
 # import customtkinter
+from dataclasses import dataclass
 import numpy as np
 from user_input import InputData
 from energy_calculations import EnergyCalculations, CalculationResults
 
+@dataclass
+class FinanceConstants:
+    """A set of constant values that are used in the financial calculations."""
+    interest: float = 0.03 # [%] interest
+    inflation: float = 0.02 # [%] inflation
+    lifetime: int = 22 # [years] lifetime of the turbine
+    financial_costs_additional: float = 0.07 # [%] additional costs for loans, fees and so on for funding.
+    price_electricity: float = 29  # [euro / MWh] price of electricity
+    green_certificate: float = 1  # [euro / MWh] value of green certificates
+    
 
 class Economics:
     """
@@ -26,23 +37,22 @@ class Economics:
         Stored energy results.
     turbine_count : int
         Number of turbines in the project (default is 1).
-    PRICE_ELECTRICITY : float
-        Electricity price in Euro/MWh.
-    GREEN_CERTIFICATE : float
-        Value of green certificates in Euro/MWh.
+    finansial_costs : FinanceConstants
+        Set of constant values used in the financial calculations.
     """
-    def __init__(self, user_input_data: InputData, energy_output_data: CalculationResults) -> None:
-        self.input_data= user_input_data
+    def __init__(
+        self, user_input_data: InputData, energy_output_data: CalculationResults
+    ) -> None:
+        self.input_data = user_input_data
         self.output_data = energy_output_data
         self.turbine_count = 1
-        self.PRICE_ELECTRICITY = 29 # euro / MWh
-        self.GREEN_CERTIFICATE = 1 # euro / MWh
+        self.finansial_costs = FinanceConstants()
 
     def capital_costs(self) -> float:
         """
         Calculate total capital expenditure (CAPEX) for the turbine.
 
-        Includes costs for the turbine, drivetrain, nacelle, tower, 
+        Includes costs for the turbine, drivetrain, nacelle, tower,
         and foundation.
 
         Returns
@@ -50,9 +60,9 @@ class Economics:
         float
             Total capital costs in k€.
         """
-        rated_power = self.output_data.rated_power/1000 # MW
-        diam = self.input_data.diam # m
-        tower_H = self.input_data.height # m
+        rated_power = self.output_data.rated_power / 1000  # MW
+        diam = self.input_data.diam  # m
+        tower_H = self.input_data.height  # m
 
         # Skipped because only one WEC
         # PP = Part rated Power
@@ -81,25 +91,18 @@ class Economics:
         # prop to (diam*height)^0.5
         foundation_site = 300 * (diam / 90 * tower_H / 100) ** (1 / 2)
 
-        return (
-            turbine + drivetrain_nacell + tower + foundation_site
-        )
+        return turbine + drivetrain_nacell + tower + foundation_site
 
-    def grid_connections(self) -> float:
+    def installation_costs(self) -> float:
         """
-        Calculate costs for grid connections and site installations.
+        Calculate costs for grid connections, roads, cables and site installations.
 
         Returns
         -------
         float
-            Grid connection costs in k€.
+            Installation costs in k€.
         """
-        rated_power = self.output_data.rated_power/1000
-
-        substation = rated_power * self.turbine_count * 50
-        site_installations = 1000
-        # print(substation)
-        return substation + site_installations
+        return 3500  # k€
 
     def operational_maintenance(self) -> float:
         """
@@ -112,18 +115,18 @@ class Economics:
         float
             Annual O&M costs in k€/year.
         """
-        rated_power = self.output_data.rated_power/1000
+        rated_power = self.output_data.rated_power / 1000
         # prop to PP
         maintenance = 600 * (rated_power * self.turbine_count / 84)
         # Removed below to fount for only one
         # PR = 20 * (rated_power * self.turbine_count / 84) ** 0.3  # local icehockey club sponsoring
         # prop to sqrt(PP)
-        insurance = 100*(rated_power*self.turbine_count/84)**0.5
+        insurance = 100 * (rated_power * self.turbine_count / 84) ** 0.5
         # prop to number of WECs
         land_cost = 360 * self.turbine_count / 28
-        fund_decomissioning = 200*rated_power*self.turbine_count/84
-        
-        return maintenance+insurance+land_cost+fund_decomissioning
+        fund_decomissioning = 200 * rated_power * self.turbine_count / 84
+
+        return maintenance + insurance + land_cost + fund_decomissioning
 
     def annual_savings(self) -> float:
         """
@@ -136,11 +139,17 @@ class Economics:
         float
             Annual net savings in k€/year.
         """
-        generated_power = self.output_data.generated_energy * 0.95*self.turbine_count # [MWh] I9*turbine_count*0.95 
-        annual_income = generated_power* (self.PRICE_ELECTRICITY+self.GREEN_CERTIFICATE) / 1000 # k€/MWh
+        generated_power = (
+            self.output_data.generated_energy * 0.95 * self.turbine_count
+        )  # [MWh] I9*turbine_count*0.95
+        annual_income = (
+            generated_power * (self.finansial_costs.price_electricity + self.finansial_costs.green_certificate) / 1000
+        )  # k€/MWh
         return annual_income - self.operational_maintenance()
 
-    def calculate_profits(self, total_capex: float = None, annual_savings: float = None) -> tuple[float, float]:
+    def calculate_profits(
+        self, total_capex: float, annual_savings: float
+    ) -> tuple[float, float]:
         """
         Calculate total project profit and margin over its lifetime.
 
@@ -148,10 +157,10 @@ class Economics:
 
         Parameters
         ----------
-        total_capex : float, optional
-            Total capital costs. If None, calculated from internal state.
-        annual_savings : float, optional
-            Annual net savings. If None, calculated from internal state.
+        total_capex : float
+            Total capital costs. 
+        annual_savings : float
+            Annual net savings.
 
         Returns
         -------
@@ -160,53 +169,50 @@ class Economics:
         margin : float
             Profitability margin (Profits / CAPEX).
         """
-        if total_capex is None:
-            total_capex = self.capital_costs()
-        if annual_savings is None:
-            annual_savings = self.annual_savings()
 
-        interest = 0.03 
-        inflation = 0.02
+        interest = self.finansial_costs.interest
+        inflation = self.finansial_costs.inflation
         ### calculate lifetime
-        lifetime = 22 # in years
-
+        lifetime = self.finansial_costs.lifetime  # in years
 
         # proximity_number = 0.5
         # Ingen reduction då vi bara räknar på en
         # lifetime_reduction = 7*proximity_number/self.turbine_count
         # lifetime -= lifetime_reduction * min(1, self.input_data.height/self.input_data.diam) # scale depending on height
-        financial_costs = 0.07*total_capex # k€
+        financial_costs = self.finansial_costs.financial_costs_additional * total_capex  # k€, additional to capex. For loans, fees and so on for funding.
 
-        k_factor = (1+inflation)/(1+interest) # quote of interest / inflation
+        k_factor = (1 + inflation) / (1 + interest)  # quote of interest / inflation
 
         # Scale savings using geometrical series formula with k_factor over lifetime years
         # In k€
-        net_present_value = annual_savings * (k_factor * (1 - k_factor**lifetime)) / (1 - k_factor)
+        net_present_value = (
+            annual_savings * (k_factor * (1 - k_factor**lifetime)) / (1 - k_factor)
+        )
 
-        profits = net_present_value-total_capex-financial_costs # k€
-        margin = profits/total_capex 
-        return profits, margin 
+        profits = net_present_value - total_capex - financial_costs  # k€
+        margin = profits / total_capex
+        return profits, margin
 
     def update(self):
         """
         Perform a full economic update and print results.
         """
         capital_costs = self.capital_costs()
-        # Skippar pga en turbin
-        # grid_connections_costs = self.grid_connections()
-        total_capex =capital_costs # Removed because only on one: +grid_connections_costs
-        annual_savings = self.annual_savings() # k€
+        total_capex = capital_costs + self.installation_costs()
+
+        annual_savings = self.annual_savings()  # k€
         profits, margin = self.calculate_profits(total_capex, annual_savings)
 
-        print(f"Profits: {profits:.2f} k€, Margin: {margin*100:.2f}%")
+        print(f"Profits: {profits:.2f} k€, Margin: {margin * 100:.2f}%")
 
-        
+
 def main():
-    print("Hello from uu-proj!")
+    """Testfunktion för filen"""
     input_data = InputData("Gustav Gamstedt", "199801281234", diam=95, height=105)
     energy_calculations = EnergyCalculations(input_data)
     economics = Economics(input_data, energy_calculations.output_data)
     economics.update()
+
 
 if __name__ == "__main__":
     main()

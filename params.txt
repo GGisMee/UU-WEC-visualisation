@@ -5,9 +5,6 @@ E6 = Y
 F6 = Month
 G6 = Day
 
-
-
-
 # Sheet 2 (economics)
 C2 = Diam
 C3 = Tower_H

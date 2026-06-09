@@ -135,7 +135,7 @@ class EnergyCalculations:
             # Changes values after and at index to value before 
             cumulated_energy_rated[idx:] = cumulated_energy_rated[idx] if idx > 0 else 0
             rated_speeds[idx:] = rated_speeds[idx] if idx > 0 else 0
-            rated_speed = rated_speeds[idx]
+        rated_speed = rated_speeds[idx]
 
         # capped by turn off limit
         turn_off_limit = 0.8*tot_possible_energy_per_m2
@@ -199,6 +199,6 @@ if __name__ == "__main__":
     input_data = InputData(name="Kalle Kula", SSN="199903151234", diam=37, height=44)
     energy_calculations = EnergyCalculations(input_data)
     energy_calculations.calculate()
-    print(energy_calculations.output_data.storm_load)
+    print(energy_calculations.output_data)
 
 
