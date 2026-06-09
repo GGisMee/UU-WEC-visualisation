@@ -37,6 +37,6 @@ En applikation för simulering och analys av vindkraftverk (fysik, hållfasthet 
 * [ ] Hantera felmeddelanden i GUI om `SimulationEngine` stöter på mekaniska misslyckanden (t.ex. `is_unsafe == True`).
 
 ### 4. Distribution & Testning
-* [ ] Skriva enhetstester för `SimulationEngine` utan GUI-beroenden.
-* [ ] Kompilera applikationen till en fristående Linux-binär med PyInstaller (`pyinstaller --onefile --windowed main.py`).
+* [ ] Skriva tester för `SimulationEngine` 
+* [ ] Skriv checkar för använderinput
 
