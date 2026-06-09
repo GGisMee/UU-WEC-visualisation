@@ -1,0 +1,22 @@
+# models/environment.py
+from dataclasses import dataclass
+
+
+@dataclass
+class SiteEnvironment:
+    # Miljö & Vindresurser
+    avg_wind_u10: float  # Average wind speed at 10m [m/s]
+    roughness: float  # Surface roughness length z0 [mm] (t.ex. 0.01 för hav)
+    survival_gust: float  # Stormbyar för överlevnad [m/s] (t.ex. 60m/s)
+
+    # Effektivitetsparametrar (Härleds oftast från SSN)
+    downtime: float  # Årlig downtime [%]
+    capture_efficiency: float  # Cp (0.0 - 0.5)
+    drivetrain_efficiency: float  # Verkningsgrad för generator/växellåda (0.0 - 1.0)
+
+    # Ekonomi & Marknad
+    electricity_price: float  # [€/MWh]
+    green_certificate: float  # Miljöcertifikat [€/MWh] (standard 1.0)
+    inflation: float  # [%] (standard 2.0)
+    interest: float  # Ränta [%] (standard 3.0)
+    lifetime: int  # Livslängd i år

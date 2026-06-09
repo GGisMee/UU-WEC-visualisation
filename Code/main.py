@@ -128,6 +128,7 @@ class VindApp(ctk.CTk):
             energy_calc = EnergyCalculations(input_data)
             results = energy_calc.calculate()
             econ = Economics(input_data, results)
+            capex = econ.capital_costs()
             profits, margin = econ.calculate_profits()
 
             # Update UI
