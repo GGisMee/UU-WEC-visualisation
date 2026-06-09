@@ -10,8 +10,10 @@ CARD_BORDER = "#222D42"
 ACCENT_BLUE = "#3B82F6"
 ACCENT_CYAN = "#06B6D4"
 ACCENT_GREEN = "#10B981"
+ACCENT_ORANGE = "#FF7A00"
 TEXT_MAIN = "#F9FAFB"
 TEXT_MUTED = "#9CA3AF"
+
 
 def load_scale_factor():
     try:
@@ -50,7 +52,7 @@ class UIStudioLauncher(ctk.CTk):
 
         # --- WINDOW SETUP ---
         self.title("Wind Power Simulator - UI Design Studio Launcher")
-        self.geometry("620x580")
+        self.geometry("620x720")
         self.resizable(False, False)
         ctk.set_appearance_mode("dark")
         
@@ -81,6 +83,12 @@ class UIStudioLauncher(ctk.CTk):
         self.create_mockup_row("Mockup C: Educational Engineering Notebook", 
                                "Designed for classrooms and research, featuring dynamic plot curves for the Weibull distribution and power outputs alongside key equations.",
                                "Launch Notebook", ACCENT_BLUE, "mockup_engineering.py")
+
+        # Mockup 4 Card (Unified challenge mockup)
+        self.create_mockup_row("Mockup D: Unified Challenge Simulator", 
+                               "Integrates CAD schematic, financials, and plot curves. Implements a Commit & Run loop, R&D run budget, and educational mission goals.",
+                               "Launch Challenge", ACCENT_ORANGE, "mockup_unified_challenge.py")
+
 
         # DPI Settings Footer
         settings_frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -151,6 +159,7 @@ class UIStudioLauncher(ctk.CTk):
         if hex_color == ACCENT_CYAN: return "#0891B2"
         if hex_color == ACCENT_GREEN: return "#059669"
         if hex_color == ACCENT_BLUE: return "#2563EB"
+        if hex_color == ACCENT_ORANGE: return "#CC6200"
         return hex_color
 
 if __name__ == "__main__":

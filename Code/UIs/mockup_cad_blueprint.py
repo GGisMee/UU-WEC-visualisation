@@ -121,7 +121,7 @@ class CADBlueprintApp(ctk.CTk):
         # Solidity Slider
         self.lbl_solidity = ctk.CTkLabel(sec_dim, text="Rotor Solidity: 3.0 %", font=scaled_font("Arial", 13))
         self.lbl_solidity.pack(anchor="w", padx=12, pady=(5, 0))
-        self.slider_solidity = ctk.CTkSlider(sec_dim, from_=1.0, to=15.0, number_of_steps=140, variable=self.solidity_var, progress_color=ACCENT_BLUE, command=self.on_slider_change)
+        self.slider_solidity = ctk.CTkSlider(sec_dim, from_=1, to=15, number_of_steps=140, variable=self.solidity_var, progress_color=ACCENT_BLUE, command=self.on_slider_change)
         self.slider_solidity.pack(fill="x", padx=12, pady=(2, 12))
 
         # -- Component Selection Section --

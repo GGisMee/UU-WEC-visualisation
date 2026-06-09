@@ -105,9 +105,8 @@ class TycoonDashboardApp(ctk.CTk):
         input_title.pack(anchor="w", padx=20, pady=(15, 10))
 
         # Tabs Widget
-        self.tab_widget = ctk.CTkTabview(self.inputs_frame, fg_color="transparent", segmented_button_fg_color="#1F2937",
-                                          segmented_button_selected_color=ACCENT_BLUE, segmented_button_selected_hover_color=ACCENT_BLUE,
-                                          text_color=TEXT_MAIN)
+        self.tab_widget = ctk.CTkTabview(self.inputs_frame, fg_color="transparent", text_color=TEXT_MAIN)
+
         self.tab_widget.pack(fill="both", expand=True, padx=10, pady=(0, 10))
         
         t1 = self.tab_widget.add("Location & ID")
@@ -279,12 +278,12 @@ class TycoonDashboardApp(ctk.CTk):
 
         self.lbl_interest = ctk.CTkLabel(scroll, text="Interest Rate: 3.0 %", font=scaled_font("Arial", 12))
         self.lbl_interest.pack(anchor="w", pady=(5, 0))
-        self.slider_interest = ctk.CTkSlider(scroll, from_=0.0, to=10.0, variable=self.interest_var, progress_color=ACCENT_PURPLE, command=self.on_fin_change)
+        self.slider_interest = ctk.CTkSlider(scroll, from_=0, to=10, variable=self.interest_var, progress_color=ACCENT_PURPLE, command=self.on_fin_change)
         self.slider_interest.pack(fill="x", pady=(2, 10))
 
         self.lbl_inflation = ctk.CTkLabel(scroll, text="Inflation Rate: 2.0 %", font=scaled_font("Arial", 12))
         self.lbl_inflation.pack(anchor="w", pady=(5, 0))
-        self.slider_inflation = ctk.CTkSlider(scroll, from_=0.0, to=8.0, variable=self.inflation_var, progress_color=ACCENT_PURPLE, command=self.on_fin_change)
+        self.slider_inflation = ctk.CTkSlider(scroll, from_=0, to=8, variable=self.inflation_var, progress_color=ACCENT_PURPLE, command=self.on_fin_change)
         self.slider_inflation.pack(fill="x", pady=(2, 10))
 
     # --- ACTION HANDLERS ---
