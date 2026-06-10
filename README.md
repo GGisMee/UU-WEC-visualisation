@@ -23,20 +23,23 @@ En applikation för simulering och analys av vindkraftverk (fysik, hållfasthet 
 ## Att göra: Nästa steg
 
 ### 1. Fixa klartberäkningsprogrammet
+
 * [ ] Flytta över och uppdatera beräkningar som krävs till applikationen
 * [ ] Koppla ihop med nya dataklasser och deras gränssnitt
 
-
 ### 2. GUI & Visualisering (AnalyticsPanel)
+
 * [ ] Koppla ihop reglage (sliders) med `WindTurbine`-objektets parametrar.
 * [ ] Implementera grafer för Weibull-fördelning och effektkurva i högerpanelen baserat på `SimulationResult`.
 * [ ] Visa score och framgångs-/felmeddelanden vid körning av `Mission`.
+* [ ] Lägg till så man kan exportera sina tester med diagram
 
 ### 3. Validering & Robusthet
+
 * [ ] Lägg till domänregler/validering direkt i `WindTurbine` (t.ex. kasta exceptions vid ogiltiga dimensioner).
 * [ ] Hantera felmeddelanden i GUI om `SimulationEngine` stöter på mekaniska misslyckanden (t.ex. `is_unsafe == True`).
 
 ### 4. Distribution & Testning
-* [ ] Skriva tester för `SimulationEngine` 
-* [ ] Skriv checkar för använderinput
 
+* [ ] Skriva tester för `SimulationEngine`
+* [ ] Skriv checkar för använderinput

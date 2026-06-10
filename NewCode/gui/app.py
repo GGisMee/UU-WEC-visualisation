@@ -27,6 +27,7 @@ class UnifiedSimulatorApp(ctk.CTk):
             avg_wind_u10=7.5,
             roughness=100.0,
             survival_gust=60.0,
+            k_factor=2.0,
             downtime=2.0,
             capture_efficiency=0.45,
             drivetrain_efficiency=0.90,

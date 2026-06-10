@@ -12,5 +12,6 @@ dependencies = [
 ]
 
 [tool.pyright]
-extraPaths = ["Code"]
+extraPaths = ["Code", "NewCode"]
+
 
