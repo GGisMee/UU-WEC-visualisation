@@ -6,7 +6,7 @@ from NewCode.models.turbine import WindTurbine
 from NewCode.models.environment import SiteEnvironment
 import NewCode.config
 from collections import namedtuple
-
+from NewCode.utils.ssn import SSNGenerator
 
 @dataclass
 class SimulationResult:
@@ -48,7 +48,8 @@ class SimulationEngine:
         
 
         # 2. Energiberäkningar
-        cut_in, rated_speed, cut_out, energy_per_m2 = SimulationEngine._operational_limits(turbine, env, wind_speeds, possible_hours)
+        energy_per_m2, cut_in, rated_speed, cut_out = SimulationEngine._operational_limits(turbine, env, wind_speeds, possible_hours)
+
         generated_energy, rated_power = SimulationEngine.energy_production(turbine, env, wind_speeds, cut_in, cut_out, rated_speed, energy_per_m2, available_hours)
         
 
@@ -57,44 +58,44 @@ class SimulationEngine:
 
         # 4. Ekonomikalkyl (CAPEX, OPEX och NPV med geometrisk serie för inflation/ränta)
         capital_cost_components = SimulationEngine._capital_costs(turbine, env, rated_power)
-        total_capex = sum(capital_cost_components)
-        operational_maintenance_costs = SimulationEngine._operational_maintenance(env, rated_power)
-        annual_savings = SimulationEngine._annual_savings(env, generated_energy, operational_maintenance_costs)
+        total_capex = sum(capital_cost_components)+env.installation_costs
+        operational_maintenance_cost_components = SimulationEngine._operational_maintenance(env, rated_power)
+        annual_savings = SimulationEngine._annual_savings(env, generated_energy, sum(operational_maintenance_cost_components))
         
         profits, margin = SimulationEngine._calculate_profits(total_capex, annual_savings, env)
 
-        print(f"Profits: {profits} k€, Margin: {margin}%")
+        print(f"Profits: {profits} k€, Margin: {margin*100}%")
         # 5. Returnera SimulationResult med alla värden
-        # return SimulationResult(
-        #     wind_nacelle=wind_nacelle,
-        #     weibull_C=weibull_C,
-        #     weibull_k=weibull_k,
-        #     rated_wind_speed=rated_speed,
-        #     cut_in_speed=cut_in,
-        #     cut_out_speed=cut_out,
-        #     rated_power=rated_power,
-        #     generated_energy=generated_energy,
-        #     capacity_factor=1,
-        #     aerodynamical_load= aurodynamical_load,
-        #     storm_load= storm_load,
-        #     wall_thickness_op = wall_thickness_op,
-        #     wall_thickness_storm = wall_thickness_storm,
-        #     safety_factor =1,
-        #     is_unsafe =1,
-        #     capex_components = (1),
-        #     total_capex=total_capex,
-        #     annual_opex=1,
-        #     annual_revenue=annual_savings,
-        #     npv_profit=profits,
-        #     margin=margin,
-        #     payback_years=1
-        # )
+        return SimulationResult(
+            wind_nacelle=wind_nacelle,
+            weibull_C=weibull_C,
+            weibull_k=weibull_k,
+            rated_wind_speed=rated_speed,
+            cut_in_speed=cut_in,
+            cut_out_speed=cut_out,
+            rated_power=rated_power,
+            generated_energy=generated_energy,
+            capacity_factor=1,
+            aerodynamical_load= aurodynamical_load,
+            storm_load= storm_load,
+            wall_thickness_op = wall_thickness_op,
+            wall_thickness_storm = wall_thickness_storm,
+            safety_factor =1,
+            is_unsafe =1,
+            capex_components = (1),
+            total_capex=total_capex,
+            annual_opex=1,
+            annual_revenue=annual_savings,
+            npv_profit=profits,
+            margin=margin,
+            payback_years=1
+        )
 
     @staticmethod
     def _wind_distrobution(turbine: WindTurbine, env: SiteEnvironment):
         z0 = env.roughness / 1000.0
         wind_nacelle: float = (
-            env.avg_wind_u10 * np.log(turbine.height / z0) / np.log(10 / z0)
+            env.avg_wind_10 * np.log(turbine.height / z0) / np.log(10 / z0)
         )
 
         h = 1  # step value. Increase for better resolution
@@ -194,7 +195,7 @@ class SimulationEngine:
         )  # [kN] force excerted on tower from wind
 
         storm_load = (
-            1 / 2 * 1.2 * 1.5 * turbine.solidity / 100 * swept_area * 60**2 / 1000
+            1 / 2 * 1.2 * 1.5 * turbine.solidity * swept_area * 60**2 / 1000
         )  #  @60 [kN], max at 60 kN. load under storm
 
         wall_thickness_operation = (
@@ -332,7 +333,7 @@ class SimulationEngine:
         # Ingen reduction då vi bara räknar på en
         # lifetime_reduction = 7*proximity_number/self.turbine_count
         # lifetime -= lifetime_reduction * min(1, self.input_data.height/self.input_data.diam) # scale depending on height
-        financial_costs = env.financial_costs_additional * total_capex  # k€, additional to capex. For loans, fees and so on for funding.
+        financial_costs = env.financial_additional_part* total_capex  # k€, additional to capex. For loans, fees and so on for funding.
 
         k_factor = (1 + inflation) / (1 + interest)  # quote of interest / inflation
 
@@ -348,6 +349,23 @@ class SimulationEngine:
 
 if __name__ == "__main__":
 
-    env = SiteEnvironment()
-    turbine = WindTurbine()
-     SimulationEngine.run_simulation(turbine, env)
+    env = SiteEnvironment(
+        avg_wind_10 = None,
+        roughness = None,
+        survival_gust = None,
+        k_factor = None,
+        downtime = None,
+        capture_efficiency = None,
+        drivetrain_efficiency = None,
+        turbine_count = 1,
+        electricity_price = 29,
+        green_certificate =1,
+        financial_additional_part = 0.07,
+        lifetime = 22,
+    )
+    SSNGenerator.apply_ssn_to_env("200301019949", env)
+    #! Får fixa enums eller något för gearbox_type och generator
+    turbine = WindTurbine(diameter=81, height=97, solidity=0.03, blades = 3,  gearbox= "None", generator="DFIG")
+    SimulationEngine.simulate(turbine, env)
+    
+

@@ -11,20 +11,20 @@ class SiteEnvironment:
     k_factor: float  # Weibull shape parameter k for wind distrobution
 
     # Effektivitetsparametrar (Härleds oftast från SSN)
+    lifetime: int # Livslängd i år
     downtime: float  # Årlig downtime [%]
     capture_efficiency: float  # Cp (0.0 - 0.5)
     drivetrain_efficiency: float  # Verkningsgrad för generator/växellåda (0.0 - 1.0)
 
     # Ekonomi & Marknad
-    electricity_price: float  # [€/MWh]
-    green_certificate: float  # Miljöcertifikat [€/MWh] (standard 1.0)
-    inflation: float  # [%] (standard 2.0)
-    interest: float  # Ränta [%] (standard 3.0)
-    lifetime: int  # Livslängd i år
+    electricity_price: float # [€/MWh] 
+    green_certificate: float = 1.0  # Miljöcertifikat [€/MWh] 
+    inflation: float = 0.02  # [%] 
+    interest: float = 0.03  # Ränta [%] 
 
     # Defaulted fields at the bottom
     wo_param: float = 7.0  # for determinating turbine cost
-    financial_costs_additional: float = 0.07  # [%] additional costs for loans, fees and so on for funding.
+    financial_additional_part: float = 0.07  # [%] additional costs for loans, fees and so on for funding.
     installation_costs: int = 3500  # k€
     turbine_count: int = 1  # number of turbines in park (Set to 1 by default)
 

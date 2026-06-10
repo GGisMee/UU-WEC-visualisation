@@ -208,7 +208,7 @@ class Economics:
 
 def main():
     """Testfunktion för filen"""
-    input_data = InputData("Gustav Gamstedt", "199801281234", diam=95, height=105)
+    input_data = InputData("Gustav Gamstedt", "200301019949", diam=81, height=97)
     energy_calculations = EnergyCalculations(input_data)
     economics = Economics(input_data, energy_calculations.output_data)
     economics.update()
