@@ -63,31 +63,32 @@ class SimulationEngine:
         
         profits, margin = SimulationEngine._calculate_profits(total_capex, annual_savings, env)
 
+        print(f"Profits: {profits} k€, Margin: {margin}%")
         # 5. Returnera SimulationResult med alla värden
-        return SimulationResult(
-            wind_nacelle=wind_nacelle,
-            weibull_C=weibull_C,
-            weibull_k=weibull_k,
-            rated_wind_speed=rated_speed,
-            cut_in_speed=cut_in,
-            cut_out_speed=cut_out,
-            rated_power=rated_power,
-            generated_energy=generated_energy,
-            capacity_factor=1,
-            aerodynamical_load= aurodynamical_load,
-            storm_load= storm_load,
-            wall_thickness_op = wall_thickness_op,
-            wall_thickness_storm = wall_thickness_storm,
-            safety_factor =1,
-            is_unsafe =1,
-            capex_components = (1),
-            total_capex=total_capex,
-            annual_opex=1,
-            annual_revenue=annual_savings,
-            npv_profit=profits,
-            margin=margin,
-            payback_years=1
-        )
+        # return SimulationResult(
+        #     wind_nacelle=wind_nacelle,
+        #     weibull_C=weibull_C,
+        #     weibull_k=weibull_k,
+        #     rated_wind_speed=rated_speed,
+        #     cut_in_speed=cut_in,
+        #     cut_out_speed=cut_out,
+        #     rated_power=rated_power,
+        #     generated_energy=generated_energy,
+        #     capacity_factor=1,
+        #     aerodynamical_load= aurodynamical_load,
+        #     storm_load= storm_load,
+        #     wall_thickness_op = wall_thickness_op,
+        #     wall_thickness_storm = wall_thickness_storm,
+        #     safety_factor =1,
+        #     is_unsafe =1,
+        #     capex_components = (1),
+        #     total_capex=total_capex,
+        #     annual_opex=1,
+        #     annual_revenue=annual_savings,
+        #     npv_profit=profits,
+        #     margin=margin,
+        #     payback_years=1
+        # )
 
     @staticmethod
     def _wind_distrobution(turbine: WindTurbine, env: SiteEnvironment):
@@ -284,6 +285,7 @@ class SimulationEngine:
 
         return maintenance, insurance, land_cost, fund_decomissioning
 
+    @staticmethod
     def _annual_savings(env:SiteEnvironment, generated_energy, operational_maintenance_costs) -> float:
         """
         Calculate net annual savings.
@@ -343,3 +345,9 @@ class SimulationEngine:
         profits = net_present_value - total_capex - financial_costs  # k€
         margin = profits / total_capex
         return profits, margin
+
+if __name__ == "__main__":
+
+    env = SiteEnvironment()
+    turbine = WindTurbine()
+     SimulationEngine.run_simulation(turbine, env)
