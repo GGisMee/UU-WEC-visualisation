@@ -48,21 +48,29 @@ class SimulationEngine:
         
 
         # 2. Energiberäkningar
-        energy_per_m2, cut_in, rated_speed, cut_out = SimulationEngine._operational_limits(turbine, env, wind_speeds, possible_hours)
+        energy_per_m2, cut_in, rated_speed, cut_out = SimulationEngine._operational_limits(turbine, env, wind_speeds, possible_hours, wind_nacelle)
 
         generated_energy, rated_power = SimulationEngine.energy_production(turbine, env, wind_speeds, cut_in, cut_out, rated_speed, energy_per_m2, available_hours)
         
 
         # 3. Hållfasthetsberäkningar
-        aurodynamical_load, storm_load, wall_thickness_op, wall_thickness_storm = SimulationEngine.structural_forces(turbine,rated_speed)
+        aurodynamical_load, storm_load, wall_thickness_op, wall_thickness_storm = SimulationEngine.structural_forces(turbine, rated_speed, env)
 
         # 4. Ekonomikalkyl (CAPEX, OPEX och NPV med geometrisk serie för inflation/ränta)
         capital_cost_components = SimulationEngine._capital_costs(turbine, env, rated_power)
-        total_capex = sum(capital_cost_components)+env.installation_costs
+        total_capex = sum(capital_cost_components) * env.turbine_count
         operational_maintenance_cost_components = SimulationEngine._operational_maintenance(env, rated_power)
-        annual_savings = SimulationEngine._annual_savings(env, generated_energy, sum(operational_maintenance_cost_components))
+        annual_opex = sum(operational_maintenance_cost_components)
+        annual_savings = SimulationEngine._annual_savings(env, generated_energy, annual_opex)
         
         profits, margin = SimulationEngine._calculate_profits(total_capex, annual_savings, env)
+
+        # 5. Beräkna säkerhetsfaktor och is_unsafe
+        safety_factor = 150.0 / max(wall_thickness_op, wall_thickness_storm)
+        is_unsafe = safety_factor < 1.0
+
+        # Gross annual revenue
+        annual_revenue = generated_energy * env.turbine_count * (env.electricity_price + env.green_certificate) / 1000
 
         print(f"Profits: {profits} k€, Margin: {margin*100}%")
         # 5. Returnera SimulationResult med alla värden
@@ -73,19 +81,19 @@ class SimulationEngine:
             rated_wind_speed=rated_speed,
             cut_in_speed=cut_in,
             cut_out_speed=cut_out,
-            rated_power=rated_power,
-            generated_energy=generated_energy,
-            capacity_factor=1,
-            aerodynamical_load= aurodynamical_load,
-            storm_load= storm_load,
-            wall_thickness_op = wall_thickness_op,
-            wall_thickness_storm = wall_thickness_storm,
-            safety_factor =1,
-            is_unsafe =1,
-            capex_components = capital_cost_components,
+            rated_power=rated_power * env.turbine_count,
+            generated_energy=generated_energy * env.turbine_count,
+            capacity_factor=generated_energy * env.turbine_count / (rated_power * env.turbine_count * 8.76) if rated_power > 0 else 0.0,
+            aerodynamical_load=aurodynamical_load,
+            storm_load=storm_load,
+            wall_thickness_op=wall_thickness_op,
+            wall_thickness_storm=wall_thickness_storm,
+            safety_factor=safety_factor,
+            is_unsafe=is_unsafe,
+            capex_components=capital_cost_components,
             total_capex=total_capex,
-            annual_opex=sum(operational_maintenance_cost_components),
-            annual_revenue=annual_savings,
+            annual_opex=annual_opex,
+            annual_revenue=annual_revenue,
             npv_profit=profits,
             margin=margin,
             payback_years=1
@@ -110,41 +118,25 @@ class SimulationEngine:
 
         # Hours of the year
         possible_hours = distrobution * 8760
-        availability = (100 - env.downtime) / 100
+        availability = 1.0 - (env.downtime if env.downtime < 1.0 else env.downtime / 100.0)
         available_hours = availability * possible_hours
 
         return wind_nacelle, k,C,wind_speeds, possible_hours, available_hours
 
     @staticmethod
-    def _operational_limits(turbine:WindTurbine, env:SiteEnvironment, wind_speeds, possible_hours):        
+    def _operational_limits(turbine:WindTurbine, env:SiteEnvironment, wind_speeds, possible_hours, wind_nacelle):        
         energy_per_m2 = 0.62 * wind_speeds**3 * possible_hours / 1000  # KWh/m^2
         tot_possible_energy_per_m2 = np.sum(energy_per_m2)
         cumulated_energy = np.cumsum(energy_per_m2)
 
-        # Steps below to cap cumulated energy to simulate effect of Betz law
-        # Finds first index where cumulated_energy surpasses limit
-        effective_limit = tot_possible_energy_per_m2 / 3
-        rated_mask = cumulated_energy > effective_limit
-        idx = np.argmax(rated_mask)
-        cumulated_energy_rated = cumulated_energy.copy()
-        rated_speeds = wind_speeds.copy()  # Effective windspeeds
-        if cumulated_energy[idx] > effective_limit:
-            # Changes values after and at index to value before
-            cumulated_energy_rated[idx:] = cumulated_energy_rated[idx] if idx > 0 else 0
-            rated_speeds[idx:] = rated_speeds[idx] if idx > 0 else 0
-        rated_speed = rated_speeds[idx]
+        # Corrected rated speed formula
+        rated_speed = 12.0 - 0.15 * wind_nacelle
 
         # capped by turn off limit
         turn_off_limit = 0.8 * tot_possible_energy_per_m2
-        capped_velocities = (
-            wind_speeds.copy()
-        )  # array for velocities before WEC is turned off
         capped_mask = cumulated_energy > turn_off_limit
         idx = np.argmax(capped_mask)
-        cut_out = capped_velocities[idx]
-        if capped_mask[-1] != 0:  # It shouldn't be all zeros
-            capped_velocities[idx:] = capped_velocities[idx]
-            velocity_cap = capped_velocities[idx]
+        cut_out = wind_speeds[idx]
 
         cut_in = int(rated_speed * 0.01 ** (1 / 3) * 10) / 10  # [m/s] speeds below are to slow
 
@@ -164,12 +156,15 @@ class SimulationEngine:
             wind_speeds > cut_out,  # values above cut_out
         ]
 
+        availability = 1.0 - (env.downtime if env.downtime < 1.0 else env.downtime / 100.0)
+
         alternatives = [
             0,  # Shut off, zone 1
             energy_per_m2
             * swept_area
             * env.capture_efficiency
-            * env.drivetrain_efficiency,  # zone 2
+            * env.drivetrain_efficiency
+            * availability,  # zone 2
             rated_power
             * available_hours,  # zone 3, Since between rated and cutout. Energy output will just be rated_power*available_hours. Constant.
             0,  # zone 4, Shut off
@@ -186,7 +181,7 @@ class SimulationEngine:
         return generated_energy, rated_power
 
     @staticmethod
-    def structural_forces(turbine:WindTurbine, rated_speed):
+    def structural_forces(turbine:WindTurbine, rated_speed, env:SiteEnvironment):
         swept_area = np.pi * (turbine.diameter / 2) ** 2
 
         # C_T=8/9, 1.2 from density of air.
@@ -195,8 +190,8 @@ class SimulationEngine:
         )  # [kN] force excerted on tower from wind
 
         storm_load = (
-            1 / 2 * 1.2 * 1.5 * turbine.solidity * swept_area * 60**2 / 1000
-        )  #  @60 [kN], max at 60 kN. load under storm
+            1 / 2 * 1.2 * 1.5 * turbine.solidity * swept_area * env.survival_gust**2 / 1000
+        )  #  @survival_gust [kN]. load under storm
 
         wall_thickness_operation = (
             aerodynamical_load
@@ -273,16 +268,14 @@ class SimulationEngine:
         tuple:
             Tuple of costs for maintenance, insurance, land lease and decommissioning.
         """
-        rated_power = rated_power / 1000
-        # prop to PP
-        maintenance = 600 * (rated_power / 84)
-        # Removed below to fount for only one
-        # PR = 20 * (rated_power * self.turbine_count / 84) ** 0.3  # local icehockey club sponsoring
-        # prop to sqrt(PP)
-        insurance = 100 * (rated_power / 84) ** 0.5
+        total_power_MW = (rated_power / 1000) * env.turbine_count
+        # prop to PP, denominator 20 instead of 84
+        maintenance = 600 * (total_power_MW / 20)
+        # prop to sqrt(PP), denominator 20 instead of 84
+        insurance = 100 * (total_power_MW / 20) ** 0.5
         # prop to number of WECs
-        land_cost = 360 * env.turbine_count / 28
-        fund_decomissioning = 200 * rated_power * env.turbine_count / 84
+        land_cost = 360 * env.turbine_count / 20
+        fund_decomissioning = 200 * total_power_MW / 20
 
         return maintenance, insurance, land_cost, fund_decomissioning
 
@@ -298,8 +291,8 @@ class SimulationEngine:
         float
             Annual net savings in k€/year.
         """
-        generated_power = generated_energy * 0.95 * env.turbine_count  # [MWh] I9*turbine_count*0.95
-        annual_income = generated_power * (env.electricity_price + env.green_certificate) / 1000  # k€/MWh
+        # Gross annual income (no 0.95 factor applied here, and turbine_count already factored in generated_energy)
+        annual_income = generated_energy * env.turbine_count * (env.electricity_price + env.green_certificate) / 1000  # k€
         return annual_income - operational_maintenance_costs
 
     @staticmethod
@@ -348,24 +341,49 @@ class SimulationEngine:
         return profits, margin
 
 if __name__ == "__main__":
+    test_case = 1
+    match test_case:
 
-    env = SiteEnvironment(
-        avg_wind_10 = None,
-        roughness = None,
-        survival_gust = None,
-        k_factor = None,
-        downtime = None,
-        capture_efficiency = None,
-        drivetrain_efficiency = None,
-        turbine_count = 1,
-        electricity_price = 29,
-        green_certificate =1,
-        financial_additional_part = 0.07,
-        lifetime = 22,
-    )
-    SSNGenerator.apply_ssn_to_env("200301019949", env)
-    #! Får fixa enums eller något för gearbox_type och generator
-    turbine = WindTurbine(diameter=81, height=97, solidity=0.03, blades = 3,  gearbox= "None", generator="DFIG")
-    SimulationEngine.simulate(turbine, env)
-    
+        case 0:
+            env = SiteEnvironment(
+                avg_wind_10 = None,
+                roughness = None,
+                survival_gust = None,
+                k_factor = None,
+                downtime = None,
+                capture_efficiency = None,
+                drivetrain_efficiency = None,
+                turbine_count = 1,
+                electricity_price = 29,
+                green_certificate =1,
+                financial_additional_part = 0.07,
+                lifetime = 22,
+            )
+            SSNGenerator.apply_ssn_to_env("200301019949", env)
+            #! Får fixa enums eller något för gearbox_type och generator
+            turbine = WindTurbine(diameter=81, height=97, solidity=0.03, blades = 3,  gearbox= "None", generator="DFIG")
+            print(env)
+            print(turbine)
+            print('\n', SimulationEngine.simulate(turbine, env))
+        case 1:
+            env = SiteEnvironment(
+                avg_wind_10 = 6.5,
+                roughness = 0.05,
+                survival_gust = 60,
+                k_factor = 2.0,
+                downtime = 0.03,
+                capture_efficiency = 0.44,
+                drivetrain_efficiency = 0.82,
+                turbine_count = 1,
+                electricity_price = 29,
+                green_certificate =1,
+                financial_additional_part = 0.07,
+                lifetime = 22,
+            )
+            #! Får fixa enums eller något för gearbox_type och generator
+            turbine = WindTurbine(diameter=81, height=97, solidity=0.03, blades = 3,  gearbox= "None", generator="DFIG")
+            print(env)
+            print(turbine)
+            print('\n', SimulationEngine.simulate(turbine, env))
+        
 
