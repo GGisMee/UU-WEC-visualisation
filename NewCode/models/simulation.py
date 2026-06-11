@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 import numpy as np
 from scipy.special import gamma
+from scipy.optimize import root_scalar
 from NewCode.models.turbine import WindTurbine
 from NewCode.models.environment import SiteEnvironment
 import NewCode.config
@@ -35,7 +36,8 @@ class SimulationResult:
     annual_opex: float  # k€/år
     annual_revenue: float  # k€/år
     npv_profit: float  # k€
-    margin: float  # %
+    IRR: float # [%]
+    margin: float  # [%]
     payback_years: float # [y]
 
 
@@ -51,26 +53,24 @@ class SimulationEngine:
         energy_per_m2, cut_in, rated_speed, cut_out = SimulationEngine._operational_limits(turbine, env, wind_speeds, possible_hours, wind_nacelle)
 
         generated_energy, rated_power = SimulationEngine.energy_production(turbine, env, wind_speeds, cut_in, cut_out, rated_speed, energy_per_m2, available_hours)
-        
 
         # 3. Hållfasthetsberäkningar
         aurodynamical_load, storm_load, wall_thickness_op, wall_thickness_storm = SimulationEngine.structural_forces(turbine, rated_speed, env)
 
         # 4. Ekonomikalkyl (CAPEX, OPEX och NPV med geometrisk serie för inflation/ränta)
-        capital_cost_components = SimulationEngine._capital_costs(turbine, env, rated_power)
-        total_capex = sum(capital_cost_components) * env.turbine_count
-        operational_maintenance_cost_components = SimulationEngine._operational_maintenance(env, rated_power)
-        annual_opex = sum(operational_maintenance_cost_components)
-        annual_savings = SimulationEngine._annual_savings(env, generated_energy, annual_opex)
+        total_capex, capital_cost_components = SimulationEngine._capital_costs(turbine, env, rated_power)
         
-        profits, margin = SimulationEngine._calculate_profits(total_capex, annual_savings, env)
+        annual_opex, operational_maintenance_cost_components = SimulationEngine._operational_maintenance(env, rated_power)
+        annual_savings, annual_revenue= SimulationEngine._annual_earnings(env, generated_energy, annual_opex)
 
-        # 5. Beräkna säkerhetsfaktor och is_unsafe
+        # Profits here are NPV
+        profits, margin = SimulationEngine._calculate_profits(total_capex, annual_savings, env)
+        IRR = SimulationEngine.IRR(total_capex, annual_savings, env.lifetime)
+
+        #! 5. Beräkna säkerhetsfaktor och is_unsafe (Kolla på denna)
         safety_factor = 150.0 / max(wall_thickness_op, wall_thickness_storm)
         is_unsafe = safety_factor < 1.0
 
-        # Gross annual revenue
-        annual_revenue = generated_energy * env.turbine_count * (env.electricity_price + env.green_certificate) / 1000
 
         print(f"Profits: {profits} k€, Margin: {margin*100}%")
         # 5. Returnera SimulationResult med alla värden
@@ -83,7 +83,7 @@ class SimulationEngine:
             cut_out_speed=cut_out,
             rated_power=rated_power * env.turbine_count,
             generated_energy=generated_energy * env.turbine_count,
-            capacity_factor=generated_energy * env.turbine_count / (rated_power * env.turbine_count * 8.76) if rated_power > 0 else 0.0,
+            capacity_factor=1,
             aerodynamical_load=aurodynamical_load,
             storm_load=storm_load,
             wall_thickness_op=wall_thickness_op,
@@ -95,8 +95,9 @@ class SimulationEngine:
             annual_opex=annual_opex,
             annual_revenue=annual_revenue,
             npv_profit=profits,
+            IRR = IRR,
             margin=margin,
-            payback_years=1
+            payback_years=total_capex/annual_savings
         )
 
     @staticmethod
@@ -210,7 +211,7 @@ class SimulationEngine:
 
 
     @staticmethod
-    def _capital_costs(turbine:WindTurbine,env:SiteEnvironment, rated_power) ->tuple:
+    def _capital_costs(turbine:WindTurbine,env:SiteEnvironment, rated_power) ->tuple[float,tuple[float,float,float,float]]:
         """
         Calculate total capital expenditure (CAPEX) for the turbine.
 
@@ -219,8 +220,14 @@ class SimulationEngine:
 
         Returns
         -------
+        float:
+            sum of following scaled by number of WEC:s
         tuple:
-            Tuple of costs for turbine, drivetrain, nacelle, tower and foundation.
+            Tuple of costs for (k€)
+            2. turbine
+            3. drivetrain
+            4. nacelle
+            5. tower and foundation.
         """
         rated_power = rated_power / 1000  # MW
         diam = turbine.diameter  # m
@@ -234,7 +241,7 @@ class SimulationEngine:
 
         ### Costs WECs (Wind energy conversion system)
         # prop to diam^3.5
-        turbine = 900 * (env.wo_param / 7.5) ** 3 * (diam / 90) ** 3.5
+        turbine_costs = 900 * (env.wo_param / 7.5) ** 3 * (diam / 90) ** 3.5
 
         # prop to power*diam
         drivetrain_nacell = (
@@ -253,7 +260,9 @@ class SimulationEngine:
         # prop to (diam*height)^0.5
         foundation_site = 300 * (diam / 90 * tower_H / 100) ** (1 / 2)
 
-        return turbine, drivetrain_nacell, tower, foundation_site
+        total_capex = (turbine_costs+drivetrain_nacell+tower+foundation_site) * env.turbine_count
+
+        return total_capex, (turbine_costs, drivetrain_nacell, tower, foundation_site)
 
 
     @staticmethod
@@ -266,34 +275,43 @@ class SimulationEngine:
         Returns
         -------
         tuple:
-            Tuple of costs for maintenance, insurance, land lease and decommissioning.
+            Tuple of costs for (in k€)
+            1. Total of below 
+            2. maintenance
+            3. insurance
+            4. land lease and decommissioning.
         """
         total_power_MW = (rated_power / 1000) * env.turbine_count
-        # prop to PP, denominator 20 instead of 84
+        # prop to PP
         maintenance = 600 * (total_power_MW / 20)
-        # prop to sqrt(PP), denominator 20 instead of 84
+        # prop to sqrt(PP)
         insurance = 100 * (total_power_MW / 20) ** 0.5
         # prop to number of WECs
         land_cost = 360 * env.turbine_count / 20
         fund_decomissioning = 200 * total_power_MW / 20
 
+        annual_opex = maintenance+insurance+land_cost+fund_decomissioning
+
         return maintenance, insurance, land_cost, fund_decomissioning
 
     @staticmethod
-    def _annual_savings(env:SiteEnvironment, generated_energy, operational_maintenance_costs) -> float:
+    def _annual_earnings(env:SiteEnvironment, generated_energy, operational_maintenance_costs) -> tuple[float, float]:
         """
-        Calculate net annual savings.
+        Calculate net annual savings as well as annual income
 
-        Computed as: (Generated Energy * Total Price) - O&M Costs.
 
         Returns
         -------
         float
-            Annual net savings in k€/year.
+            Annual net savings in k€/year. 
+            Computed as: Annual Income - O&M Costs.
+        float
+            Annual income from energy (k€/year)
+
         """
         # Gross annual income (no 0.95 factor applied here, and turbine_count already factored in generated_energy)
         annual_income = generated_energy * env.turbine_count * (env.electricity_price + env.green_certificate) / 1000  # k€
-        return annual_income - operational_maintenance_costs
+        return annual_income - operational_maintenance_costs, annual_income
 
     @staticmethod
     def _calculate_profits(total_capex: float, annual_savings: float, env:SiteEnvironment) -> tuple[float, float]:
@@ -340,6 +358,34 @@ class SimulationEngine:
         margin = profits / total_capex
         return profits, margin
 
+    @staticmethod
+    def IRR(total_capex, annual_savings, years):
+        """
+        Calculate the Internal Rate of Return (IRR) for an investment.
+
+        Parameters
+        ----------
+        total_capex : float
+            Total capital expenditure in k€.
+        annual_savings : float
+            Annual net savings in k€.
+        years : int
+            Investment period in years.
+
+        Returns
+        -------
+        IRR : float
+            Internal rate of return as a decimal (e.g., 0.1 for 10%).
+        """
+
+        cash_flows = np.array((annual_savings*years-total_capex))
+
+        npv = lambda r: np.sum(cash_flows/(1+r)**np.arange(len(cash_flows)))
+        IRR = root_scalar(npv, bracket=[-0.99, 1], method='bentq')
+        return IRR
+
+
+
 if __name__ == "__main__":
     test_case = 1
     match test_case:
@@ -367,21 +413,21 @@ if __name__ == "__main__":
             print('\n', SimulationEngine.simulate(turbine, env))
         case 1:
             env = SiteEnvironment(
-                avg_wind_10 = 6.5,
-                roughness = 0.05,
+                avg_wind_10 = 7,
+                roughness = 0.10,
                 survival_gust = 60,
                 k_factor = 2.0,
-                downtime = 0.03,
+                downtime = 0.02,
                 capture_efficiency = 0.44,
-                drivetrain_efficiency = 0.82,
+                drivetrain_efficiency = 0.92,
                 turbine_count = 1,
-                electricity_price = 29,
-                green_certificate =1,
+                electricity_price = 40,
+                green_certificate =2,
                 financial_additional_part = 0.07,
                 lifetime = 22,
             )
             #! Får fixa enums eller något för gearbox_type och generator
-            turbine = WindTurbine(diameter=81, height=97, solidity=0.03, blades = 3,  gearbox= "None", generator="DFIG")
+            turbine = WindTurbine(diameter=131, height=120, solidity=0.04, blades = 3,  gearbox= "None", generator="DFIG")
             print(env)
             print(turbine)
             print('\n', SimulationEngine.simulate(turbine, env))
