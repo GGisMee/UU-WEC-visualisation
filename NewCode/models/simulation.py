@@ -83,7 +83,7 @@ class SimulationEngine:
             cut_out_speed=cut_out,
             rated_power=rated_power * env.turbine_count,
             generated_energy=generated_energy * env.turbine_count,
-            capacity_factor=1,
+            capacity_factor=generated_energy / (rated_power * 8760 / 1000),
             aerodynamical_load=aurodynamical_load,
             storm_load=storm_load,
             wall_thickness_op=wall_thickness_op,
