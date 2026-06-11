@@ -25,10 +25,8 @@ class SimulationResult:
     # Krafter & Hållfasthet
     aerodynamical_load: float  # kN
     storm_load: float  # kN
-    wall_thickness_op: float  # mm
-    wall_thickness_storm: float  # mm
-    safety_factor: float  # Budget (150mm) / max(op, storm)
-    is_unsafe: bool
+    mean_wall_thickness: float # mm
+    slenderness_ratio: float # [-]
 
     # Ekonomi
     capex_components: tuple # (X, Y, Z, W) representing costs for turbine, drivetrain, tower, foundation [k€]
@@ -55,7 +53,7 @@ class SimulationEngine:
         generated_energy, rated_power = SimulationEngine.energy_production(turbine, env, wind_speeds, cut_in, cut_out, rated_speed, energy_per_m2, available_hours)
 
         # 3. Hållfasthetsberäkningar
-        aurodynamical_load, storm_load, wall_thickness_op, wall_thickness_storm = SimulationEngine.structural_forces(turbine, rated_speed, env)
+        tower_mass, aerodynamical_load, storm_load, mean_wall_thickness, slenderness_ratio = SimulationEngine.load_and_mass(turbine, rated_speed, env)
 
         # 4. Ekonomikalkyl (CAPEX, OPEX och NPV med geometrisk serie för inflation/ränta)
         total_capex, capital_cost_components = SimulationEngine._capital_costs(turbine, env, rated_power)
@@ -67,9 +65,6 @@ class SimulationEngine:
         profits, margin = SimulationEngine._calculate_profits(total_capex, annual_savings, env)
         IRR = SimulationEngine.IRR(total_capex, annual_savings, env.lifetime)
 
-        #! 5. Beräkna säkerhetsfaktor och is_unsafe (Kolla på denna)
-        safety_factor = 150.0 / max(wall_thickness_op, wall_thickness_storm)
-        is_unsafe = safety_factor < 1.0
 
 
         print(f"Profits: {profits} k€, Margin: {margin*100}%")
@@ -84,12 +79,10 @@ class SimulationEngine:
             rated_power=rated_power * env.turbine_count,
             generated_energy=generated_energy * env.turbine_count,
             capacity_factor=generated_energy / (rated_power * 8760 / 1000),
-            aerodynamical_load=aurodynamical_load,
+            aerodynamical_load=aerodynamical_load,
             storm_load=storm_load,
-            wall_thickness_op=wall_thickness_op,
-            wall_thickness_storm=wall_thickness_storm,
-            safety_factor=safety_factor,
-            is_unsafe=is_unsafe,
+            mean_wall_thickness=mean_wall_thickness,
+            slenderness_ratio=slenderness_ratio,
             capex_components=capital_cost_components,
             total_capex=total_capex,
             annual_opex=annual_opex,
@@ -182,33 +175,73 @@ class SimulationEngine:
         return generated_energy, rated_power
 
     @staticmethod
-    def structural_forces(turbine:WindTurbine, rated_speed, env:SiteEnvironment):
+    def load_and_mass(turbine:WindTurbine, rated_speed:float, env:SiteEnvironment):
+        """
+        Estimate structural loads and approximate tower mass based on rated wind speed
+
+        Parameters
+        ----------
+        turbine : WindTurbine
+            Turbine object containing geometry (diameter, height, solidity, etc.).
+        rated_speed : float
+            Rated wind speed (m/s) used to compute aerodynamic loads.
+        env : SiteEnvironment
+            Environment object containing survival gust, downtime, and efficiencies.
+
+        Returns
+        -------
+        mass : float
+            Approximate steel mass of the tower (kg) required to resist moments.
+        aerodynamical_load : float
+            Aerodynamic load (kN) at rated wind speed.
+        storm_load : float
+            Load (kN) under survival gust conditions.
+        mean_wall_thickness : float
+            Mean wall thickness (mm) for storm loads.
+        slenderness_ratio : float
+            Ratio of tower height to base radius.
+
+        """
+        safety_factor = 2
+        max_stress_level = 160e6 
+        taper_ratio = 0.65  # Standard: toppen är 65% av basens radie
+        density_steel = 7850 # kg/m^3
         swept_area = np.pi * (turbine.diameter / 2) ** 2
 
+        # Different levels from base to top (0 - height)
+        steps = 100
+        z_levels = np.linspace(0, turbine.height, steps)
+        dz = turbine.height / steps
+
+        # Radiis
+        R_base = turbine.height / 40
+        R_top = R_base * taper_ratio  # Standard: toppen är 65% av basens radie
+        R_z = R_base - ((R_base - R_top) / turbine.height) * z_levels
+
+
+        # load forces at nacelle
         # C_T=8/9, 1.2 from density of air.
-        aerodynamical_load = (
-            1 / 2 * 1.2 * 8 / 9 * swept_area * rated_speed**2 / 1000
-        )  # [kN] force excerted on tower from wind
+        aerodynamical_load = 1 / 2 * 1.2 * 8 / 9 * swept_area * rated_speed**2 / 1000 #[kN] force excerted on tower from wind
+        storm_load = 1 / 2 * 1.2 * 1.5 * turbine.solidity * swept_area * env.survival_gust**2 / 1000 #  @survival_gust [kN]. load under storm
 
-        storm_load = (
-            1 / 2 * 1.2 * 1.5 * turbine.solidity * swept_area * env.survival_gust**2 / 1000
-        )  #  @survival_gust [kN]. load under storm
+        max_load = max(aerodynamical_load, storm_load)
 
-        wall_thickness_operation = (
-            aerodynamical_load
-            * turbine.height
-            / (np.pi * (turbine.height / 40) ** 2 * 160)
-            * 2
-        )
-        wall_thickness_storm = (
-            storm_load
-            * turbine.height
-            / (np.pi * (turbine.height / 40) ** 2 * 160)
-            * 2
-        )
+        moment_z =  max_load* (turbine.height - z_levels) # [kNm]
 
-        return aerodynamical_load, storm_load, wall_thickness_operation, wall_thickness_storm
+        allowed_stress = max_stress_level / safety_factor # [Pa] 
+        
+        # Moment i Nm: max_moment_z * 1000
+        t_required_z = (moment_z * 1000) / (np.pi * (R_z**2) * allowed_stress) # [m]
+        t_required_z = np.clip(t_required_z, 0.004, None)
+        
+        section_area = np.pi*(R_z**2-(R_z-t_required_z)**2)
+        volume = np.trapezoid(section_area, dx=dz) # integrate section area  [m^3]
+        mass = volume * density_steel # kg
 
+        slenderness_ratio = turbine.height / (2 * R_base)
+        mean_wall_thickness = float(np.mean(t_required_z)*1000) # mm
+
+        return mass, aerodynamical_load, storm_load, mean_wall_thickness, slenderness_ratio
 
     @staticmethod
     def _capital_costs(turbine:WindTurbine,env:SiteEnvironment, rated_power) ->tuple[float,tuple[float,float,float,float]]:
