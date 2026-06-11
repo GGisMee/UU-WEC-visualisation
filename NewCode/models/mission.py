@@ -2,7 +2,21 @@
 from dataclasses import dataclass
 from models.environment import SiteEnvironment
 from models.simulation import SimulationResult
+from utils.ssn import SSNGenerator
+from enum import Enum
 
+
+class DefaultMissions(Enum):
+    Sandbox = Mission(
+        name="Sandbox",
+        description="Free Play Sandbox: Explore turbine sizes and parameters with unlimited simulation runs.",
+        max_runs = 10000,
+        constraints={},
+        env=SSNGenerator.apply_ssn_to_env(ssn="199801281234",env=SiteEnvironment())
+
+        )
+    
+    Economic_Challange = Mission()
 
 @dataclass
 class Mission:

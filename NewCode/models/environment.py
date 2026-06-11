@@ -1,9 +1,13 @@
 # models/environment.py
+from enum import Enum
 from dataclasses import dataclass
 
+class DefaultEnvironments(Enum):
+    
 
 @dataclass
 class SiteEnvironment:
+    
     # Miljö & Vindresurser
     avg_wind_10: float  # Average wind speed at 10m [m/s]
     roughness: float  # Surface roughness length z0 [mm] (t.ex. 0.01 för hav)
