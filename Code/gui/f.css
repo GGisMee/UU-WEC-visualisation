@@ -1,0 +1,42 @@
+:root {
+  --bg-main: rgb(245, 245, 245);
+  --bg-surface: rgb(255, 255, 255);
+  --bg-input: rgb(255, 255, 255);
+  --text-main: rgb(0, 0, 0);
+  --text-muted: rgb(60, 60, 60);
+  --border: rgb(200, 200, 200);
+  --accent: rgb(237, 116, 46);
+  --delete-hover: rgb(190, 48, 53);
+  --tooltip-bg: rgb(39, 46, 58);
+  --tooltip-text: rgb(232, 236, 242);
+  --tooltip-border: rgb(74, 83, 97);
+  --scrollbar-track: rgb(230, 230, 230);
+  --scrollbar-thumb: rgb(170, 170, 170);
+  --scrollbar-thumb-hover: rgb(140, 140, 140);
+  --input-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  --chat-font-family: "Artifakt Element", "Artifakt", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --chat-text-color: rgb(0, 0, 0);
+  --chat-muted-color: rgb(117, 127, 142);
+  --chat-message-size: 13px;
+  --chat-input-size: 13px;
+}
+
+html.dark-mode,
+body.dark-mode {
+  --bg-main: rgb(59, 68, 83);
+  --bg-surface: rgb(44, 52, 64);
+  --bg-input: rgb(40, 40, 40);
+  --text-main: rgb(245, 245, 245);
+  --text-muted: rgb(245, 245, 245);
+  --border: rgb(80, 88, 100);
+  --delete-hover: rgb(255, 141, 146);
+  --tooltip-bg: rgb(22, 31, 45);
+  --tooltip-text: rgb(220, 229, 241);
+  --tooltip-border: rgb(62, 74, 94);
+  --scrollbar-track: rgb(34, 40, 50);
+  --scrollbar-thumb: rgb(98, 108, 122);
+  --scrollbar-thumb-hover: rgb(122, 132, 146);
+  --input-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --chat-text-color: rgb(255, 255, 255);
+  --chat-muted-color: rgb(156, 168, 187);
+}
