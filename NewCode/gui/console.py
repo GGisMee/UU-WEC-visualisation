@@ -8,6 +8,24 @@ from models.environment import SiteEnvironment, SSNGenerator
 from gui.theme import FusionTheme
 
 class ConsolePanel(ctk.CTkFrame):
+    """
+    A control console panel frame for the Wind Power Simulator.
+    
+    Provides tabbed views for input configuration (Physical Specs, Drivetrain)
+    and a read-only list of environmental and economics variables.
+    
+    Attributes
+    ----------
+    turbine : WindTurbine
+        The wind turbine configuration model.
+    environment : SiteEnvironment
+        The site environment configurations.
+    on_change : Callable
+        Callback function triggered when parameters change.
+    on_ssn : Callable
+        Callback function triggered when a valid SSN is entered.
+    """
+
     def __init__(
         self, 
         parent, 
@@ -16,6 +34,22 @@ class ConsolePanel(ctk.CTkFrame):
         on_change_callback: Callable,
         on_ssn_callback: Callable
     ):
+        """
+        Initialize the ConsolePanel.
+        
+        Parameters
+        ----------
+        parent : ctk.CTkFrame or ctk.CTk
+            The parent Tkinter widget.
+        turbine : WindTurbine
+            The turbine model instance to modify.
+        environment : SiteEnvironment
+            The current environment properties instance.
+        on_change_callback : Callable
+            Triggered on slider/menu change.
+        on_ssn_callback : Callable
+            Triggered on valid SSN entry.
+        """
         super().__init__(
             parent, 
             width=320, 
@@ -50,6 +84,9 @@ class ConsolePanel(ctk.CTkFrame):
         self.update_drivetrain_desc()
 
     def create_widgets(self):
+        """
+        Create and arrange GUI widgets inside the tab views.
+        """
         # 1. Title Label
         self.lbl_title = ctk.CTkLabel(
             self, 
@@ -277,6 +314,14 @@ class ConsolePanel(ctk.CTkFrame):
     # EVENT HANDLERS
     # ==========================================
     def on_slider_move(self, *args):
+        """
+        Handle slider movement events and update the turbine model.
+        
+        Parameters
+        ----------
+        *args : tuple
+            Variable arguments from Tkinter event.
+        """
         # Update labels instantly
         self.lbl_diam_val.configure(text=f"Rotor Diameter: {self.diam_var.get():.1f} m")
         self.lbl_height_val.configure(text=f"Hub Height: {self.height_var.get():.1f} m")
@@ -291,18 +336,42 @@ class ConsolePanel(ctk.CTkFrame):
         self.on_change()
 
     def on_segmented_click(self, choice):
+        """
+        Handle segmented button click for blade count selection.
+        
+        Parameters
+        ----------
+        choice : str
+            The selected segmented button value (e.g. "3 Blades").
+        """
         # Extract number of blades (e.g. "3 Blades" -> 3)
         num_blades = int(choice.split()[0])
         self.turbine.blades = num_blades
         self.on_change()
 
     def on_dropdown_select(self, *args):
+        """
+        Handle dropdown selector events for gearbox and generator.
+        
+        Parameters
+        ----------
+        *args : tuple
+            Variable arguments from Tkinter event.
+        """
         self.turbine.gearbox = self.gearbox_var.get()
         self.turbine.generator = self.generator_var.get()
         self.update_drivetrain_desc()
         self.on_change()
 
     def on_ssn_trace(self, *args):
+        """
+        Trace and validate changes to the SSN entry field.
+        
+        Parameters
+        ----------
+        *args : tuple
+            Variable arguments from Tkinter trace event.
+        """
         ssn = self.ssn_var.get()
         if SSNGenerator.validate(ssn):
             self.on_ssn(ssn)
@@ -311,7 +380,9 @@ class ConsolePanel(ctk.CTkFrame):
     # PUBLIC/VIEW INTERFACES
     # ==========================================
     def update_from_models(self):
-        """Called when external state (environment/mission) changes variables."""
+        """
+        Update all GUI variables and elements to match current model values.
+        """
         # 1. Update Tkinter variables from Turbine model
         self.diam_var.set(self.turbine.diameter)
         self.height_var.set(self.turbine.height)
@@ -330,6 +401,9 @@ class ConsolePanel(ctk.CTkFrame):
         self.update_drivetrain_desc()
 
     def update_drivetrain_desc(self):
+        """
+        Update the informational description text for the selected drivetrain options.
+        """
         gear = self.gearbox_var.get()
         gen = self.generator_var.get()
         if gear == "None (Direct Drive)":
@@ -339,6 +413,9 @@ class ConsolePanel(ctk.CTkFrame):
         self.lbl_drivetrain_desc.configure(text=desc)
 
     def update_env_view(self):
+        """
+        Update the read-only display rows for environmental and economics values.
+        """
         if not self.environment:
             return
         
@@ -366,9 +443,25 @@ class ConsolePanel(ctk.CTkFrame):
         self.env_rows["interest"].configure(text=f"{env.interest:.1f} %" if env.interest is not None else "- %")
 
     def set_objectives_text(self, text: str):
+        """
+        Set the mission objectives description label text.
+        
+        Parameters
+        ----------
+        text : str
+            The text description to show.
+        """
         self.lbl_objectives.configure(text=text)
 
     def set_inputs_enabled(self, enabled: bool):
+        """
+        Enable or disable interactive widgets on the console panel.
+        
+        Parameters
+        ----------
+        enabled : bool
+            True to enable inputs, False to disable.
+        """
         state = "normal" if enabled else "disabled"
         self.slider_diam.configure(state=state)
         self.slider_height.configure(state=state)
