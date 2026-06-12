@@ -1,10 +1,10 @@
-# Vindkraftssimulator (Challenge Mode)
+# Vindkraftssimulator
 
 En modulär och pedagogisk CustomTkinter-applikation för simulering, dimensionering och analys av vindkraftverk. Verktyget är utformat för att lära studenter grundläggande fysikaliska, mekaniska och ekonomiska avvägningar inom vindkraftsteknik genom spelifierade uppdrag (Missions) och personnummer-baserad parametergenerering.
 
 ---
 
-## 🏗️ Arkitektur & Dataflöde
+## Arkitektur & Dataflöde
 
 Systemet bygger på **Domändriven design (DDD)** för att separera data från beräkningslogik och användargränssnitt, vilket förhindrar kodduplicering och underlättar automatiserad testning.
 
@@ -38,7 +38,7 @@ graph TD
 
 ---
 
-## 📂 Filstruktur
+## Filstruktur
 
 Projektets struktur är uppdelat i en tydlig Model-View-Controller-struktur under mappen `Code/`:
 
