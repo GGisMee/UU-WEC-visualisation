@@ -33,10 +33,47 @@ class WindTurbine:
     height: float  # [m] Navhöjd (tornhöjd)
     solidity: float  # [%] Soliditet (bladyta mot svept area)
     blades: int  # Antal blad (2, 3 eller 4)
-    gearbox: str  # "None (Direct Drive)", "Medium-Speed", "High-Speed"
-    generator: str  # "Synchronous", "Asynchronous", "DFIG"
+    gearbox: Gearbox # "None (Direct Drive)", "Medium-Speed", "High-Speed"
+    generator: Generator # "Synchronous", "Asynchronous", "DFIG"
 
     @property
     def swept_area(self) -> float:
         """Beräknar svept area i m²."""
         return np.pi * (self.diameter / 2.0) ** 2
+
+    @property
+    def drivetrain_specs(self) -> dict:
+        """Hämtar beräkningsfaktorer för vald drivlina."""
+        return DRIVETRAIN_SPECS.get((self.gearbox, self.generator), {
+            "drivetrain_efficiency": 0.92,
+            "downtime": 0.04,
+            "capex_mod": 1.00,
+            "opex_mod": 1.00,
+            "mass_mod": 1.00
+        })
+
+    @property
+    def drivetrain_efficiency(self) -> float:
+        """Drivlinans verkningsgrad."""
+        return self.drivetrain_specs["drivetrain_efficiency"]
+
+    @property
+    def downtime(self) -> float:
+        """Planerat/oplanerat stillestånd (downtime)."""
+        return self.drivetrain_specs["downtime"]
+
+    @property
+    def capex_mod(self) -> float:
+        """Kostnadsmodifikator för CAPEX (drivlina)."""
+        return self.drivetrain_specs["capex_mod"]
+
+    @property
+    def opex_mod(self) -> float:
+        """Kostnadsmodifikator för OPEX (drift och underhåll)."""
+        return self.drivetrain_specs["opex_mod"]
+
+    @property
+    def mass_mod(self) -> float:
+        """Massmodifikator för tornets dimensionering / nacellevikt."""
+        return self.drivetrain_specs["mass_mod"]
+

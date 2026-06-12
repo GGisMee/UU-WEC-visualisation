@@ -18,10 +18,6 @@ class DefaultEnvironments(Enum):
                     roughness = 0.2,               # mm, öppet vatten/kust
                     survival_gust = 59.5,          # m/s (IEC klass II referens, ~1.4x Vref)
                     k_factor = 1.84,               # Lillgrund Weibull-fit
-                    lifetime = 25,                 # år
-                    downtime = 5.0,                # % 
-                    capture_efficiency = 0.45,     # Cp 
-                    drivetrain_efficiency = 0.94,  # n_tot 
                     electricity_price = 55,        # €/MWh
                     green_certificate = 1.0,       # €/MWh
                     inflation = 2.0,               # %
@@ -34,10 +30,6 @@ class DefaultEnvironments(Enum):
                     roughness = 0.2,               # mm, öppet hav
                     survival_gust = 65.0,          # m/s, klass S/Tropical-nivå
                     k_factor = 2.0,                # lägre variabilitet på öppet hav
-                    lifetime = 25,                 # år
-                    downtime = 8.0,                # % (tuffare underhåll offshore i stormmiljö)
-                    capture_efficiency = 0.47,     # Cp
-                    drivetrain_efficiency = 0.95,  # n_tot (offshore väljer hög-effektiva drivlinor)
                     electricity_price = 60,        # €/MWh
                     green_certificate = 1.0,       # €/MWh
                 )
@@ -49,10 +41,6 @@ class DefaultEnvironments(Enum):
                     roughness = 500.0,             # mm, hög ytråhet (skog)
                     survival_gust = 50.0,          # m/s, IEC klass IIIA onshore-förhållanden
                     k_factor = 1.8,                # mer variabel vind inlandet
-                    lifetime = 25,                 # år
-                    downtime = 4.0,                # %
-                    capture_efficiency = 0.42,     # Cp
-                    drivetrain_efficiency = 0.93,  # n_tot
                     electricity_price = 50,        # €/MWh
                     green_certificate = 1.0,       # €/MWh
                 )
@@ -63,10 +51,6 @@ class DefaultEnvironments(Enum):
                     roughness = 30.0,              # mm, platt landskap/jordbruksmark
                     survival_gust = 50.0,          # m/s, standard IEC klass IIIA/IIIB
                     k_factor = 2.4,                # mycket stabil vind
-                    lifetime = 25,                 # år
-                    downtime = 3.0,                # % (platt inland = lättillgängligt för underhåll)
-                    capture_efficiency = 0.43,     # Cp
-                    drivetrain_efficiency = 0.92,  # n_tot (asynkron drivlina har något lägre verkningsgrad)
                     electricity_price = 48,        # €/MWh (matchar lägre budgetförutsättningar)
                     green_certificate = 1.0,       # €/MWh
                 )
@@ -80,11 +64,6 @@ class SiteEnvironment:
     survival_gust: float  # Stormbyar för överlevnad [m/s] (t.ex. 60m/s)
     k_factor: float  # Weibull shape parameter k for wind distrobution
 
-    # Effektivitetsparametrar (Härleds oftast från SSN)
-    lifetime: int # Livslängd i år #! Byt till WindTurbine
-    downtime: float  # Årlig downtime [%] #! Byt till WindTurbine
-    capture_efficiency: float  # Cp (0.0 - 0.5) #! Byt till WindTurbine, bero på solidity
-    drivetrain_efficiency: float  # Verkningsgrad för generator/växellåda (0.0 - 1.0) #! Byt till WindTurbine
 
     # Ekonomi & Marknad
     electricity_price: float # [€/MWh] 
@@ -121,10 +100,7 @@ class SSNGenerator:
        
         env.avg_wind_10 = abs(int((6+D/10)*10)/10-int(31.9+int(PIN/100)/2)*1.2/50)
         env.roughness = M*D 
-        env.downtime = abs(2000-Y)+1
 
-        env.capture_efficiency = 0.54-M/100 
-        env.drivetrain_efficiency = 0.94-(PIN - round(PIN,-2))/400 # efficiency of internal mechanical system
 
         
 
@@ -182,7 +158,7 @@ class SSNGenerator:
         return (hash((i, name)) % 10**10) / 10**10 
 
 if __name__ == '__main__':
-    env = SiteEnvironment(None,None,None,None,22,None,None,None, electricity_price=30)
+    env = SiteEnvironment(None,None,None,None,22,None,None,None)
     SSNGenerator.apply_ssn_to_env("200301019949", env)
     print(env)
 
