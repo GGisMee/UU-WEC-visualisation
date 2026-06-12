@@ -1,10 +1,10 @@
-# Vindkraftssimulator (Challenge Mode)
+# Vindkraftssimulator
 
 En modulär och pedagogisk CustomTkinter-applikation för simulering, dimensionering och analys av vindkraftverk. Verktyget är utformat för att lära studenter grundläggande fysikaliska, mekaniska och ekonomiska avvägningar inom vindkraftsteknik genom spelifierade uppdrag (Missions) och personnummer-baserad parametergenerering.
 
 ---
 
-## 🏗️ Arkitektur & Dataflöde
+## Arkitektur & Dataflöde
 
 Systemet bygger på **Domändriven design (DDD)** för att separera data från beräkningslogik och användargränssnitt, vilket förhindrar kodduplicering och underlättar automatiserad testning.
 
@@ -38,7 +38,7 @@ graph TD
 
 ---
 
-## 📂 Filstruktur
+## Filstruktur
 
 Projektets struktur är uppdelat i en tydlig Model-View-Controller-struktur under mappen `Code/`:
 
@@ -66,7 +66,7 @@ uu_proj/
 
 ---
 
-## 🎨 Gränssnittsstruktur (UI Structure)
+## Gränssnittsstruktur (UI Structure)
 
 Gränssnittet är uppdelat i ett trepanelssystem i CustomTkinter och använder ett **händelsestyrt gränssnittsmönster (Event-Driven UI)** där panelerna är frikopplade och kommunicerar via huvudkontrollern (`app.py`):
 
@@ -85,7 +85,7 @@ Gränssnittet är uppdelat i ett trepanelssystem i CustomTkinter och använder e
 
 ---
 
-## 🎯 Spelregler & Uppdrag (Missions)
+## Spelregler & Uppdrag (Missions)
 
 Drivlinans olika teknologier (Direct Drive vs. växellåda, samt synkron-, DFIG- eller asynkrongenerator) påverkar kostnad, underhåll (OPEX), driftstopp (downtime), verkningsgrad ($C_p$) och nacelle-vikt (vilket belastar tornet). Detta tvingar fram olika optimala geometrier och drivline-kombinationer i de olika uppdragen.
 
@@ -117,7 +117,7 @@ För att spegla verklig ingenjörskonst är vissa kombinationer blockerade i app
 
 ---
 
-## 📈 Projektplanering & Roadmap
+## Projektplanering & Roadmap
 
 Utvecklingen är uppdelad i fyra milstolpar (milestones) enligt [broader_plan.md](file:///home/gustavg/Projects/uu_proj/Tankar/New%20Format/broader_plan.md):
 
