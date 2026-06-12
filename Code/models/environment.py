@@ -19,9 +19,9 @@ class DefaultEnvironments(Enum):
                     survival_gust = 59.5,          # m/s (IEC klass II referens, ~1.4x Vref)
                     k_factor = 1.84,               # Lillgrund Weibull-fit
                     lifetime = 25,                 # år
-                    downtime = 5.0,                # %
-                    capture_efficiency = 0.45,     # Cp
-                    drivetrain_efficiency = 0.94,  # n_tot
+                    downtime = 5.0,                # % 
+                    capture_efficiency = 0.45,     # Cp 
+                    drivetrain_efficiency = 0.94,  # n_tot 
                     electricity_price = 55,        # €/MWh
                     green_certificate = 1.0,       # €/MWh
                     inflation = 2.0,               # %
@@ -81,10 +81,10 @@ class SiteEnvironment:
     k_factor: float  # Weibull shape parameter k for wind distrobution
 
     # Effektivitetsparametrar (Härleds oftast från SSN)
-    lifetime: int # Livslängd i år
-    downtime: float  # Årlig downtime [%]
-    capture_efficiency: float  # Cp (0.0 - 0.5)
-    drivetrain_efficiency: float  # Verkningsgrad för generator/växellåda (0.0 - 1.0)
+    lifetime: int # Livslängd i år #! Byt till WindTurbine
+    downtime: float  # Årlig downtime [%] #! Byt till WindTurbine
+    capture_efficiency: float  # Cp (0.0 - 0.5) #! Byt till WindTurbine, bero på solidity
+    drivetrain_efficiency: float  # Verkningsgrad för generator/växellåda (0.0 - 1.0) #! Byt till WindTurbine
 
     # Ekonomi & Marknad
     electricity_price: float # [€/MWh] 
