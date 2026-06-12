@@ -7,7 +7,6 @@ from NewCode.models.turbine import WindTurbine
 from NewCode.models.environment import SiteEnvironment
 import NewCode.config
 from collections import namedtuple
-from NewCode.utils.ssn import SSNGenerator
 
 @dataclass
 class SimulationResult:
