@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from models.environment import SiteEnvironment
 from models.simulation import SimulationResult
-from utils.ssn import SSNGenerator
+from models.environment import SSNGenerator
 from enum import Enum
 
 class DefaultMissions(Enum):
