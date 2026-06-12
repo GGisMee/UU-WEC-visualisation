@@ -9,6 +9,7 @@ class DefaultMissions(Enum):
     SANDBOX = "sandbox"
     ARCTIC_GALE = "arctic_gale"
     THE_GENTLE_BREEZE = "the_gentle_breeze"
+    THE_COMMUNITY_COOPERATIVE = "the_community_cooperative"
 
     def create(self, env: SiteEnvironment) -> Mission:
         # Matchar enum-värdet och returnerar rätt Mission
@@ -39,6 +40,16 @@ class DefaultMissions(Enum):
                     constraints={},
                     max_runs=6
                     )
+
+            case DefaultMissions.THE_COMMUNITY_COOPERATIVE:
+                return Mission(
+                    name="The Community Cooperative",
+                    description="Onshore plattlandskap nära ett litet samhälle.",
+                    env=env,
+                    constraints={},
+                    max_runs=6
+                    )
+
 
 @dataclass
 class Mission:

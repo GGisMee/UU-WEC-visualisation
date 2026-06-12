@@ -6,6 +6,7 @@ En modulär och pedagogisk CustomTkinter-applikation för simulering, dimensione
 
 ## 🏗️ Arkitektur & Dataflöde
 
+Systemet bygger på **Domändriven design (DDD)** för att separera data från beräkningslogik och användargränssnitt, vilket förhindrar kodduplicering och underlättar automatiserad testning.
 
 ```mermaid
 graph TD
@@ -32,12 +33,12 @@ graph TD
   1. **Vindprofil (Wind Shear)**: Beräknar vindhastigheten vid navhöjd utifrån logaritmiska vindprofiler.
   2. **Weibull-fördelning**: Skapar vindfördelningskurvan över årets 8760 timmar.
   3. **Energiproduktion**: Integrerar effektkurvan (med Betz gränser) för att beräkna årlig energiproduktion (AEP).
-  4. **Hållfasthet (Alternativ A)**: Beräknar böjmomentet längs tornet under driftlaster och stormbyar ($65\text{ m/s}$). Dimensionerar tornets minsta väggtjocklek ($t_{\text{krävd}}$) för att hålla en **fast säkerhetsfaktor på 1.5** mot stålgränsen (160 MPa). Tornets totala vikt (massa) och CAPEX beräknas direkt utifrån denna tjocklek.
+  4. **Hållfasthet (Alternativ A)**: Beräknar böjmomentet längs tornet under driftlaster och stormbyar. Dimensionerar tornets minsta väggtjocklek ($t_{\text{krävd}}$) för att hålla en **fast säkerhetsfaktor på 1.5** mot stålgränsen (160 MPa). Tornets totala vikt (massa) och CAPEX beräknas direkt utifrån denna tjocklek.
   5. **Ekonomi**: Beräknar CAPEX-komponenter, årliga driftskostnader (OPEX), elintäkter samt Net Present Value (NPV) med geometrisk serie över turbinens livslängd.
 
 ---
 
-##  Filstruktur
+## 📂 Filstruktur
 
 Projektets struktur är uppdelat i en tydlig Model-View-Controller-struktur under mappen `Code/`:
 
@@ -65,7 +66,7 @@ uu_proj/
 
 ---
 
-##  Gränssnittsstruktur (UI Structure)
+## 🎨 Gränssnittsstruktur (UI Structure)
 
 Gränssnittet är uppdelat i ett trepanelssystem i CustomTkinter och använder ett **händelsestyrt gränssnittsmönster (Event-Driven UI)** där panelerna är frikopplade och kommunicerar via huvudkontrollern (`app.py`):
 
@@ -84,22 +85,39 @@ Gränssnittet är uppdelat i ett trepanelssystem i CustomTkinter och använder e
 
 ---
 
-##  Spelregler & Uppdrag (Missions)
+## 🎯 Spelregler & Uppdrag (Missions)
 
-Drivlinans olika teknologier (Direct Drive vs. växellåda, samt synkron-, DFIG- eller asynkrongenerator) påverkar kostnad, underhåll (OPEX), driftstopp (downtime), verkningsgrad ($C_p$) och nacelle-vikt (vilket belastar tornet). Detta ska tvinga fram olika optimala geometrier och drivline-kombinationer i de olika uppdragen:
+Drivlinans olika teknologier (Direct Drive vs. växellåda, samt synkron-, DFIG- eller asynkrongenerator) påverkar kostnad, underhåll (OPEX), driftstopp (downtime), verkningsgrad ($C_p$) och nacelle-vikt (vilket belastar tornet). Detta tvingar fram olika optimala geometrier och drivline-kombinationer i de olika uppdragen.
 
-### 📋 Uppdragsöversikt
+### Drivline-kompatibilitet
+För att spegla verklig ingenjörskonst är vissa kombinationer blockerade i appen:
+* **Asynchronous (SCIG)** kan **endast** användas med **High-Speed** växellåda.
+* **DFIG** kan användas med **High-Speed** eller **Medium-Speed** växellåda.
+* **Synchronous** är kompatibel med **alla** växellådsval (Direct Drive, Medium-Speed, High-Speed).
 
-| Uppdrag                | Miljö & Utmaning                                                                            | Särskilda Regler & Samhällskrav                                                                       |
-| :--------------------- | :------------------------------------------------------------------------------------------ | :---------------------------------------------------------------------------------------------------- |
-| **1. Sandbox**         | Valfritt testande                                                                           | Inga begränsningar på simuleringar eller mått.                                                        |
-| **2. Arctic Gale**     | Offshore stormläge                                                                          | **Tornets bastjocklek max 100 mm** (tillverkningsgräns). Inga höjdgränser.                            |
-| **3. Gentle Breeze**   | Lågvindsoptimering i skog. Mycket vind högre upp                                            | **Totalhöjd (Tip Height) max 160 m** (luftfarts- och visningsregler).                                 |
-| **4. Community Co-op** | Lokal vindförening nära samhälle. Platt terräng (låg vindskjuvning). Stabil vind ($k=2.4$). | **Totalhöjd max 140 m** OCH **Diameter max 90 m** (buller- och skuggbegränsning). **CAPEX < 3.8 M€**. |
+### 📋 Uppdragsöversikt och Parametrar
+
+| Parameter | U1: Sandbox (Lillgrund) | U2: Arctic Gale (Dogger Bank) | U3: Gentle Breeze (Smöla/Skog) | U4: Community Co-op (Markbygden) |
+| :--- | :--- | :--- | :--- | :--- |
+| **avg_wind_10** | 7.0 m/s | 8.5 m/s | 4.5 m/s | 5.5 m/s |
+| **roughness** | 0.2 mm | 0.2 mm | 500.0 mm | 30.0 mm |
+| **survival_gust** | 59.5 m/s | 65.0 m/s | 50.0 m/s | 50.0 m/s |
+| **k_factor** | 1.84 | 2.0 | 1.8 | 2.4 |
+| **lifetime** | 25 år | 25 år | 25 år | 25 år |
+| **downtime** | 5.0 % | 8.0 % | 4.0 % | 3.0 % |
+| **capture_eff** ($C_p$) | 0.45 | 0.47 | 0.42 | 0.43 |
+| **drivetrain_eff** | 0.94 | 0.95 | 0.93 | 0.92 |
+| **electricity_price** | 55 €/MWh | 60 €/MWh | 50 €/MWh | 48 €/MWh |
+
+### Särskilda Regler & Samhällskrav per Uppdrag:
+* **Uppdrag 1 (Sandbox)**: Inga restriktioner för höjd eller tjocklek. Fritt fram att testa.
+* **Uppdrag 2 (Arctic Gale)**: **Tornets bastjocklek max 100 mm** (fast SF 1.5). Inga höjdgränser. Mål: NPV > 0. (Optimalt: *Medium-Speed + DFIG*).
+* **Uppdrag 3 (Gentle Breeze)**: **Totalhöjden (Tip Height = H + D/2) max 160 m**. Mål: AEP $\ge 1800\text{ MWh}$ och CAPEX < 5.0 M€. (Optimalt: *High-Speed + Synchronous* på grund av stark vindgradient).
+* **Uppdrag 4 (Community Co-op)**: **Totalhöjd max 140 m** OCH **Diameter max 90 m** (buller- och skuggbegränsning). Mål: CAPEX < 3.8 M€ och NPV > 0. (Optimalt: *High-Speed + Asynchronous*).
 
 ---
 
-##  Projektplanering & Roadmap
+## 📈 Projektplanering & Roadmap
 
 Utvecklingen är uppdelad i fyra milstolpar (milestones) enligt [broader_plan.md](file:///home/gustavg/Projects/uu_proj/Tankar/New%20Format/broader_plan.md):
 
@@ -110,12 +128,12 @@ Utvecklingen är uppdelad i fyra milstolpar (milestones) enligt [broader_plan.md
 ### Milstolpe 2: Modulär CustomTkinter GUI-integration (Pågående)
 * Dela upp det monolitiska gränssnittet till de fristående klasserna i `Code/gui/`: `ConsolePanel`, `CADCanvas` och `AnalyticsPanel`.
 * Koppla samman panelerna med händelsestyrda callbacks i `app.py` och säkerställa att ritningar och diagram uppdateras baserat på faktiska simulationsobjekt.
-	* Sammankoppla med **environments** och sätt upp **constriants** för att klara nivån
+* Implementera uppdragsbegränsningar och drivline-kompatibilitet i gränssnittet.
 
 ### Milstolpe 3: Spelmekanik & SSN-logik (Nästa steg)
 * Implementera `SSNGenerator` för personnummer-parsing.
 * Bygga in de fyra uppdragens checklistor, utvärderingslogik och gränser (t.ex. totalhöjd, tjocklek, budget och simuleringsräknare).
 
-### Milstolpe 4: Verifiering & Paketering
+### Milstolpe 4: Verification & Paketering
 * Skriva enhetstester för att säkerställa att Python-beräkningarna matchar referenskalkylerna i Excel.
 * Lägga till robust felhantering och paketera applikationen till en fristående `.exe`-fil med PyInstaller för distribution till studenterna.

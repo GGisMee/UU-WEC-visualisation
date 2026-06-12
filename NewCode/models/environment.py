@@ -3,7 +3,6 @@ from enum import Enum
 from dataclasses import dataclass
 import datetime
 
-
 class DefaultEnvironments(Enum):
     SANDBOX = "sandbox"
     ARCTIC_GALE = "arctic_gale"
@@ -15,22 +14,66 @@ class DefaultEnvironments(Enum):
         match self:
             case DefaultEnvironments.SANDBOX:
                 env = SiteEnvironment(
-
+                    avg_wind_10 = 7.0,             # m/s (~8.5 m/s vid hubhöjd 65m)
+                    roughness = 0.2,               # mm, öppet vatten/kust
+                    survival_gust = 59.5,          # m/s (IEC klass II referens, ~1.4x Vref)
+                    k_factor = 1.84,               # Lillgrund Weibull-fit
+                    lifetime = 25,                 # år
+                    downtime = 5.0,                # %
+                    capture_efficiency = 0.45,     # Cp
+                    drivetrain_efficiency = 0.94,  # n_tot
+                    electricity_price = 55,        # €/MWh
+                    green_certificate = 1.0,       # €/MWh
+                    inflation = 2.0,               # %
+                    interest = 3.0,                # %
                 )
             
             case DefaultEnvironments.ARCTIC_GALE:
-                return SiteEnvironment()
+                return SiteEnvironment(
+                    avg_wind_10 = 8.5,             # m/s, högre offshore-medelvind
+                    roughness = 0.2,               # mm, öppet hav
+                    survival_gust = 65.0,          # m/s, klass S/Tropical-nivå
+                    k_factor = 2.0,                # lägre variabilitet på öppet hav
+                    lifetime = 25,                 # år
+                    downtime = 8.0,                # % (tuffare underhåll offshore i stormmiljö)
+                    capture_efficiency = 0.47,     # Cp
+                    drivetrain_efficiency = 0.95,  # n_tot (offshore väljer hög-effektiva drivlinor)
+                    electricity_price = 60,        # €/MWh
+                    green_certificate = 1.0,       # €/MWh
+                )
 
             
-            case DefaultEnvironments.SANDBOX:
-                return SiteEnvironment()
+            case DefaultEnvironments.THE_GENTLE_BREEZE:
+                return SiteEnvironment(
+                    avg_wind_10 = 4.5,             # m/s, låg vid 10m i skog
+                    roughness = 500.0,             # mm, hög ytråhet (skog)
+                    survival_gust = 50.0,          # m/s, IEC klass IIIA onshore-förhållanden
+                    k_factor = 1.8,                # mer variabel vind inlandet
+                    lifetime = 25,                 # år
+                    downtime = 4.0,                # %
+                    capture_efficiency = 0.42,     # Cp
+                    drivetrain_efficiency = 0.93,  # n_tot
+                    electricity_price = 50,        # €/MWh
+                    green_certificate = 1.0,       # €/MWh
+                )
 
             case DefaultEnvironments.THE_COMMUNITY_COOPERATIVE:
-                return SiteEnvironment()
+                return SiteEnvironment(
+                    avg_wind_10 = 5.5,             # m/s, måttlig med stabil vind inlandet
+                    roughness = 30.0,              # mm, platt landskap/jordbruksmark
+                    survival_gust = 50.0,          # m/s, standard IEC klass IIIA/IIIB
+                    k_factor = 2.4,                # mycket stabil vind
+                    lifetime = 25,                 # år
+                    downtime = 3.0,                # % (platt inland = lättillgängligt för underhåll)
+                    capture_efficiency = 0.43,     # Cp
+                    drivetrain_efficiency = 0.92,  # n_tot (asynkron drivlina har något lägre verkningsgrad)
+                    electricity_price = 48,        # €/MWh (matchar lägre budgetförutsättningar)
+                    green_certificate = 1.0,       # €/MWh
+                )
+        return env
 
 @dataclass
 class SiteEnvironment:
-    
     # Miljö & Vindresurser
     avg_wind_10: float  # Average wind speed at 10m [m/s]
     roughness: float  # Surface roughness length z0 [mm] (t.ex. 0.01 för hav)
@@ -51,7 +94,7 @@ class SiteEnvironment:
 
     # Defaulted fields at the bottom
     wo_param: float = 7.0  # for determinating turbine cost
-    financial_additional_part: float = 0.07  # [%] additional costs for loans, fees and so on for funding.
+    financial_additional_part: float = 0.07  # [%] additional costs for loans, fees and so on for funding. Percentage of capex
     installation_costs: int = 3500  # k€
     turbine_count: int = 1  # number of turbines in park (Set to 1 by default)
 
@@ -126,6 +169,17 @@ class SSNGenerator:
         year = datetime.date.today().year
         Age = year - Y  # Approximatelly
         return Age, Y, M, D, S
+
+    @staticmethod
+    def generate_random_pm(i:int,name:str) -> float:
+        """Generates a 'random' float in range [-1,1], which value persists when i and name are the same"""
+        return 2*SSNGenerator.generate_random(i,name)-1
+
+
+    @staticmethod
+    def generate_random(i:int,name:str) -> float:
+        """Generates a 'random' float in range [0,1], which value persists when i and name are the same"""
+        return (hash((i, name)) % 10**10) / 10**10 
 
 if __name__ == '__main__':
     env = SiteEnvironment(None,None,None,None,22,None,None,None, electricity_price=30)
