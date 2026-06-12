@@ -100,9 +100,10 @@ class ConsolePanel(ctk.CTkFrame):
         self.tabs = ctk.CTkTabview(
             self, 
             fg_color="transparent",
+            segmented_button_fg_color=Theme.BOX_BG.value,
             segmented_button_selected_color=Theme.TAB_SELECTED.value,
             segmented_button_selected_hover_color=Theme.TAB_SELECTED_HOVER.value,
-            segmented_button_unselected_color=Theme.BUTTON_BG.value,
+            segmented_button_unselected_color=Theme.BOX_BG.value,
             segmented_button_unselected_hover_color=Theme.BUTTON_HOVER.value,
             text_color=Theme.TEXT_MAIN.value
         )

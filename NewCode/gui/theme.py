@@ -140,4 +140,4 @@ class Futuristic(Enum):
 
 # --- SETUP CONFIGURATION ---
 # Select active theme here: FusionTheme or Futuristic
-Theme = Futuristic
+Theme = FusionTheme
