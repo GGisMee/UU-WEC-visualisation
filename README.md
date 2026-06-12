@@ -66,7 +66,7 @@ uu_proj/
 
 ---
 
-## 🎨 Gränssnittsstruktur (UI Structure)
+## Gränssnittsstruktur (UI Structure)
 
 Gränssnittet är uppdelat i ett trepanelssystem i CustomTkinter och använder ett **händelsestyrt gränssnittsmönster (Event-Driven UI)** där panelerna är frikopplade och kommunicerar via huvudkontrollern (`app.py`):
 
@@ -85,7 +85,7 @@ Gränssnittet är uppdelat i ett trepanelssystem i CustomTkinter och använder e
 
 ---
 
-## 🎯 Spelregler & Uppdrag (Missions)
+## Spelregler & Uppdrag (Missions)
 
 Drivlinans olika teknologier (Direct Drive vs. växellåda, samt synkron-, DFIG- eller asynkrongenerator) påverkar kostnad, underhåll (OPEX), driftstopp (downtime), verkningsgrad ($C_p$) och nacelle-vikt (vilket belastar tornet). Detta tvingar fram olika optimala geometrier och drivline-kombinationer i de olika uppdragen.
 
@@ -95,7 +95,7 @@ För att spegla verklig ingenjörskonst är vissa kombinationer blockerade i app
 * **DFIG** kan användas med **High-Speed** eller **Medium-Speed** växellåda.
 * **Synchronous** är kompatibel med **alla** växellådsval (Direct Drive, Medium-Speed, High-Speed).
 
-### 📋 Uppdragsöversikt och Parametrar
+### Uppdragsöversikt och Parametrar
 
 | Parameter | U1: Sandbox (Lillgrund) | U2: Arctic Gale (Dogger Bank) | U3: Gentle Breeze (Smöla/Skog) | U4: Community Co-op (Markbygden) |
 | :--- | :--- | :--- | :--- | :--- |
@@ -117,7 +117,7 @@ För att spegla verklig ingenjörskonst är vissa kombinationer blockerade i app
 
 ---
 
-## 📈 Projektplanering & Roadmap
+## Projektplanering & Roadmap
 
 Utvecklingen är uppdelad i fyra milstolpar (milestones) enligt [broader_plan.md](file:///home/gustavg/Projects/uu_proj/Tankar/New%20Format/broader_plan.md):
 
