@@ -4,15 +4,15 @@ import tkinter as tk
 import math
 from typing import Callable
 from models.turbine import WindTurbine
-from gui.theme import FusionTheme
+from gui.theme import Theme
 
 class CADCanvas(ctk.CTkFrame):
     def __init__(self, parent, turbine: WindTurbine, on_simulate_click: Callable):
         super().__init__(
             parent, 
-            fg_color=FusionTheme.BG_SURFACE.value, 
+            fg_color=Theme.BG_SURFACE.value, 
             border_width=1, 
-            border_color=FusionTheme.BORDER.value
+            border_color=Theme.BORDER.value
         )
         self.turbine = turbine
         self.blade_angle = 0.0
@@ -26,23 +26,23 @@ class CADCanvas(ctk.CTkFrame):
         self.lbl_title = ctk.CTkLabel(
             self, 
             text="LIVE CAD BLUEPRINT SCHEMATIC", 
-            font=("Montserrat", 13, "bold"), 
-            text_color=FusionTheme.TEXT_MAIN.value
+            font=Theme.fonts.SUBTITLE, 
+            text_color=Theme.TEXT_MAIN.value
         )
         self.lbl_title.pack(anchor="w", padx=15, pady=(15, 5))
 
         # Canvas drawing container
-        # Background: `#0B132B` (blueprint dark blue)
-        self.canvas = tk.Canvas(self, bg="#0B132B", highlightthickness=0)
+        mode_idx = 0 if ctk.get_appearance_mode() == "Light" else 1
+        self.canvas = tk.Canvas(self, bg=Theme.BLUEPRINT_BG.value[mode_idx], highlightthickness=0)
         self.canvas.pack(fill="both", expand=True, padx=15, pady=(5, 5))
 
         # Action: Commit & Run Button (Fusion Orange)
         self.btn_simulate = ctk.CTkButton(
             self, 
             text="🚀 RUN SIMULATION", 
-            font=("Arial", 13, "bold"), 
-            fg_color=FusionTheme.ACCENT.value, 
-            hover_color="#CC6200",
+            font=Theme.fonts.SUBTITLE, 
+            fg_color=Theme.ACCENT.value, 
+            hover_color=Theme.ACCENT_HOVER.value,
             text_color="white",
             height=36,
             command=on_simulate_click
@@ -62,18 +62,29 @@ class CADCanvas(ctk.CTkFrame):
         if w < 10 or h < 10:
             return  # Canvas is not yet fully initialized/placed
 
+        # Extract color indices based on current CustomTkinter appearance mode
+        mode = ctk.get_appearance_mode()
+        idx = 0 if mode == "Light" else 1
+
+        bg_color = Theme.BLUEPRINT_BG.value[idx]
+        grid_color = Theme.BLUEPRINT_GRID.value[idx]
+        steel_color = Theme.BLUEPRINT_STEEL.value[idx]
+        base_color = Theme.BLUEPRINT_BASE.value[idx]
+        blade_color = Theme.BLUEPRINT_BLADE.value[idx]
+        text_color = Theme.TEXT_MAIN.value[idx]
+        info_color = Theme.INFO.value[idx]
+
         self.canvas.delete("all")
+        self.canvas.configure(bg=bg_color)
 
         # 1. Technical Grid lines (Spacing: 25px)
         grid_space = 25
-        grid_color = "#121D33"
         for x in range(0, w, grid_space):
             self.canvas.create_line(x, 0, x, h, fill=grid_color, width=1)
         for y in range(0, h, grid_space):
             self.canvas.create_line(0, y, w, y, fill=grid_color, width=1)
 
         # 2. Scale math to fit the turbine height/diameter in the canvas
-        # Maximum expected turbine height/diameter is ~160m
         max_expected_dim = 160.0
         draw_scale = (h * 0.55) / max_expected_dim
 
@@ -89,12 +100,11 @@ class CADCanvas(ctk.CTkFrame):
         rotor_r = int((real_diam / 2) * draw_scale)
 
         # 3. Check structural stress safety (either forced by simulation or live approximation)
-        # solidity * diameter * wind shear moment
         moment = (real_solidity / 3.0) * (real_diam / 90.0) * (real_height / 90.0)**2
         is_unsafe = self.is_unsafe or (moment > 2.2)
         
-        tower_color = FusionTheme.DANGER.value[1] if is_unsafe else "#334155"
-        tower_outline = FusionTheme.DANGER.value[1] if is_unsafe else "#64748B"
+        tower_fill = Theme.DANGER.value[idx] if is_unsafe else steel_color
+        tower_outline = Theme.DANGER.value[idx] if is_unsafe else base_color
 
         # 4. Draw Foundation Base
         base_w = int(40 * self.scale_factor)
@@ -103,7 +113,7 @@ class CADCanvas(ctk.CTkFrame):
             center_x + base_w, ground_y,
             center_x + base_w - 5, ground_y - 12,
             center_x - base_w + 5, ground_y - 12,
-            fill="#1E293B", outline="#475569", width=2
+            fill=base_color, outline=steel_color, width=2
         )
 
         # 5. Draw Tapered Tower
@@ -114,17 +124,17 @@ class CADCanvas(ctk.CTkFrame):
             center_x + tower_base_r, ground_y - 12,
             center_x + tower_top_r, hub_y,
             center_x - tower_top_r, hub_y,
-            fill=tower_color, outline=tower_outline, width=2
+            fill=tower_fill, outline=tower_outline, width=2
         )
 
         # 6. Draw Height Dimension Line (Left Side)
         dim_left_x = center_x - tower_base_r - int(25 * self.scale_factor)
-        self.canvas.create_line(dim_left_x, ground_y, dim_left_x, hub_y, fill=FusionTheme.INFO.value[1], arrow=tk.BOTH, width=1.5)
-        self.canvas.create_line(dim_left_x - 5, ground_y, dim_left_x + 5, ground_y, fill=FusionTheme.INFO.value[1])
-        self.canvas.create_line(dim_left_x - 5, hub_y, dim_left_x + 5, hub_y, fill=FusionTheme.INFO.value[1])
+        self.canvas.create_line(dim_left_x, ground_y, dim_left_x, hub_y, fill=info_color, arrow=tk.BOTH, width=1.5)
+        self.canvas.create_line(dim_left_x - 5, ground_y, dim_left_x + 5, ground_y, fill=info_color)
+        self.canvas.create_line(dim_left_x - 5, hub_y, dim_left_x + 5, hub_y, fill=info_color)
         self.canvas.create_text(
             dim_left_x - int(35 * self.scale_factor), (ground_y + hub_y) // 2, 
-            text=f"H = {real_height:.1f}m", fill=FusionTheme.TEXT_MAIN.value[1], font=("Arial", int(10 * self.scale_factor), "bold")
+            text=f"H = {real_height:.1f}m", fill=text_color, font=(Theme.fonts.family, int(10 * self.scale_factor), "bold")
         )
 
         # 7. Draw Nacelle (Drivetrain housing)
@@ -133,7 +143,7 @@ class CADCanvas(ctk.CTkFrame):
         self.canvas.create_rectangle(
             center_x - nacelle_w, hub_y - nacelle_h,
             center_x + 6, hub_y + 3,
-            fill="#475569", outline="#E2E8F0", width=1.5
+            fill=steel_color, outline=base_color, width=1.5
         )
 
         # 8. Draw Rotating Blades
@@ -157,24 +167,24 @@ class CADCanvas(ctk.CTkFrame):
                 center_x - bx, hub_y + by,
                 center_x + bx, hub_y - by,
                 tip_x, tip_y,
-                fill="#F8FAFC", outline=FusionTheme.INFO.value[1], width=1.5
+                fill=blade_color, outline=info_color, width=1.5
             )
 
         # 9. Draw Hub Nose Cone (Highlight in Fusion Orange)
         self.canvas.create_oval(
             center_x - 6, hub_y - 6,
             center_x + 6, hub_y + 6,
-            fill=FusionTheme.ACCENT.value[1], outline="#FFFFFF", width=1.5
+            fill=Theme.ACCENT.value[idx], outline=blade_color, width=1.5
         )
 
         # 10. Draw Rotor Diameter Dimension Line (Right Side)
         dim_right_x = center_x + rotor_r + int(25 * self.scale_factor)
-        self.canvas.create_line(dim_right_x, hub_y - rotor_r, dim_right_x, hub_y + rotor_r, fill=FusionTheme.INFO.value[1], arrow=tk.BOTH, width=1.5)
-        self.canvas.create_line(dim_right_x - 5, hub_y - rotor_r, dim_right_x + 5, hub_y - rotor_r, fill=FusionTheme.INFO.value[1])
-        self.canvas.create_line(dim_right_x - 5, hub_y + rotor_r, dim_right_x + 5, hub_y + rotor_r, fill=FusionTheme.INFO.value[1])
+        self.canvas.create_line(dim_right_x, hub_y - rotor_r, dim_right_x, hub_y + rotor_r, fill=info_color, arrow=tk.BOTH, width=1.5)
+        self.canvas.create_line(dim_right_x - 5, hub_y - rotor_r, dim_right_x + 5, hub_y - rotor_r, fill=info_color)
+        self.canvas.create_line(dim_right_x - 5, hub_y + rotor_r, dim_right_x + 5, hub_y + rotor_r, fill=info_color)
         self.canvas.create_text(
             dim_right_x + int(35 * self.scale_factor), hub_y, 
-            text=f"D = {real_diam:.1f}m", fill=FusionTheme.TEXT_MAIN.value[1], font=("Arial", int(10 * self.scale_factor), "bold")
+            text=f"D = {real_diam:.1f}m", fill=text_color, font=(Theme.fonts.family, int(10 * self.scale_factor), "bold")
         )
 
         # 11. Safety Alert Banner (Bending Moment overload)
@@ -182,12 +192,15 @@ class CADCanvas(ctk.CTkFrame):
             self.canvas.create_rectangle(
                 center_x - 110, ground_y + 10,
                 center_x + 110, ground_y + 35,
-                fill=FusionTheme.DANGER.value[1], outline="#FFFFFF", width=1
+                fill=Theme.DANGER.value[idx], outline=blade_color, width=1
             )
             self.canvas.create_text(
                 center_x, ground_y + 22,
-                text="⚠️ HIGH BENDING MOMENT ALERT", fill="white", font=("Arial", 9, "bold")
+                text="⚠️ HIGH BENDING MOMENT ALERT", fill="white", font=Theme.fonts.HEADER
             )
+
+        # Update frame styling
+        self.configure(fg_color=Theme.BG_SURFACE.value, border_color=Theme.BORDER.value)
 
     def rotate_loop(self):
         """Blade rotation animation loop."""

@@ -9,14 +9,13 @@ from models.mission import DefaultMissions
 from gui.console import ConsolePanel
 from gui.canvas import CADCanvas
 from gui.analytics import AnalyticsPanel
-from gui.theme import FusionTheme
+from gui.theme import Theme
 
 def load_scale_factor():
     try:
         dir_path = os.path.dirname(os.path.abspath(__file__))
         scale_path = os.path.join(dir_path, "scale.txt")
         if not os.path.exists(scale_path):
-            # Fallback path if run from project root
             scale_path = os.path.join(dir_path, "..", "Code", "prototypes", "scale.txt")
         if os.path.exists(scale_path):
             with open(scale_path, "r") as f:
@@ -36,11 +35,10 @@ class UnifiedSimulatorApp(ctk.CTk):
         
         self.title("Wind Power Simulator Pro")
         self.geometry("1200x750")
-        self.configure(fg_color=FusionTheme.BG_MAIN.value)
+        self.configure(fg_color=Theme.BG_MAIN.value)
         ctk.set_appearance_mode("dark")
 
         # --- STATE INITIALIZATION ---
-        # Initialize default model instances (Sandbox mode values)
         self.turbine = WindTurbine(
             diameter=95.0, 
             height=105.0, 
@@ -51,7 +49,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         )
         self.environment = DefaultEnvironments.SANDBOX.create()
         self.active_mission_name = "Free Play Sandbox"
-        self.runs_remaining = None  # None indicates infinite runs
+        self.runs_remaining = None
         self.simulation_out_of_date = True
         self.last_sim_result = None
 
@@ -95,10 +93,10 @@ class UnifiedSimulatorApp(ctk.CTk):
         # Header main container
         self.header_frame = ctk.CTkFrame(
             self, 
-            fg_color=FusionTheme.BG_SURFACE.value, 
+            fg_color=Theme.BG_SURFACE.value, 
             corner_radius=0, 
             border_width=1, 
-            border_color=FusionTheme.BORDER.value
+            border_color=Theme.BORDER.value
         )
         self.header_frame.grid(row=0, column=0, columnspan=3, sticky="ew", padx=10, pady=(10, 5))
         
@@ -112,8 +110,8 @@ class UnifiedSimulatorApp(ctk.CTk):
         ctk.CTkLabel(
             left_header, 
             text="MISSION / CHALLENGE SELECTOR", 
-            font=("Montserrat", 10, "bold"), 
-            text_color=FusionTheme.ACCENT.value
+            font=Theme.fonts.HEADER, 
+            text_color=Theme.ACCENT.value
         ).pack(anchor="w")
         
         self.mission_menu = ctk.CTkOptionMenu(
@@ -125,50 +123,70 @@ class UnifiedSimulatorApp(ctk.CTk):
                 "The Community Cooperative"
             ],
             command=self.on_mission_change,
-            fg_color=FusionTheme.BG_INPUT.value,
-            button_color=FusionTheme.BORDER.value,
-            button_hover_color=FusionTheme.ACCENT.value,
-            text_color=FusionTheme.TEXT_MAIN.value,
+            fg_color=Theme.BG_INPUT.value,
+            button_color=Theme.BUTTON_BG.value,
+            button_hover_color=Theme.BUTTON_HOVER.value,
+            text_color=Theme.TEXT_MAIN.value,
             width=220,
-            height=28
+            height=28,
+            font=Theme.fonts.BODY
         )
         self.mission_menu.pack(anchor="w", pady=(2, 5))
         
         self.lbl_mission_desc = ctk.CTkLabel(
             left_header, 
             text="",
-            font=("Arial", 11),
-            text_color=FusionTheme.TEXT_MUTED.value,
+            font=Theme.fonts.BODY,
+            text_color=Theme.TEXT_MUTED.value,
             justify="left"
         )
         self.lbl_mission_desc.pack(anchor="w")
 
-        # Right Column: Performance scorecard panels
+        # Right Column: Theme selection + scorecards
         right_header = ctk.CTkFrame(self.header_frame, fg_color="transparent")
         right_header.grid(row=0, column=1, sticky="e", padx=15, pady=10)
 
+        # Theme Selector Dropdown
+        theme_frame = ctk.CTkFrame(right_header, fg_color="transparent")
+        theme_frame.pack(side="left", padx=(0, 15))
+        ctk.CTkLabel(theme_frame, text="THEME", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value).pack(anchor="w")
+        self.theme_menu = ctk.CTkOptionMenu(
+            theme_frame,
+            values=["Dark", "Light", "System"],
+            command=self.on_theme_change,
+            fg_color=Theme.BG_INPUT.value,
+            button_color=Theme.BUTTON_BG.value,
+            button_hover_color=Theme.BUTTON_HOVER.value,
+            text_color=Theme.TEXT_MAIN.value,
+            width=90,
+            height=24,
+            font=Theme.fonts.MUTED
+        )
+        self.theme_menu.pack(anchor="w")
+        self.theme_menu.set("Dark")
+
         # 1. R&D Runs Remaining Scorecard
-        self.runs_card = ctk.CTkFrame(right_header, fg_color=FusionTheme.BG_INPUT.value, width=130, height=52, border_width=1, border_color=FusionTheme.BORDER.value)
+        self.runs_card = ctk.CTkFrame(right_header, fg_color=Theme.BG_INPUT.value, width=130, height=52, border_width=1, border_color=Theme.BORDER.value)
         self.runs_card.pack(side="left", padx=5)
         self.runs_card.pack_propagate(False)
-        ctk.CTkLabel(self.runs_card, text="R&D RUNS REMAINING", font=("Arial", 9, "bold"), text_color=FusionTheme.TEXT_MUTED.value).pack(pady=(4, 0))
-        self.lbl_runs = ctk.CTkLabel(self.runs_card, text="∞ / ∞", font=("Arial", 14, "bold"), text_color=FusionTheme.SUCCESS.value)
+        ctk.CTkLabel(self.runs_card, text="R&D RUNS REMAINING", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value).pack(pady=(4, 0))
+        self.lbl_runs = ctk.CTkLabel(self.runs_card, text="∞ / ∞", font=Theme.fonts.TITLE, text_color=Theme.SUCCESS.value)
         self.lbl_runs.pack()
 
         # 2. Design Grade Scorecard
-        self.grade_card = ctk.CTkFrame(right_header, fg_color=FusionTheme.BG_INPUT.value, width=100, height=52, border_width=1, border_color=FusionTheme.BORDER.value)
+        self.grade_card = ctk.CTkFrame(right_header, fg_color=Theme.BG_INPUT.value, width=100, height=52, border_width=1, border_color=Theme.BORDER.value)
         self.grade_card.pack(side="left", padx=5)
         self.grade_card.pack_propagate(False)
-        ctk.CTkLabel(self.grade_card, text="DESIGN GRADE", font=("Arial", 9, "bold"), text_color=FusionTheme.TEXT_MUTED.value).pack(pady=(4, 0))
-        self.lbl_grade = ctk.CTkLabel(self.grade_card, text="N/A", font=("Arial", 14, "bold"), text_color=FusionTheme.TEXT_MUTED.value)
+        ctk.CTkLabel(self.grade_card, text="DESIGN GRADE", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value).pack(pady=(4, 0))
+        self.lbl_grade = ctk.CTkLabel(self.grade_card, text="N/A", font=Theme.fonts.TITLE, text_color=Theme.TEXT_MUTED.value)
         self.lbl_grade.pack()
 
         # 3. Lifetime Profit Scorecard
-        self.profit_card = ctk.CTkFrame(right_header, fg_color=FusionTheme.BG_INPUT.value, width=140, height=52, border_width=1, border_color=FusionTheme.BORDER.value)
+        self.profit_card = ctk.CTkFrame(right_header, fg_color=Theme.BG_INPUT.value, width=140, height=52, border_width=1, border_color=Theme.BORDER.value)
         self.profit_card.pack(side="left", padx=5)
         self.profit_card.pack_propagate(False)
-        ctk.CTkLabel(self.profit_card, text="LIFETIME PROFIT", font=("Arial", 9, "bold"), text_color=FusionTheme.TEXT_MUTED.value).pack(pady=(4, 0))
-        self.lbl_profit = ctk.CTkLabel(self.profit_card, text="- k€", font=("Arial", 14, "bold"), text_color=FusionTheme.TEXT_MUTED.value)
+        ctk.CTkLabel(self.profit_card, text="LIFETIME PROFIT", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value).pack(pady=(4, 0))
+        self.lbl_profit = ctk.CTkLabel(self.profit_card, text="- k€", font=Theme.fonts.TITLE, text_color=Theme.TEXT_MUTED.value)
         self.lbl_profit.pack()
 
     # ==========================================
@@ -191,6 +209,20 @@ class UnifiedSimulatorApp(ctk.CTk):
                 f"Medelvind: {self.environment.avg_wind_10:.1f} m/s, Råhet: {self.environment.roughness:.1f} mm."
             )
 
+    def on_theme_change(self, choice: str):
+        """Called when appearance mode selection changes in dropdown."""
+        ctk.set_appearance_mode(choice.lower())
+        # Let CustomTkinter propagate color updates before updating canvas drawings
+        self.after(50, self.update_theme_drawings)
+
+    def update_theme_drawings(self):
+        """Redraws manual tk.Canvas drawings with new theme color tokens."""
+        self.configure(fg_color=Theme.BG_MAIN.value)
+        self.cad_canvas.update_geometry()
+        self.console.update_from_models()
+        self.analytics.draw_performance_curves()
+        self.analytics.redraw_capex_bar()
+
     def on_mission_change(self, choice: str):
         self.active_mission_name = choice
         self.simulation_out_of_date = True
@@ -200,7 +232,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         if choice == "Free Play Sandbox":
             self.environment = DefaultEnvironments.SANDBOX.create()
             self.runs_remaining = None
-            self.lbl_runs.configure(text="∞ / ∞", text_color=FusionTheme.SUCCESS.value)
+            self.lbl_runs.configure(text="∞ / ∞", text_color=Theme.SUCCESS.value)
             self.lbl_mission_desc.configure(text="Free Play Sandbox: Explore WEC layouts with no run limits.")
             # Set default turbine properties
             self.turbine.diameter = 95.0
@@ -213,7 +245,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         elif choice == "The Arctic Gale":
             self.environment = DefaultEnvironments.ARCTIC_GALE.create()
             self.runs_remaining = 6
-            self.lbl_runs.configure(text="6 / 6", text_color=FusionTheme.SUCCESS.value)
+            self.lbl_runs.configure(text="6 / 6", text_color=Theme.SUCCESS.value)
             self.lbl_mission_desc.configure(
                 text="Mission A: Design a storm-hardened offshore WEC. Goal: Safety Margin >= 1.0 (mean thickness <= 150mm) AND Profit Margin >= 10%. Max 6 runs!"
             )
@@ -228,7 +260,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         elif choice == "The Gentle Breeze":
             self.environment = DefaultEnvironments.THE_GENTLE_BREEZE.create()
             self.runs_remaining = 6
-            self.lbl_runs.configure(text="6 / 6", text_color=FusionTheme.SUCCESS.value)
+            self.lbl_runs.configure(text="6 / 6", text_color=Theme.SUCCESS.value)
             self.lbl_mission_desc.configure(
                 text="Mission B: Optimize for low-wind forest site. Goal: Energy >= 1,800 MWh AND Capacity Factor >= 35% AND CAPEX < 5,000 k€. Max 6 runs!"
             )
@@ -243,9 +275,9 @@ class UnifiedSimulatorApp(ctk.CTk):
         elif choice == "The Community Cooperative":
             self.environment = DefaultEnvironments.THE_COMMUNITY_COOPERATIVE.create()
             self.runs_remaining = 6
-            self.lbl_runs.configure(text="6 / 6", text_color=FusionTheme.SUCCESS.value)
+            self.lbl_runs.configure(text="6 / 6", text_color=Theme.SUCCESS.value)
             self.lbl_mission_desc.configure(
-                text="Mission C: Build a community turbine. Goal: Profit Margin >= 5% AND Mean Wall Thickness <= 120.0 mm. Max 6 runs!"
+                text="Mission C: Build a community WEC. Goal: Profit Margin >= 5% AND Mean Wall Thickness <= 120.0 mm. Max 6 runs!"
             )
             # Preset initial dimensions
             self.turbine.diameter = 95.0
@@ -263,8 +295,8 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.cad_canvas.update_safety_state(False)
 
         # Reset scorecards
-        self.lbl_grade.configure(text="N/A", text_color=FusionTheme.TEXT_MUTED.value)
-        self.lbl_profit.configure(text="- k€", text_color=FusionTheme.TEXT_MUTED.value)
+        self.lbl_grade.configure(text="N/A", text_color=Theme.TEXT_MUTED.value)
+        self.lbl_profit.configure(text="- k€", text_color=Theme.TEXT_MUTED.value)
         
         self.on_inputs_changed()
 
@@ -299,7 +331,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         # 1. Decrement runs if applicable
         if self.runs_remaining is not None:
             self.runs_remaining -= 1
-            color = FusionTheme.SUCCESS.value if self.runs_remaining >= 4 else (FusionTheme.ALERT.value if self.runs_remaining >= 2 else FusionTheme.DANGER.value)
+            color = Theme.SUCCESS.value if self.runs_remaining >= 4 else (Theme.ALERT.value if self.runs_remaining >= 2 else Theme.DANGER.value)
             self.lbl_runs.configure(text=f"{self.runs_remaining} / 6", text_color=color)
 
         # 2. Run simulation calculations
@@ -317,29 +349,29 @@ class UnifiedSimulatorApp(ctk.CTk):
         # 4. Grade & Profit Scorecard Updates
         margin_pct = result.margin * 100.0
         grade = "C"
-        grade_color = FusionTheme.TEXT_MAIN.value
+        grade_color = Theme.TEXT_MAIN.value
         
         if is_unsafe:
             grade = "F"
-            grade_color = FusionTheme.DANGER.value
+            grade_color = Theme.DANGER.value
         elif result.npv_profit < 0:
             grade = "D"
-            grade_color = FusionTheme.DANGER.value
+            grade_color = Theme.DANGER.value
         else:
             if margin_pct >= 25.0:
                 grade = "A+"
-                grade_color = FusionTheme.SUCCESS.value
+                grade_color = Theme.SUCCESS.value
             elif margin_pct >= 15.0:
                 grade = "A"
-                grade_color = FusionTheme.SUCCESS.value
+                grade_color = Theme.SUCCESS.value
             elif margin_pct >= 5.0:
                 grade = "B"
-                grade_color = FusionTheme.INFO.value
+                grade_color = Theme.INFO.value
 
         self.lbl_grade.configure(text=grade, text_color=grade_color)
         self.lbl_profit.configure(
             text=f"{result.npv_profit:,.1f} k€", 
-            text_color=FusionTheme.SUCCESS.value if result.npv_profit >= 0 else FusionTheme.DANGER.value
+            text_color=Theme.SUCCESS.value if result.npv_profit >= 0 else Theme.DANGER.value
         )
 
         # 5. Evaluate Mission Targets
@@ -354,12 +386,11 @@ class UnifiedSimulatorApp(ctk.CTk):
         profits = result.npv_profit
 
         if self.active_mission_name == "The Arctic Gale":
-            # Safety Margin >= 1.0 (thick <= 150), Profit Margin >= 10%, Profits > 0
             success = (thick <= 150.0) and (margin_pct >= 10.0) and (profits > 0)
             if success:
                 self.show_dialog(
                     "Mission Accomplished!", 
-                    f"Congratulations! You successfully designed an offshore turbine that can survive arctic storm gusts.\n\n"
+                    f"Congratulations! You successfully designed an offshore WEC that can survive arctic storm gusts.\n\n"
                     f"• Mean Wall Thickness: {thick:.1f} mm (Required: <= 150 mm)\n"
                     f"• Profit Margin: {margin_pct:.1f}% (Required: >= 10.0%)\n"
                     f"• Lifetime Profit: {profits:,.1f} k€"
@@ -383,7 +414,6 @@ class UnifiedSimulatorApp(ctk.CTk):
                 )
 
         elif self.active_mission_name == "The Gentle Breeze":
-            # Energy >= 1800 MWh, Cap Factor >= 35%, CAPEX < 5000 k€
             aep = result.generated_energy
             cf_pct = result.capacity_factor * 100.0
             tot_capex = result.total_capex
@@ -417,12 +447,11 @@ class UnifiedSimulatorApp(ctk.CTk):
                 )
 
         elif self.active_mission_name == "The Community Cooperative":
-            # Profit Margin >= 5%, Mean Wall Thickness <= 120mm
             success = (margin_pct >= 5.0) and (thick <= 120.0)
             if success:
                 self.show_dialog(
                     "Mission Accomplished!", 
-                    f"Excellent work! You engineered a community-friendly turbine that is safe and profitable.\n\n"
+                    f"Excellent work! You engineered a community-friendly WEC that is safe and profitable.\n\n"
                     f"• Mean Wall Thickness: {thick:.1f} mm (Required: <= 120 mm)\n"
                     f"• Profit Margin: {margin_pct:.1f}% (Required: >= 5.0%)\n"
                     f"• Lifetime Profit: {profits:,.1f} k€"
@@ -449,16 +478,16 @@ class UnifiedSimulatorApp(ctk.CTk):
         dialog = ctk.CTkToplevel(self)
         dialog.title(title)
         dialog.geometry("420x240")
-        dialog.configure(fg_color=FusionTheme.BG_SURFACE.value)
+        dialog.configure(fg_color=Theme.BG_SURFACE.value)
         
         # Modal configuration
         dialog.transient(self)
         dialog.grab_set()
 
-        title_color = FusionTheme.DANGER.value if is_err else FusionTheme.SUCCESS.value
-        ctk.CTkLabel(dialog, text=title.upper(), font=("Montserrat", 12, "bold"), text_color=title_color).pack(pady=(15, 10))
+        title_color = Theme.DANGER.value if is_err else Theme.SUCCESS.value
+        ctk.CTkLabel(dialog, text=title.upper(), font=Theme.fonts.SUBTITLE, text_color=title_color).pack(pady=(15, 10))
         
-        tb = ctk.CTkTextbox(dialog, fg_color="transparent", text_color=FusionTheme.TEXT_MAIN.value, font=("Arial", 11), wrap="word", width=380, height=120)
+        tb = ctk.CTkTextbox(dialog, fg_color="transparent", text_color=Theme.TEXT_MAIN.value, font=Theme.fonts.BODY, wrap="word", width=380, height=120)  # type: ignore
         tb.pack(padx=15, pady=5)
         tb.insert("0.0", message)
         tb.configure(state="disabled")
@@ -468,8 +497,9 @@ class UnifiedSimulatorApp(ctk.CTk):
             text="Close", 
             width=120, 
             height=28, 
-            fg_color=FusionTheme.BG_INPUT.value, 
-            text_color=FusionTheme.TEXT_MAIN.value, 
-            hover_color=FusionTheme.BORDER.value, 
-            command=dialog.destroy
+            fg_color=Theme.BUTTON_BG.value, 
+            text_color=Theme.TEXT_MAIN.value, 
+            hover_color=Theme.BUTTON_HOVER.value, 
+            command=dialog.destroy,
+            font=Theme.fonts.MUTED_BOLD
         ).pack(pady=10)

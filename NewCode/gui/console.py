@@ -5,7 +5,7 @@ import math
 from typing import Callable
 from models.turbine import WindTurbine
 from models.environment import SiteEnvironment, SSNGenerator
-from gui.theme import FusionTheme
+from gui.theme import Theme
 
 class ConsolePanel(ctk.CTkFrame):
     """
@@ -53,9 +53,9 @@ class ConsolePanel(ctk.CTkFrame):
         super().__init__(
             parent, 
             width=320, 
-            fg_color=FusionTheme.BG_SURFACE.value, 
+            fg_color=Theme.BG_SURFACE.value, 
             border_width=1, 
-            border_color=FusionTheme.BORDER.value
+            border_color=Theme.BORDER.value
         )
         self.turbine = turbine
         self.environment = environment
@@ -91,8 +91,8 @@ class ConsolePanel(ctk.CTkFrame):
         self.lbl_title = ctk.CTkLabel(
             self, 
             text="CONTROL CONSOLE", 
-            font=("Montserrat", 14, "bold"), 
-            text_color=FusionTheme.ACCENT.value
+            font=Theme.fonts.TITLE, 
+            text_color=Theme.TEXT_ACCENT.value
         )
         self.lbl_title.pack(anchor="w", padx=15, pady=(15, 5))
 
@@ -100,10 +100,11 @@ class ConsolePanel(ctk.CTkFrame):
         self.tabs = ctk.CTkTabview(
             self, 
             fg_color="transparent",
-            segmented_button_selected_color=FusionTheme.ACCENT.value,
-            segmented_button_selected_hover_color="#CC6200",
-            segmented_button_unselected_color=FusionTheme.BG_INPUT.value,
-            text_color=FusionTheme.TEXT_MAIN.value
+            segmented_button_selected_color=Theme.TAB_SELECTED.value,
+            segmented_button_selected_hover_color=Theme.TAB_SELECTED_HOVER.value,
+            segmented_button_unselected_color=Theme.BUTTON_BG.value,
+            segmented_button_unselected_hover_color=Theme.BUTTON_HOVER.value,
+            text_color=Theme.TEXT_MAIN.value
         )
         self.tabs.pack(fill="both", expand=True, padx=5, pady=5)
         
@@ -115,32 +116,32 @@ class ConsolePanel(ctk.CTkFrame):
         # TAB 1: PHYSICAL SPECS
         # ==========================================
         # Designer Name
-        ctk.CTkLabel(p_tab, text="Designer Name", font=("Arial", 11), text_color=FusionTheme.TEXT_MUTED.value).pack(anchor="w", padx=5, pady=(5, 0))
+        ctk.CTkLabel(p_tab, text="Designer Name", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value).pack(anchor="w", padx=5, pady=(5, 0))
         self.ent_name = ctk.CTkEntry(
             p_tab, 
             textvariable=self.name_var, 
             height=26, 
-            fg_color=FusionTheme.BG_INPUT.value, 
-            border_color=FusionTheme.BORDER.value,
-            text_color=FusionTheme.TEXT_MAIN.value
+            fg_color=Theme.BG_INPUT.value, 
+            border_color=Theme.BORDER.value,
+            text_color=Theme.TEXT_MAIN.value
         )
         self.ent_name.pack(fill="x", padx=5, pady=(0, 5))
 
         # SSN Field
-        ctk.CTkLabel(p_tab, text="SSN (YYYYMMDDXXXX)", font=("Arial", 11), text_color=FusionTheme.TEXT_MUTED.value).pack(anchor="w", padx=5, pady=(2, 0))
+        ctk.CTkLabel(p_tab, text="SSN (YYYYMMDDXXXX)", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value).pack(anchor="w", padx=5, pady=(2, 0))
         self.ent_ssn = ctk.CTkEntry(
             p_tab, 
             textvariable=self.ssn_var, 
             height=26, 
-            fg_color=FusionTheme.BG_INPUT.value, 
-            border_color=FusionTheme.BORDER.value,
-            text_color=FusionTheme.TEXT_MAIN.value
+            fg_color=Theme.BG_INPUT.value, 
+            border_color=Theme.BORDER.value,
+            text_color=Theme.TEXT_MAIN.value
         )
         self.ent_ssn.pack(fill="x", padx=5, pady=(0, 10))
 
         # Sliders
         # Rotor Diameter
-        self.lbl_diam_val = ctk.CTkLabel(p_tab, text=f"Rotor Diameter: {self.turbine.diameter:.1f} m", font=("Arial", 12), text_color=FusionTheme.TEXT_MAIN.value)
+        self.lbl_diam_val = ctk.CTkLabel(p_tab, text=f"Rotor Diameter: {self.turbine.diameter:.1f} m", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
         self.lbl_diam_val.pack(anchor="w", padx=5, pady=(5, 0))
         self.slider_diam = ctk.CTkSlider(
             p_tab, 
@@ -149,14 +150,15 @@ class ConsolePanel(ctk.CTkFrame):
             number_of_steps=120, 
             variable=self.diam_var, 
             command=self.on_slider_move,
-            progress_color=FusionTheme.ACCENT.value,
-            button_color=FusionTheme.ACCENT.value,
-            button_hover_color="#CC6200"
+            progress_color=Theme.SLIDER_PROGRESS.value,
+            button_color=Theme.SLIDER_BUTTON.value,
+            button_hover_color=Theme.SLIDER_BUTTON_HOVER.value,
+            fg_color=Theme.SLIDER_BG.value
         )
         self.slider_diam.pack(fill="x", padx=5, pady=(0, 10))
 
         # Hub Height
-        self.lbl_height_val = ctk.CTkLabel(p_tab, text=f"Hub Height: {self.turbine.height:.1f} m", font=("Arial", 12), text_color=FusionTheme.TEXT_MAIN.value)
+        self.lbl_height_val = ctk.CTkLabel(p_tab, text=f"Hub Height: {self.turbine.height:.1f} m", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
         self.lbl_height_val.pack(anchor="w", padx=5, pady=(5, 0))
         self.slider_height = ctk.CTkSlider(
             p_tab, 
@@ -165,87 +167,89 @@ class ConsolePanel(ctk.CTkFrame):
             number_of_steps=120, 
             variable=self.height_var, 
             command=self.on_slider_move,
-            progress_color=FusionTheme.ACCENT.value,
-            button_color=FusionTheme.ACCENT.value,
-            button_hover_color="#CC6200"
+            progress_color=Theme.SLIDER_PROGRESS.value,
+            button_color=Theme.SLIDER_BUTTON.value,
+            button_hover_color=Theme.SLIDER_BUTTON_HOVER.value,
+            fg_color=Theme.SLIDER_BG.value
         )
         self.slider_height.pack(fill="x", padx=5, pady=(0, 10))
 
         # Solidity
-        self.lbl_solidity_val = ctk.CTkLabel(p_tab, text=f"Rotor Solidity: {self.turbine.solidity:.1f} %", font=("Arial", 12), text_color=FusionTheme.TEXT_MAIN.value)
+        self.lbl_solidity_val = ctk.CTkLabel(p_tab, text=f"Rotor Solidity: {self.turbine.solidity:.1f} %", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
         self.lbl_solidity_val.pack(anchor="w", padx=5, pady=(5, 0))
         self.slider_solidity = ctk.CTkSlider(
             p_tab, 
-            from_=1.0, 
-            to=10.0, 
+            from_=1, 
+            to=10, 
             number_of_steps=90, 
             variable=self.solidity_var, 
             command=self.on_slider_move,
-            progress_color=FusionTheme.ACCENT.value,
-            button_color=FusionTheme.ACCENT.value,
-            button_hover_color="#CC6200"
+            progress_color=Theme.SLIDER_PROGRESS.value,
+            button_color=Theme.SLIDER_BUTTON.value,
+            button_hover_color=Theme.SLIDER_BUTTON_HOVER.value,
+            fg_color=Theme.SLIDER_BG.value
         )
         self.slider_solidity.pack(fill="x", padx=5, pady=(0, 10))
 
         # Blades Count Segmented Button
-        ctk.CTkLabel(p_tab, text="Number of Blades", font=("Arial", 11), text_color=FusionTheme.TEXT_MUTED.value).pack(anchor="w", padx=5, pady=(5, 0))
+        ctk.CTkLabel(p_tab, text="Number of Blades", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value).pack(anchor="w", padx=5, pady=(5, 0))
         self.seg_blades = ctk.CTkSegmentedButton(
             p_tab, 
             values=["2 Blades", "3 Blades", "4 Blades"], 
             variable=self.blades_var,
             command=self.on_segmented_click,
-            selected_color=FusionTheme.ACCENT.value,
-            selected_hover_color="#CC6200",
-            unselected_color=FusionTheme.BG_INPUT.value,
-            unselected_hover_color=FusionTheme.BG_MAIN.value,
-            text_color=FusionTheme.TEXT_MAIN.value
+            selected_color=Theme.ACCENT.value,
+            selected_hover_color=Theme.ACCENT_HOVER.value,
+            unselected_color=Theme.BG_INPUT.value,
+            unselected_hover_color=Theme.BG_MAIN.value,
+            text_color=Theme.TEXT_MAIN.value
         )
         self.seg_blades.pack(fill="x", padx=5, pady=5)
 
         # ==========================================
         # TAB 2: DRIVETRAIN
         # ==========================================
-        ctk.CTkLabel(d_tab, text="Gearbox Technology", font=("Arial", 12), text_color=FusionTheme.TEXT_MAIN.value).pack(anchor="w", padx=5, pady=(10, 2))
+        ctk.CTkLabel(d_tab, text="Gearbox Technology", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value).pack(anchor="w", padx=5, pady=(10, 2))
         self.combo_gearbox = ctk.CTkOptionMenu(
             d_tab, 
             values=["None (Direct Drive)", "Medium-Speed", "High-Speed"],
             variable=self.gearbox_var,
             command=self.on_dropdown_select,
-            fg_color=FusionTheme.BG_INPUT.value,
-            button_color=FusionTheme.BORDER.value,
-            button_hover_color=FusionTheme.ACCENT.value,
-            text_color=FusionTheme.TEXT_MAIN.value
+            fg_color=Theme.BG_INPUT.value,
+            button_color=Theme.BORDER.value,
+            button_hover_color=Theme.TEXT_ACCENT.value,
+            text_color=Theme.TEXT_MAIN.value
         )
         self.combo_gearbox.pack(fill="x", padx=5, pady=(0, 15))
 
-        ctk.CTkLabel(d_tab, text="Generator Type", font=("Arial", 12), text_color=FusionTheme.TEXT_MAIN.value).pack(anchor="w", padx=5, pady=(10, 2))
+        ctk.CTkLabel(d_tab, text="Generator Type", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value).pack(anchor="w", padx=5, pady=(10, 2))
         self.combo_generator = ctk.CTkOptionMenu(
             d_tab, 
             values=["Synchronous", "Asynchronous", "DFIG"],
             variable=self.generator_var,
             command=self.on_dropdown_select,
-            fg_color=FusionTheme.BG_INPUT.value,
-            button_color=FusionTheme.BORDER.value,
-            button_hover_color=FusionTheme.ACCENT.value,
-            text_color=FusionTheme.TEXT_MAIN.value
+            fg_color=Theme.BG_INPUT.value,
+            button_color=Theme.BORDER.value,
+            button_hover_color=Theme.TEXT_ACCENT.value,
+            text_color=Theme.TEXT_MAIN.value
         )
         self.combo_generator.pack(fill="x", padx=5, pady=(0, 15))
 
         # Drivetrain description frame
         drivetrain_info = ctk.CTkFrame(
             d_tab, 
-            fg_color=FusionTheme.BG_MAIN.value, 
+            fg_color=Theme.BOX_BG.value, 
             corner_radius=6, 
             border_width=1, 
-            border_color=FusionTheme.BORDER.value
+            border_color=Theme.BORDER.value
         )
         drivetrain_info.pack(fill="both", expand=True, padx=5, pady=10)
         
         self.lbl_drivetrain_desc = ctk.CTkLabel(
             drivetrain_info, 
             text="",
-            font=("Arial", 10),
-            text_color=FusionTheme.TEXT_MUTED.value,
+            font=Theme.fonts.MUTED,
+            text_color=Theme.TEXT_MUTED.value,
             wraplength=260,
             justify="left"
         )
@@ -256,7 +260,7 @@ class ConsolePanel(ctk.CTkFrame):
         # ==========================================
         self.env_scroll = ctk.CTkScrollableFrame(
             e_tab, 
-            fg_color="transparent"
+            fg_color=Theme.BG_SURFACE.value
         )
         self.env_scroll.pack(fill="both", expand=True, padx=2, pady=2)
 
@@ -278,33 +282,33 @@ class ConsolePanel(ctk.CTkFrame):
             row = ctk.CTkFrame(self.env_scroll, fg_color="transparent")
             row.pack(fill="x", pady=2, padx=2)
             
-            ctk.CTkLabel(row, text=text, font=("Arial", 10), text_color=FusionTheme.TEXT_MUTED.value).pack(side="left")
-            val_lbl = ctk.CTkLabel(row, text=init, font=("Arial", 10, "bold"), text_color=FusionTheme.TEXT_MAIN.value)
+            ctk.CTkLabel(row, text=text, font=Theme.fonts.MUTED, text_color=Theme.TEXT_MUTED.value).pack(side="left")
+            val_lbl = ctk.CTkLabel(row, text=init, font=Theme.fonts.MUTED_BOLD, text_color=Theme.TEXT_MAIN.value)
             val_lbl.pack(side="right")
             self.env_rows[key] = val_lbl
 
         # Mission Objectives box
         self.objectives_box = ctk.CTkFrame(
             self.env_scroll, 
-            fg_color=FusionTheme.BG_MAIN.value, 
+            fg_color=Theme.BOX_BG.value, 
             corner_radius=6,
             border_width=1,
-            border_color=FusionTheme.BORDER.value
+            border_color=Theme.BORDER.value
         )
         self.objectives_box.pack(fill="x", pady=10, padx=2)
         
         ctk.CTkLabel(
             self.objectives_box, 
             text="MISSION TARGETS", 
-            font=("Arial", 9, "bold"), 
-            text_color=FusionTheme.ACCENT.value
+            font=Theme.fonts.HEADER, 
+            text_color=Theme.ACCENT.value
         ).pack(anchor="w", padx=8, pady=(6, 2))
         
         self.lbl_objectives = ctk.CTkLabel(
             self.objectives_box, 
             text="Sandbox: Explore freely.", 
-            font=("Arial", 10), 
-            text_color=FusionTheme.TEXT_MUTED.value,
+            font=Theme.fonts.MUTED, 
+            text_color=Theme.TEXT_MUTED.value,
             wraplength=240,
             justify="left"
         )
