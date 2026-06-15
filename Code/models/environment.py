@@ -2,6 +2,7 @@
 from enum import Enum
 from dataclasses import dataclass
 import datetime
+import numpy as np
 
 class DefaultEnvironments(Enum):
     SANDBOX = "sandbox"
@@ -9,7 +10,7 @@ class DefaultEnvironments(Enum):
     THE_GENTLE_BREEZE = "the_gentle_breeze"
     THE_COMMUNITY_COOPERATIVE = "the_community_cooperative"
 
-    def create(self) -> SiteEnvironment:
+    def create(self) -> "SiteEnvironment":
         # Matchar enum-värdet och returnerar rätt Mission
         match self:
             case DefaultEnvironments.SANDBOX:
@@ -76,6 +77,12 @@ class SiteEnvironment:
     financial_additional_part: float = 0.07  # [%] additional costs for loans, fees and so on for funding. Percentage of capex
     installation_costs: int = 3500  # k€
     turbine_count: int = 1  # number of turbines in park (Set to 1 by default)
+
+    def calculate_wind_at_height(self, height: float) -> float:
+        """Information Expert: calculates wind speed at a specific hub height using logarithmic wind shear."""
+        z0 = self.roughness / 1000.0
+        return float(self.avg_wind_10 * np.log(height / z0) / np.log(10.0 / z0))
+
 
 
 

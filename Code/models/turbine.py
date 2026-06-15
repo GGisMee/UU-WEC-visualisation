@@ -3,6 +3,11 @@ from dataclasses import dataclass, field
 import numpy as np
 from enum import Enum
 from scipy.interpolate import CubicSpline
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    pass
+
 
 class Gearbox(Enum):
     HIGH_SPEED = "High-Speed"
@@ -102,4 +107,16 @@ class WindTurbine:
         else:
             res = v # Cubic interpol
         return res if res >= 0.04 else 0.04
-        
+
+
+    @property
+    def slenderness_ratio(self) -> float:
+        return self.height / (2 * (self.bottom_diameter / 2))
+
+    @property
+    def tower_mass(self) -> float:
+        r_bottom = self.bottom_diameter / 2
+        r_top = self.top_diameter / 2
+        volume = np.pi * self.height * self.wall_thickness * (r_bottom + r_top - self.wall_thickness)
+        return volume * 7850  # kg/m^3
+
