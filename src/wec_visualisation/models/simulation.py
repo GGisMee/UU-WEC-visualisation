@@ -4,9 +4,9 @@ import numpy as np
 from scipy.special import gamma
 from scipy.optimize import root_scalar
 
-from models.turbine import WindTurbine, Gearbox, Generator
-from models.environment import SiteEnvironment, SSNGenerator
-import config
+from src.wec_visualisation.models.turbine import WindTurbine, Gearbox, Generator
+from src.wec_visualisation.models.environment import SiteEnvironment, SSNGenerator
+import src.wec_visualisation.config as config
 
 @dataclass(frozen=True)
 class StructuralReport:

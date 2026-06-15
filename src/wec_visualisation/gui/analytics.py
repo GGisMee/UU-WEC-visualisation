@@ -2,8 +2,8 @@
 import customtkinter as ctk
 import tkinter as tk
 import math
-from models.simulation import SimulationResult
-from gui.theme import Theme
+from src.wec_visualisation.models.simulation import SimulationResult
+from src.wec_visualisation.gui.theme import Theme
 
 class AnalyticsPanel(ctk.CTkFrame):
     def __init__(self, parent, on_simulate_click):

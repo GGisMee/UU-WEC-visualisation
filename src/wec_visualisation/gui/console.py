@@ -3,10 +3,10 @@ import customtkinter as ctk
 import tkinter as tk
 import math
 from typing import Callable
-from models.turbine import WindTurbine
-from models.environment import SiteEnvironment, SSNGenerator
-from gui.theme import Theme
-from models.turbine import Generator, Gearbox
+from src.wec_visualisation.models.turbine import WindTurbine
+from src.wec_visualisation.models.environment import SiteEnvironment, SSNGenerator
+from src.wec_visualisation.gui.theme import Theme
+from src.wec_visualisation.models.turbine import Generator, Gearbox
 
 class ConsolePanel(ctk.CTkFrame):
     """

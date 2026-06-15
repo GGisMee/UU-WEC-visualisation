@@ -2,14 +2,14 @@
 import os
 import customtkinter as ctk
 import tkinter as tk
-from models.turbine import WindTurbine, Generator, Gearbox
-from models.environment import SiteEnvironment, DefaultEnvironments, SSNGenerator
-from models.simulation import SimulationEngine
-from models.mission import DefaultMissions
-from gui.console import ConsolePanel
-from gui.canvas import CADCanvas
-from gui.analytics import AnalyticsPanel
-from gui.theme import Theme
+from src.wec_visualisation.models.turbine import WindTurbine, Generator, Gearbox
+from src.wec_visualisation.models.environment import SiteEnvironment, DefaultEnvironments, SSNGenerator
+from src.wec_visualisation.models.simulation import SimulationEngine
+from src.wec_visualisation.models.mission import DefaultMissions
+from src.wec_visualisation.gui.console import ConsolePanel
+from src.wec_visualisation.gui.canvas import CADCanvas
+from src.wec_visualisation.gui.analytics import AnalyticsPanel
+from src.wec_visualisation.gui.theme import Theme
 
 def load_scale_factor():
     try:

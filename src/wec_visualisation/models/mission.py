@@ -1,8 +1,8 @@
 # models/challenge.py
 from dataclasses import dataclass
-from models.environment import SiteEnvironment
-from models.simulation import SimulationResult
-from models.environment import SSNGenerator
+from src.wec_visualisation.models.environment import SiteEnvironment
+from src.wec_visualisation.models.simulation import SimulationResult
+from src.wec_visualisation.models.environment import SSNGenerator
 from enum import Enum
 
 class DefaultMissions(Enum):
