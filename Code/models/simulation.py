@@ -183,11 +183,12 @@ class StructuralService:
         I_z = np.pi/4 * (R_z**4 - (R_z - wall_thickness)**4) # [m]
 
         # 2. CROSS-SECTIONAL PROPERTIES [cite: 81, 84]
-        area = np.pi * (R_z**2-(R_z**2- wall_thickness)**2)        # [m²] Steel cross-sectional area
+        area = np.pi * (R_z**2 - (R_z - wall_thickness)**2)        # [m²] Steel cross-sectional area
         w_z = I_z/R_z # [m³] Section modulus (thin-walled approximation)
         
         # 3. GRAVITY / SELF-WEIGHT INTEGRATION
-        section_volume = area * (turbine.height/ 100)  # [m³] Volume per segment
+        segment_length = turbine.height / (steps - 1)
+        section_volume = area * segment_length  # [m³] Volume per segment
         tower_mass_above = np.flip(np.cumsum(np.flip(section_volume))) * steel_density  # [kg] Cumulative tower mass from top down
         
         # 4. APPLIED LOADS [cite: 81]
@@ -233,7 +234,7 @@ class StructuralService:
         
         # Moment of inertia
         I_z = np.pi/4 * (R_z**4 - (R_z - wall_thickness)**4)
-        max_stress = np.max((moment_z * R_z) / I_z)
+        max_stress = np.max((1000 * moment_z * R_z) / I_z)
         breaking_utilization = max_stress / break_stress # value < 1 => breaks
         return float(breaking_utilization)
 
