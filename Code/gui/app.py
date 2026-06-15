@@ -40,8 +40,10 @@ class UnifiedSimulatorApp(ctk.CTk):
 
         # --- STATE INITIALIZATION ---
         self.turbine = WindTurbine(
-            diameter=95.0, 
+            rotor_diameter=95.0, 
             height=105.0, 
+            top_diameter=1.5,
+            bottom_diameter=2.6,
             solidity=3.5, 
             blades=3, 
             gearbox=Gearbox.MEDIUM_SPEED, 
@@ -433,8 +435,8 @@ class UnifiedSimulatorApp(ctk.CTk):
                 self.show_dialog(
                     "Mission Failed", 
                     "You ran out of simulation runs without meeting the criteria.\n\n"
-                    "TIP: To keep thickness low onshore, avoid extreme heights and large diameters. "
-                    "Optimize diameter slightly for maximum revenue at low storm loads.", 
+                    "TIP: To keep thickness low onshore, avoid extreme heights and large rotor diameters. "
+                    "Optimize rotor diameter slightly for maximum revenue at low storm loads.", 
                     is_err=True
                 )
             else:

@@ -137,7 +137,7 @@ class SimulationEngine:
 
     @staticmethod
     def energy_production(turbine:WindTurbine, env:SiteEnvironment, wind_speeds, cut_in, cut_out, rated_speed, energy_per_m2, available_hours):
-        swept_area = np.pi * (turbine.diameter / 2) ** 2
+        swept_area = np.pi * (turbine.rotor_diameter / 2) ** 2
 
         rated_power = 0.62 * rated_speed**3 * swept_area / 1000 *turbine.capture_efficiency*turbine.drivetrain_efficiency
         
@@ -181,7 +181,7 @@ class SimulationEngine:
         Parameters
         ----------
         turbine : WindTurbine
-            Turbine object containing geometry (diameter, height, solidity, etc.).
+            Turbine object containing geometry (rotor_diameter, height, solidity, etc.).
         rated_speed : float
             Rated wind speed (m/s) used to compute aerodynamic loads.
         env : SiteEnvironment
@@ -205,7 +205,7 @@ class SimulationEngine:
         max_stress_level = 160e6 
         taper_ratio = 0.65  # Standard: toppen är 65% av basens radie
         density_steel = 7850 # kg/m^3
-        swept_area = np.pi * (turbine.diameter / 2) ** 2
+        swept_area = np.pi * (turbine.rotor_diameter / 2) ** 2
 
         # Different levels from base to top (0 - height)
         steps = 100
@@ -213,8 +213,8 @@ class SimulationEngine:
         dz = turbine.height / steps
 
         # Radiis
-        R_base = turbine.height / 40
-        R_top = R_base * taper_ratio  # Standard: toppen är 65% av basens radie
+        R_base = turbine.bottom_diameter / 2
+        R_top = turbine.top_diameter / 2
         R_z = R_base - ((R_base - R_top) / turbine.height) * z_levels
 
 
@@ -262,7 +262,7 @@ class SimulationEngine:
             5. tower and foundation.
         """
         rated_power = rated_power / 1000  # MW
-        diam = turbine.diameter  # m
+        diam = turbine.rotor_diameter  # m
         tower_H = turbine.height  # m
 
         # Skipped because only one WEC
@@ -376,7 +376,7 @@ class SimulationEngine:
         # proximity_number = 0.5
         # Ingen reduction då vi bara räknar på en
         # lifetime_reduction = 7*proximity_number/self.turbine_count
-        # lifetime -= lifetime_reduction * min(1, self.input_data.height/self.input_data.diam) # scale depending on height
+        # lifetime -= lifetime_reduction * min(1, self.input_data.height/self.input_data.rotor_diameter) # scale depending on height
         financial_costs = env.financial_additional_part* total_capex  # k€, additional to capex. For loans, fees and so on for funding.
 
         k_factor = (1 + inflation) / (1 + interest)  # quote of interest / inflation
@@ -407,15 +407,23 @@ class SimulationEngine:
 
         Returns
         -------
-        IRR : float
-            Internal rate of return as a decimal (e.g., 0.1 for 10%).
+        IRR : float or RootResults
+            Internal rate of return.
         """
-
-        cash_flows = np.array((annual_savings*years-total_capex))
-
-        npv = lambda r: np.sum(cash_flows/(1+r)**np.arange(len(cash_flows)))
-        IRR = root_scalar(npv, bracket=[-0.99, 1], method='bentq')
-        return IRR
+        try:
+            if annual_savings <= 0 or total_capex <= 0:
+                return 0.0
+            cash_flows = np.insert(np.full(years, annual_savings), 0, -total_capex)
+            npv = lambda r: np.sum(cash_flows/(1+r)**np.arange(len(cash_flows)))
+            
+            # Check signs at bracket endpoints
+            a, b = -0.99, 5.0
+            if npv(a) * npv(b) < 0:
+                IRR = root_scalar(npv, bracket=[a, b], method='brentq')
+                return IRR
+            return 0.0
+        except Exception:
+            return 0.0
 
 
 
@@ -440,7 +448,7 @@ if __name__ == "__main__":
             )
             SSNGenerator.apply_ssn_to_env("200301019949", env)
             #! Får fixa enums eller något för gearbox_type och generator
-            turbine = WindTurbine(diameter=81, height=97, solidity=0.03, blades = 3,  gearbox= "None", generator="DFIG")
+            turbine = WindTurbine(rotor_diameter=81, height=97, solidity=0.03, blades = 3,  gearbox= "None", generator="DFIG")
             print(env)
             print(turbine)
             print('\n', SimulationEngine.simulate(turbine, env))
@@ -456,7 +464,7 @@ if __name__ == "__main__":
                 financial_additional_part = 0.07,
             )
             #! Får fixa enums eller något för gearbox_type och generator
-            turbine = WindTurbine(diameter=131, height=120, solidity=0.04, blades = 3,  gearbox= Gearbox.NONE, generator=Generator.DFIG)
+            turbine = WindTurbine(rotor_diameter=131, height=120, solidity=0.04, blades = 3,  gearbox= Gearbox.NONE, generator=Generator.DFIG)
             print(env)
             print(turbine)
             print('\n', SimulationEngine.simulate(turbine, env))

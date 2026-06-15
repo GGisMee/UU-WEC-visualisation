@@ -31,15 +31,16 @@ DRIVETRAIN_SPECS = {
 }
 @dataclass
 class WindTurbine:
-    diameter: float  # [m] Rotordiameter
+    rotor_diameter: float  # [m] Rotordiameter
     height: float  # [m] Navhöjd (tornhöjd)
+    top_diameter: float # [m] top tower diameter
+    bottom_diameter: float # [m] bottom tower diameter
     solidity: float  # [%] Soliditet (bladyta mot svept area)
     blades: int  # Antal blad (2, 3 eller 4)
     gearbox: Gearbox # "None (Direct Drive)", "Medium-Speed", "High-Speed"
     generator: Generator # "Synchronous", "Asynchronous", "DFIG"
     lifetime:int = 25
     _cp_spline: CubicSpline = field(init=False, repr=False)
-    drivetrain_specs: dict[str, float] = field(init=False, repr=False)
 
     def __post_init__(self):
         # Initiera spline för capture efficiency
@@ -48,17 +49,18 @@ class WindTurbine:
 
         # 2. skapa interpolatorn med cubicspline
         # bc_type='clamped' tvingas derivatan till 0 vid ändpunkterna för snyggare kurva
-        self._cp_spline = cubicspline(sigma_pts, cp_pts, bc_type='clamped') # type: ignore
+        self._cp_spline = CubicSpline(sigma_pts, cp_pts, bc_type='clamped') # type: ignore
 
 
-    def update_drivetrain_specs(self):
+    @property
+    def drivetrain_specs(self):
         """Hämtar beräkningsfaktorer för vald drivlina."""
-        self.drivetrain_specs = DRIVETRAIN_SPECS[self.gearbox, self.generator]
+        return DRIVETRAIN_SPECS[self.gearbox, self.generator]
 
     @property
     def swept_area(self) -> float:
         """Beräknar svept area i m²."""
-        return np.pi * (self.diameter / 2.0) ** 2
+        return np.pi * (self.rotor_diameter / 2.0) ** 2
 
 
     @property
@@ -91,9 +93,9 @@ class WindTurbine:
         """Returns capture efficiency calculated from solidity
         Cubic interpolated for solidity between 0 and 0.1 with (sigma_pts, cp_pts) above.
         Then linearly declining to 0.04 at solidity=0.5, lastly 0.04."""
-        v = capture_efficiency.cp_spline(solidity) # type:ignore
+        v = self._cp_spline(self.solidity) # type:ignore
         if self.solidity > 0.1:
-            value_at_01 = capture_efficiency.cp_spline(0.1) # type:ignore
+            value_at_01 = self._cp_spline(0.1) # type:ignore
             t = (self.solidity-0.1)/(0.5-0.1) # [0,1] from first solidity=0.1 to solidity=0.5
             res = value_at_01+t*(0.04-value_at_01) # Linear interpolation
         else:

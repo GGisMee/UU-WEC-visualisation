@@ -70,8 +70,10 @@ class ConsolePanel(ctk.CTkFrame):
         # Tkinter variables for managing GUI input state
         self.name_var = tk.StringVar(value="Gustav Gamstedt")
         self.ssn_var = tk.StringVar(value="199801281234")
-        self.diam_var = tk.DoubleVar(value=turbine.diameter)
+        self.rotor_diameter_var = tk.DoubleVar(value=turbine.rotor_diameter)
         self.height_var = tk.DoubleVar(value=turbine.height)
+        self.top_diameter_var = tk.DoubleVar(value=turbine.top_diameter)
+        self.bottom_diameter_var = tk.DoubleVar(value=turbine.bottom_diameter)
         self.solidity_var = tk.DoubleVar(value=turbine.solidity)
         self.blades_var = tk.StringVar(value=f"{turbine.blades} Blades")
         self.gearbox_var = tk.StringVar(value=turbine.gearbox.value)
@@ -143,38 +145,21 @@ class ConsolePanel(ctk.CTkFrame):
 
         # Sliders
         # Rotor Diameter
-        self.lbl_diam_val = ctk.CTkLabel(p_tab, text=f"Rotor Diameter: {self.turbine.diameter:.1f} m", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
-        self.lbl_diam_val.pack(anchor="w", padx=5, pady=(5, 0))
-        self.slider_diam = ctk.CTkSlider(
+        self.lbl_rotor_diameter_val = ctk.CTkLabel(p_tab, text=f"Rotor Diameter: {self.turbine.rotor_diameter:.1f} m", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
+        self.lbl_rotor_diameter_val.pack(anchor="w", padx=5, pady=(5, 0))
+        self.slider_rotor_diameter = ctk.CTkSlider(
             p_tab, 
             from_=30, 
             to=150, 
             number_of_steps=120, 
-            variable=self.diam_var, 
+            variable=self.rotor_diameter_var, 
             command=self.on_slider_move,
             progress_color=Theme.SLIDER_PROGRESS.value,
             button_color=Theme.SLIDER_BUTTON.value,
             button_hover_color=Theme.SLIDER_BUTTON_HOVER.value,
             fg_color=Theme.SLIDER_BG.value
         )
-        self.slider_diam.pack(fill="x", padx=5, pady=(0, 10))
-
-        # Hub Height
-        self.lbl_height_val = ctk.CTkLabel(p_tab, text=f"Hub Height: {self.turbine.height:.1f} m", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
-        self.lbl_height_val.pack(anchor="w", padx=5, pady=(5, 0))
-        self.slider_height = ctk.CTkSlider(
-            p_tab, 
-            from_=40, 
-            to=160, 
-            number_of_steps=120, 
-            variable=self.height_var, 
-            command=self.on_slider_move,
-            progress_color=Theme.SLIDER_PROGRESS.value,
-            button_color=Theme.SLIDER_BUTTON.value,
-            button_hover_color=Theme.SLIDER_BUTTON_HOVER.value,
-            fg_color=Theme.SLIDER_BG.value
-        )
-        self.slider_height.pack(fill="x", padx=5, pady=(0, 10))
+        self.slider_rotor_diameter.pack(fill="x", padx=5, pady=(0, 10))
 
         # Solidity
         self.lbl_solidity_val = ctk.CTkLabel(p_tab, text=f"Rotor Solidity: {self.turbine.solidity:.1f} %", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
@@ -192,6 +177,90 @@ class ConsolePanel(ctk.CTkFrame):
             fg_color=Theme.SLIDER_BG.value
         )
         self.slider_solidity.pack(fill="x", padx=5, pady=(0, 10))
+
+        # Tower dimensions container (Hub Height, Top Diameter, Bottom Diameter stacked in a box)
+        self.tower_box = ctk.CTkFrame(
+            p_tab, 
+            fg_color=Theme.BOX_BG.value, 
+            border_width=1, 
+            border_color=Theme.BORDER.value
+        )
+        self.tower_box.pack(fill="x", padx=5, pady=(5, 10))
+
+        # Title/Label for the Tower group
+        ctk.CTkLabel(
+            self.tower_box, 
+            text="TOWER GEOMETRY", 
+            font=Theme.fonts.HEADER, 
+            text_color=Theme.ACCENT.value
+        ).pack(anchor="w", padx=10, pady=(8, 2))
+
+        # 1. Hub Height
+        self.lbl_height_val = ctk.CTkLabel(
+            self.tower_box, 
+            text=f"Hub Height: {self.turbine.height:.1f} m", 
+            font=Theme.fonts.BODY_BOLD, 
+            text_color=Theme.TEXT_MAIN.value
+        )
+        self.lbl_height_val.pack(anchor="w", padx=10, pady=(4, 0))
+        self.slider_height = ctk.CTkSlider(
+            self.tower_box, 
+            from_=40, 
+            to=160, 
+            number_of_steps=120, 
+            variable=self.height_var, 
+            command=self.on_slider_move,
+            progress_color=Theme.SLIDER_PROGRESS.value,
+            button_color=Theme.SLIDER_BUTTON.value,
+            button_hover_color=Theme.SLIDER_BUTTON_HOVER.value,
+            fg_color=Theme.SLIDER_BG.value
+        )
+        self.slider_height.pack(fill="x", padx=10, pady=(0, 8))
+
+        # 2. Top Diameter
+        self.lbl_top_diam_val = ctk.CTkLabel(
+            self.tower_box, 
+            text=f"Top Diameter: {self.turbine.top_diameter:.2f} m", 
+            font=Theme.fonts.BODY_BOLD, 
+            text_color=Theme.TEXT_MAIN.value
+        )
+        self.lbl_top_diam_val.pack(anchor="w", padx=10, pady=(4, 0))
+        self.slider_top_diam = ctk.CTkSlider(
+            self.tower_box, 
+            from_=1, 
+            to=8, 
+            number_of_steps=65, 
+            variable=self.top_diameter_var, 
+            command=self.on_slider_move,
+            progress_color=Theme.SLIDER_PROGRESS.value,
+            button_color=Theme.SLIDER_BUTTON.value,
+            button_hover_color=Theme.SLIDER_BUTTON_HOVER.value,
+            fg_color=Theme.SLIDER_BG.value
+        )
+        self.slider_top_diam.pack(fill="x", padx=10, pady=(0, 8))
+
+        # 3. Bottom Diameter
+        self.lbl_bottom_diam_val = ctk.CTkLabel(
+            self.tower_box, 
+            text=f"Base Diameter: {self.turbine.bottom_diameter:.2f} m", 
+            font=Theme.fonts.BODY_BOLD, 
+            text_color=Theme.TEXT_MAIN.value
+        )
+        self.lbl_bottom_diam_val.pack(anchor="w", padx=10, pady=(4, 0))
+        self.slider_bottom_diam = ctk.CTkSlider(
+            self.tower_box, 
+            from_=1, 
+            to=12, 
+            number_of_steps=100, 
+            variable=self.bottom_diameter_var, 
+            command=self.on_slider_move,
+            progress_color=Theme.SLIDER_PROGRESS.value,
+            button_color=Theme.SLIDER_BUTTON.value,
+            button_hover_color=Theme.SLIDER_BUTTON_HOVER.value,
+            fg_color=Theme.SLIDER_BG.value
+        )
+        self.slider_bottom_diam.pack(fill="x", padx=10, pady=(0, 10))
+
 
         # Blades Count Segmented Button
         ctk.CTkLabel(p_tab, text="Number of Blades", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value).pack(anchor="w", padx=5, pady=(5, 0))
@@ -329,13 +398,17 @@ class ConsolePanel(ctk.CTkFrame):
             Variable arguments from Tkinter event.
         """
         # Update labels instantly
-        self.lbl_diam_val.configure(text=f"Rotor Diameter: {self.diam_var.get():.1f} m")
+        self.lbl_rotor_diameter_val.configure(text=f"Rotor Diameter: {self.rotor_diameter_var.get():.1f} m")
         self.lbl_height_val.configure(text=f"Hub Height: {self.height_var.get():.1f} m")
+        self.lbl_top_diam_val.configure(text=f"Top Diameter: {self.top_diameter_var.get():.2f} m")
+        self.lbl_bottom_diam_val.configure(text=f"Base Diameter: {self.bottom_diameter_var.get():.2f} m")
         self.lbl_solidity_val.configure(text=f"Rotor Solidity: {self.solidity_var.get():.1f} %")
 
         # Update model directly
-        self.turbine.diameter = self.diam_var.get()
+        self.turbine.rotor_diameter = self.rotor_diameter_var.get()
         self.turbine.height = self.height_var.get()
+        self.turbine.top_diameter = self.top_diameter_var.get()
+        self.turbine.bottom_diameter = self.bottom_diameter_var.get()
         self.turbine.solidity = self.solidity_var.get()
 
         # Notify parent app
@@ -390,16 +463,20 @@ class ConsolePanel(ctk.CTkFrame):
         Update all GUI variables and elements to match current model values.
         """
         # 1. Update Tkinter variables from Turbine model
-        self.diam_var.set(self.turbine.diameter)
+        self.rotor_diameter_var.set(self.turbine.rotor_diameter)
         self.height_var.set(self.turbine.height)
+        self.top_diameter_var.set(self.turbine.top_diameter)
+        self.bottom_diameter_var.set(self.turbine.bottom_diameter)
         self.solidity_var.set(self.turbine.solidity)
         self.blades_var.set(f"{self.turbine.blades} Blades")
         self.gearbox_var.set(self.turbine.gearbox.value)
         self.generator_var.set(self.turbine.generator.value)
 
         # Update physical spec labels
-        self.lbl_diam_val.configure(text=f"Rotor Diameter: {self.turbine.diameter:.1f} m")
+        self.lbl_rotor_diameter_val.configure(text=f"Rotor Diameter: {self.turbine.rotor_diameter:.1f} m")
         self.lbl_height_val.configure(text=f"Hub Height: {self.turbine.height:.1f} m")
+        self.lbl_top_diam_val.configure(text=f"Top Diameter: {self.turbine.top_diameter:.2f} m")
+        self.lbl_bottom_diam_val.configure(text=f"Base Diameter: {self.turbine.bottom_diameter:.2f} m")
         self.lbl_solidity_val.configure(text=f"Rotor Solidity: {self.turbine.solidity:.1f} %")
 
         # Update views
@@ -469,8 +546,10 @@ class ConsolePanel(ctk.CTkFrame):
             True to enable inputs, False to disable.
         """
         state = "normal" if enabled else "disabled"
-        self.slider_diam.configure(state=state)
+        self.slider_rotor_diameter.configure(state=state)
         self.slider_height.configure(state=state)
+        self.slider_top_diam.configure(state=state)
+        self.slider_bottom_diam.configure(state=state)
         self.slider_solidity.configure(state=state)
         self.seg_blades.configure(state=state)
         self.combo_gearbox.configure(state=state)

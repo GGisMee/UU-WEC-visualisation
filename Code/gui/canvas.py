@@ -84,7 +84,7 @@ class CADCanvas(ctk.CTkFrame):
         for y in range(0, h, grid_space):
             self.canvas.create_line(0, y, w, y, fill=grid_color, width=1)
 
-        # 2. Scale math to fit the turbine height/diameter in the canvas
+        # 2. Scale math to fit the turbine height/rotor_diameter in the canvas
         max_expected_dim = 160.0
         draw_scale = (h * 0.55) / max_expected_dim
 
@@ -93,14 +93,14 @@ class CADCanvas(ctk.CTkFrame):
         center_x = w // 2
 
         real_height = self.turbine.height
-        real_diam = self.turbine.diameter
+        real_rotor_diam = self.turbine.rotor_diameter
         real_solidity = self.turbine.solidity
 
         hub_y = ground_y - int(real_height * draw_scale)
-        rotor_r = int((real_diam / 2) * draw_scale)
+        rotor_r = int((real_rotor_diam / 2) * draw_scale)
 
         # 3. Check structural stress safety (either forced by simulation or live approximation)
-        moment = (real_solidity / 3.0) * (real_diam / 90.0) * (real_height / 90.0)**2
+        moment = (real_solidity / 3.0) * (real_rotor_diam / 90.0) * (real_height / 90.0)**2
         is_unsafe = self.is_unsafe or (moment > 2.2)
         
         tower_fill = Theme.DANGER.value[idx] if is_unsafe else steel_color
@@ -117,8 +117,8 @@ class CADCanvas(ctk.CTkFrame):
         )
 
         # 5. Draw Tapered Tower
-        tower_base_r = max(5, int(15 * (real_height / 100)))
-        tower_top_r = max(3, int(6 * (real_height / 100)))
+        tower_base_r = max(5, int((self.turbine.bottom_diameter / 2) * draw_scale * 3.0))
+        tower_top_r = max(3, int((self.turbine.top_diameter / 2) * draw_scale * 3.0))
         self.canvas.create_polygon(
             center_x - tower_base_r, ground_y - 12,
             center_x + tower_base_r, ground_y - 12,
@@ -184,7 +184,7 @@ class CADCanvas(ctk.CTkFrame):
         self.canvas.create_line(dim_right_x - 5, hub_y + rotor_r, dim_right_x + 5, hub_y + rotor_r, fill=info_color)
         self.canvas.create_text(
             dim_right_x + int(35 * self.scale_factor), hub_y, 
-            text=f"D = {real_diam:.1f}m", fill=text_color, font=(Theme.fonts.family, int(10 * self.scale_factor), "bold")
+            text=f"D = {real_rotor_diam:.1f}m", fill=text_color, font=(Theme.fonts.family, int(10 * self.scale_factor), "bold")
         )
 
         # 11. Safety Alert Banner (Bending Moment overload)
@@ -205,10 +205,10 @@ class CADCanvas(ctk.CTkFrame):
     def rotate_loop(self):
         """Blade rotation animation loop."""
         if self.animation_running:
-            # Rotor speed depends on diameter and solidity (smaller/thinner = faster)
+            # Rotor speed depends on rotor_diameter and solidity (smaller/thinner = faster)
             sol = self.turbine.solidity
-            diam = self.turbine.diameter
-            speed = max(1, int(40 - diam / 4 - sol))
+            rotor_diam = self.turbine.rotor_diameter
+            speed = max(1, int(40 - rotor_diam / 4 - sol))
             
             self.blade_angle = (self.blade_angle + speed) % 360
             self.update_geometry()

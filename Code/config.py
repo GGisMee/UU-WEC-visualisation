@@ -14,3 +14,4 @@ DEFAULT_INSTALLATION_COST = 3500.0  # k€ (vägar, nätanslutning, etc.)
 DEFAULT_FINANCIAL_FEES_RATE = 0.07  # 7% extra kostnader på CAPEX för lån/avgifter
 
 # TODO: Lägg in scale och andra sådanna dev parametrar möjligtvis låta användaren ändar det med en settings sida
+# TODO: Implementera fler av dessa
