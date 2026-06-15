@@ -301,7 +301,7 @@ class UnifiedChallengeApp(ctk.CTk):
 
         self.btn_simulate = ctk.CTkButton(
             action_bar, 
-            text="🚀 RUN SIMULATION", 
+            text="RUN SIMULATION", 
             font=("Arial", 14, "bold"), 
             fg_color=ACCENT_ORANGE, 
             hover_color="#CC6200",

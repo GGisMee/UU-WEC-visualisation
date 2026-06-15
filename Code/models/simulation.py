@@ -174,7 +174,34 @@ class SimulationEngine:
         return generated_energy, rated_power
 
     @staticmethod
-    def load_and_mass(turbine:WindTurbine, rated_speed:float, env:SiteEnvironment):
+    def load_and_mass(turbine:WindTurbine):
+        """Calculates loads on tower during storm and normal use, slenderness ratio and mass for steel in the tower
+
+        Parameters
+        ----------
+        turbine : WindTurbine
+
+        Returns
+        ------
+        float
+            mass of steel in tower
+        float
+            slenderness ratio. I.e H/(2*R_bottom)
+        """
+        density_steel = 7850 # kg/m^3
+        R_bottom = turbine.bottom_diameter/2
+        R_top= turbine.top_diameter/2
+        wall_thickness = turbine.wall_thickness
+        # Mass calculation
+        volume = np.pi*turbine.height*wall_thickness*(R_bottom+R_top-wall_thickness) # [m^3]
+        mass = volume * density_steel # kg
+
+        slenderness_ratio = turbine.height / (2 * R_bottom)
+        return mass, slenderness_ratio
+    
+
+    @staticmethod
+    def breaking_stress(turbine:WindTurbine, rated_speed:float, env:SiteEnvironment):
         """
         Estimate structural loads and approximate tower mass based on rated wind speed
 
@@ -201,18 +228,18 @@ class SimulationEngine:
             Ratio of tower height to base radius.
 
         """
-        safety_factor = 2
-        max_stress_level = 160e6 
-        taper_ratio = 0.65  # Standard: toppen är 65% av basens radie
-        density_steel = 7850 # kg/m^3
+        break_stress = 1e6 # [Pa] For steel
+        elasticity = 21e4 # [] Elasticity module for steel
+    
         swept_area = np.pi * (turbine.rotor_diameter / 2) ** 2
 
         # Different levels from base to top (0 - height)
         steps = 100
         z_levels = np.linspace(0, turbine.height, steps)
-        dz = turbine.height / steps
 
-        # Radiis
+        wall_thickness = turbine.wall_thickness
+
+        # Radii
         R_base = turbine.bottom_diameter
         R_top = turbine.top_diameter
         R_z = R_base - ((R_base - R_top) / turbine.height) * z_levels
@@ -227,20 +254,18 @@ class SimulationEngine:
 
         moment_z =  max_load* (turbine.height - z_levels) # [kNm]
 
-        allowed_stress = max_stress_level / safety_factor # [Pa] 
-        
-        # Moment i Nm: max_moment_z * 1000
-        t_required_z = (moment_z * 1000) / (np.pi * (R_z**2) * allowed_stress) # [m]
-        t_required_z = np.clip(t_required_z, 0.004, None)
-        
-        section_area = np.pi*(R_z**2-(R_z-t_required_z)**2)
-        volume = np.trapezoid(section_area, dx=dz) # integrate section area  [m^3]
-        mass = volume * density_steel # kg
+        # Moment of inertia
+        I_z = np.pi/4*(R_z**4-(R_z-wall_thickness)**4)
+        max_stress = np.max((moment_z * R_z) / I_z)
+        utilization = max_stress / break_stress # Breaking factor. value<1 => breaks 
 
-        slenderness_ratio = turbine.height / (2 * R_base)
-        mean_wall_thickness = float(np.mean(t_required_z)*1000) # mm
+        return utilization, aerodynamical_load, storm_load
 
-        return mass, aerodynamical_load, storm_load, mean_wall_thickness, slenderness_ratio
+    @staticmethod
+    def buckeling(turbine: WindTurbine, rated_speed: float, env:SiteEnvironment):
+        thickness = turbine.wall_thickness
+        
+
 
     @staticmethod
     def _capital_costs(turbine:WindTurbine,env:SiteEnvironment, rated_power) ->tuple[float,tuple[float,float,float,float]]:

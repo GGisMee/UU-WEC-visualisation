@@ -39,7 +39,7 @@ class CADCanvas(ctk.CTkFrame):
         # Action: Commit & Run Button (Fusion Orange)
         self.btn_simulate = ctk.CTkButton(
             self, 
-            text="🚀 RUN SIMULATION", 
+            text="RUN SIMULATION", 
             font=Theme.fonts.SUBTITLE, 
             fg_color=Theme.ACCENT.value, 
             hover_color=Theme.ACCENT_HOVER.value,
