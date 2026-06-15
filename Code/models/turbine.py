@@ -33,13 +33,14 @@ DRIVETRAIN_SPECS = {
 class WindTurbine:
     rotor_diameter: float  # [m] Rotordiameter
     height: float  # [m] Navhöjd (tornhöjd)
-    top_diameter: float # [m] top tower diameter
-    bottom_diameter: float # [m] bottom tower diameter
     solidity: float  # [%] Soliditet (bladyta mot svept area)
     blades: int  # Antal blad (2, 3 eller 4)
     gearbox: Gearbox # "None (Direct Drive)", "Medium-Speed", "High-Speed"
     generator: Generator # "Synchronous", "Asynchronous", "DFIG"
-    lifetime:int = 25
+    top_diameter: float = 3.25 # [m] top tower diameter
+    bottom_diameter: float = 5.0 # [m] bottom tower diameter
+    wall_thickness: float = 0.05 # [m] thickness of walls in tower
+    lifetime:int = 25 # [y] lifetime of WEC
     _cp_spline: CubicSpline = field(init=False, repr=False)
 
     def __post_init__(self):

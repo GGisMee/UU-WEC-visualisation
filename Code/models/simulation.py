@@ -213,8 +213,8 @@ class SimulationEngine:
         dz = turbine.height / steps
 
         # Radiis
-        R_base = turbine.bottom_diameter / 2
-        R_top = turbine.top_diameter / 2
+        R_base = turbine.bottom_diameter
+        R_top = turbine.top_diameter
         R_z = R_base - ((R_base - R_top) / turbine.height) * z_levels
 
 

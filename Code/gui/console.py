@@ -74,6 +74,7 @@ class ConsolePanel(ctk.CTkFrame):
         self.height_var = tk.DoubleVar(value=turbine.height)
         self.top_diameter_var = tk.DoubleVar(value=turbine.top_diameter)
         self.bottom_diameter_var = tk.DoubleVar(value=turbine.bottom_diameter)
+        self.wall_thickness_var = tk.DoubleVar(value=turbine.wall_thickness * 1000.0)
         self.solidity_var = tk.DoubleVar(value=turbine.solidity)
         self.blades_var = tk.StringVar(value=f"{turbine.blades} Blades")
         self.gearbox_var = tk.StringVar(value=turbine.gearbox.value)
@@ -259,7 +260,29 @@ class ConsolePanel(ctk.CTkFrame):
             button_hover_color=Theme.SLIDER_BUTTON_HOVER.value,
             fg_color=Theme.SLIDER_BG.value
         )
-        self.slider_bottom_diam.pack(fill="x", padx=10, pady=(0, 10))
+        self.slider_bottom_diam.pack(fill="x", padx=10, pady=(0, 8))
+
+        # 4. Wall Thickness
+        self.lbl_wall_thickness_val = ctk.CTkLabel(
+            self.tower_box, 
+            text=f"Wall Thickness: {self.turbine.wall_thickness * 1000.0:.1f} mm", 
+            font=Theme.fonts.BODY_BOLD, 
+            text_color=Theme.TEXT_MAIN.value
+        )
+        self.lbl_wall_thickness_val.pack(anchor="w", padx=10, pady=(4, 0))
+        self.slider_wall_thickness = ctk.CTkSlider(
+            self.tower_box, 
+            from_=10, 
+            to=250, 
+            number_of_steps=240, 
+            variable=self.wall_thickness_var, 
+            command=self.on_slider_move,
+            progress_color=Theme.SLIDER_PROGRESS.value,
+            button_color=Theme.SLIDER_BUTTON.value,
+            button_hover_color=Theme.SLIDER_BUTTON_HOVER.value,
+            fg_color=Theme.SLIDER_BG.value
+        )
+        self.slider_wall_thickness.pack(fill="x", padx=10, pady=(0, 10))
 
 
         # Blades Count Segmented Button
@@ -402,6 +425,7 @@ class ConsolePanel(ctk.CTkFrame):
         self.lbl_height_val.configure(text=f"Hub Height: {self.height_var.get():.1f} m")
         self.lbl_top_diam_val.configure(text=f"Top Diameter: {self.top_diameter_var.get():.2f} m")
         self.lbl_bottom_diam_val.configure(text=f"Base Diameter: {self.bottom_diameter_var.get():.2f} m")
+        self.lbl_wall_thickness_val.configure(text=f"Wall Thickness: {self.wall_thickness_var.get():.1f} mm")
         self.lbl_solidity_val.configure(text=f"Rotor Solidity: {self.solidity_var.get():.1f} %")
 
         # Update model directly
@@ -409,6 +433,7 @@ class ConsolePanel(ctk.CTkFrame):
         self.turbine.height = self.height_var.get()
         self.turbine.top_diameter = self.top_diameter_var.get()
         self.turbine.bottom_diameter = self.bottom_diameter_var.get()
+        self.turbine.wall_thickness = self.wall_thickness_var.get() / 1000.0
         self.turbine.solidity = self.solidity_var.get()
 
         # Notify parent app
@@ -467,6 +492,7 @@ class ConsolePanel(ctk.CTkFrame):
         self.height_var.set(self.turbine.height)
         self.top_diameter_var.set(self.turbine.top_diameter)
         self.bottom_diameter_var.set(self.turbine.bottom_diameter)
+        self.wall_thickness_var.set(self.turbine.wall_thickness * 1000.0)
         self.solidity_var.set(self.turbine.solidity)
         self.blades_var.set(f"{self.turbine.blades} Blades")
         self.gearbox_var.set(self.turbine.gearbox.value)
@@ -477,6 +503,7 @@ class ConsolePanel(ctk.CTkFrame):
         self.lbl_height_val.configure(text=f"Hub Height: {self.turbine.height:.1f} m")
         self.lbl_top_diam_val.configure(text=f"Top Diameter: {self.turbine.top_diameter:.2f} m")
         self.lbl_bottom_diam_val.configure(text=f"Base Diameter: {self.turbine.bottom_diameter:.2f} m")
+        self.lbl_wall_thickness_val.configure(text=f"Wall Thickness: {self.turbine.wall_thickness * 1000.0:.1f} mm")
         self.lbl_solidity_val.configure(text=f"Rotor Solidity: {self.turbine.solidity:.1f} %")
 
         # Update views
@@ -550,6 +577,7 @@ class ConsolePanel(ctk.CTkFrame):
         self.slider_height.configure(state=state)
         self.slider_top_diam.configure(state=state)
         self.slider_bottom_diam.configure(state=state)
+        self.slider_wall_thickness.configure(state=state)
         self.slider_solidity.configure(state=state)
         self.seg_blades.configure(state=state)
         self.combo_gearbox.configure(state=state)

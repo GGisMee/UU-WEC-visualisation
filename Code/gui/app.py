@@ -317,8 +317,8 @@ class UnifiedSimulatorApp(ctk.CTk):
         # 3. Update Views
         self.analytics.display_results(result)
         
-        # Unsafe check: mean wall thickness > 150mm limit
-        is_unsafe = result.mean_wall_thickness > 150.0
+        # Unsafe check: chosen wall thickness is less than required, OR required exceeds 150mm limit
+        is_unsafe = (result.mean_wall_thickness > self.turbine.wall_thickness * 1000.0) or (result.mean_wall_thickness > 150.0)
         self.cad_canvas.update_safety_state(is_unsafe)
 
         # 4. Grade & Profit Scorecard Updates
@@ -361,12 +361,13 @@ class UnifiedSimulatorApp(ctk.CTk):
         profits = result.npv_profit
 
         if self.active_mission_name == "The Arctic Gale":
-            success = (thick <= 150.0) and (margin_pct >= 10.0) and (profits > 0)
+            success = (thick <= 150.0) and (thick <= self.turbine.wall_thickness * 1000.0) and (margin_pct >= 10.0) and (profits > 0)
             if success:
                 self.show_dialog(
                     "Mission Accomplished!", 
                     f"Congratulations! You successfully designed an offshore WEC that can survive arctic storm gusts.\n\n"
                     f"• Mean Wall Thickness: {thick:.1f} mm (Required: <= 150 mm)\n"
+                    f"• Chosen Thickness: {self.turbine.wall_thickness * 1000.0:.1f} mm\n"
                     f"• Profit Margin: {margin_pct:.1f}% (Required: >= 10.0%)\n"
                     f"• Lifetime Profit: {profits:,.1f} k€"
                 )
@@ -383,6 +384,7 @@ class UnifiedSimulatorApp(ctk.CTk):
                     "Simulation Complete",
                     f"Objectives not yet fully met.\n\n"
                     f"• Mean Wall Thickness: {thick:.1f} / 150 mm {'(OK)' if thick <= 150 else '(FAILED)'}\n"
+                    f"• Chosen Thickness: {self.turbine.wall_thickness * 1000.0:.1f} mm {'(OK)' if thick <= self.turbine.wall_thickness * 1000.0 else f'(FAILED: Needs >= {thick:.1f} mm)'}\n"
                     f"• Profit Margin: {margin_pct:.1f}% / 10.0% {'(OK)' if margin_pct >= 10.0 else '(FAILED)'}\n\n"
                     f"Runs Remaining: {self.runs_remaining}. Adjust parameters and try again!", 
                     is_err=True
@@ -393,14 +395,15 @@ class UnifiedSimulatorApp(ctk.CTk):
             cf_pct = result.capacity_factor * 100.0
             tot_capex = result.total_capex
             
-            success = (aep >= 1800.0) and (cf_pct >= 35.0) and (tot_capex < 5000.0)
+            success = (aep >= 1800.0) and (cf_pct >= 35.0) and (tot_capex < 5000.0) and (thick <= self.turbine.wall_thickness * 1000.0)
             if success:
                 self.show_dialog(
                     "Mission Accomplished!", 
                     f"Excellent work! You engineered a low-wind turbine that hits both energy and budget targets.\n\n"
                     f"• Energy Generated: {aep:,.1f} MWh (Required: >= 1,800 MWh)\n"
                     f"• Capacity Factor: {cf_pct:.1f}% (Required: >= 35.0%)\n"
-                    f"• Total CAPEX: {tot_capex:,.1f} k€ (Required: < 5,000 k€)"
+                    f"• Total CAPEX: {tot_capex:,.1f} k€ (Required: < 5,000 k€)\n"
+                    f"• Chosen Thickness: {self.turbine.wall_thickness * 1000.0:.1f} mm (Required: >= {thick:.1f} mm)"
                 )
             elif self.runs_remaining == 0:
                 self.show_dialog(
@@ -416,18 +419,20 @@ class UnifiedSimulatorApp(ctk.CTk):
                     f"Objectives not yet fully met.\n\n"
                     f"• Energy Generated: {aep:,.1f} / 1,800 MWh {'(OK)' if aep >= 1800.0 else '(FAILED)'}\n"
                     f"• Capacity Factor: {cf_pct:.1f}% / 35.0% {'(OK)' if cf_pct >= 35.0 else '(FAILED)'}\n"
-                    f"• Total CAPEX: {tot_capex:,.1f} / 5,000 k€ {'(OK)' if tot_capex < 5000.0 else '(FAILED)'}\n\n"
+                    f"• Total CAPEX: {tot_capex:,.1f} / 5,000 k€ {'(OK)' if tot_capex < 5000.0 else '(FAILED)'}\n"
+                    f"• Chosen Thickness: {self.turbine.wall_thickness * 1000.0:.1f} mm {'(OK)' if thick <= self.turbine.wall_thickness * 1000.0 else f'(FAILED: Needs >= {thick:.1f} mm)'}\n\n"
                     f"Runs Remaining: {self.runs_remaining}. Adjust parameters and try again!", 
                     is_err=True
                 )
 
         elif self.active_mission_name == "The Community Cooperative":
-            success = (margin_pct >= 5.0) and (thick <= 120.0)
+            success = (margin_pct >= 5.0) and (thick <= 120.0) and (thick <= self.turbine.wall_thickness * 1000.0)
             if success:
                 self.show_dialog(
                     "Mission Accomplished!", 
                     f"Excellent work! You engineered a community-friendly WEC that is safe and profitable.\n\n"
                     f"• Mean Wall Thickness: {thick:.1f} mm (Required: <= 120 mm)\n"
+                    f"• Chosen Thickness: {self.turbine.wall_thickness * 1000.0:.1f} mm\n"
                     f"• Profit Margin: {margin_pct:.1f}% (Required: >= 5.0%)\n"
                     f"• Lifetime Profit: {profits:,.1f} k€"
                 )
@@ -444,6 +449,7 @@ class UnifiedSimulatorApp(ctk.CTk):
                     "Simulation Complete",
                     f"Objectives not yet fully met.\n\n"
                     f"• Mean Wall Thickness: {thick:.1f} / 120 mm {'(OK)' if thick <= 120 else '(FAILED)'}\n"
+                    f"• Chosen Thickness: {self.turbine.wall_thickness * 1000.0:.1f} mm {'(OK)' if thick <= self.turbine.wall_thickness * 1000.0 else f'(FAILED: Needs >= {thick:.1f} mm)'}\n"
                     f"• Profit Margin: {margin_pct:.1f}% / 5.0% {'(OK)' if margin_pct >= 5.0 else '(FAILED)'}\n\n"
                     f"Runs Remaining: {self.runs_remaining}. Adjust parameters and try again!", 
                     is_err=True
