@@ -116,10 +116,12 @@ class AnalyticsPanel(ctk.CTkFrame):
 
         self.ledger_rows = {}
         ledger_defs = [
+            ("capex_dev", "Development Expenditure (DEVEX)", "- k€"),
             ("capex_turb", "Turbine Rotor Assembly Cost", "- k€"),
             ("capex_driv", "Drivetrain & Nacelle Cost", "- k€"),
             ("capex_tow", "Steel Tower Structure Cost", "- k€"),
             ("capex_found", "Concrete Foundation & Site Cost", "- k€"),
+            ("capex_install", "Installation Logistics Cost", "- k€"),
             ("capex_tot", "TOTAL CAPITAL COST (CAPEX)", "- k€", True),
             ("opex", "Annual Operating Costs (OPEX)", "- k€/yr"),
             ("revenue", "Net Annual Yield Revenue", "- k€/yr"),
@@ -238,10 +240,22 @@ class AnalyticsPanel(ctk.CTkFrame):
 
         # 2. Update Ledger Tab
         caps = result.capex_components
-        self.ledger_rows["capex_turb"].configure(text=f"{caps[0]:,.1f} k€")
-        self.ledger_rows["capex_driv"].configure(text=f"{caps[1]:,.1f} k€")
-        self.ledger_rows["capex_tow"].configure(text=f"{caps[2]:,.1f} k€")
-        self.ledger_rows["capex_found"].configure(text=f"{caps[3]:,.1f} k€")
+        if isinstance(caps, dict):
+            self.ledger_rows["capex_dev"].configure(text=f"{caps.get('devex', 0.0):,.1f} k€")
+            self.ledger_rows["capex_turb"].configure(text=f"{caps.get('rotor', 0.0):,.1f} k€")
+            self.ledger_rows["capex_driv"].configure(text=f"{caps.get('drivetrain', 0.0):,.1f} k€")
+            self.ledger_rows["capex_tow"].configure(text=f"{caps.get('tower', 0.0):,.1f} k€")
+            self.ledger_rows["capex_found"].configure(text=f"{caps.get('foundation', 0.0):,.1f} k€")
+            self.ledger_rows["capex_install"].configure(text=f"{caps.get('installation', 0.0):,.1f} k€")
+        else:
+            if "capex_dev" in self.ledger_rows:
+                self.ledger_rows["capex_dev"].configure(text="0.0 k€")
+            if "capex_install" in self.ledger_rows:
+                self.ledger_rows["capex_install"].configure(text="0.0 k€")
+            self.ledger_rows["capex_turb"].configure(text=f"{caps[0]:,.1f} k€")
+            self.ledger_rows["capex_driv"].configure(text=f"{caps[1]:,.1f} k€")
+            self.ledger_rows["capex_tow"].configure(text=f"{caps[2]:,.1f} k€")
+            self.ledger_rows["capex_found"].configure(text=f"{caps[3]:,.1f} k€")
         self.ledger_rows["capex_tot"].configure(text=f"{result.total_capex:,.1f} k€")
         self.ledger_rows["opex"].configure(text=f"{result.annual_opex:,.1f} k€/yr")
         self.ledger_rows["revenue"].configure(text=f"{result.annual_revenue:,.1f} k€/yr")
@@ -429,22 +443,51 @@ class AnalyticsPanel(ctk.CTkFrame):
             return
 
         caps = res.capex_components
-        tot = sum(caps)
+        tot = sum(caps.values()) if isinstance(caps, dict) else sum(caps)
         if tot <= 0:
             return
 
-        # Ratios
-        w_turb = int((caps[0] / tot) * w)
-        w_driv = int((caps[1] / tot) * w)
-        w_tow = int((caps[2] / tot) * w)
+        if isinstance(caps, dict):
+            # Dict implementation: support all 6 components
+            v_dev = caps.get("devex", 0.0)
+            v_turb = caps.get("rotor", 0.0)
+            v_driv = caps.get("drivetrain", 0.0)
+            v_tow = caps.get("tower", 0.0)
+            v_found = caps.get("foundation", 0.0)
+            
+            # Ratios
+            w_dev = int((v_dev / tot) * w)
+            w_turb = int((v_turb / tot) * w)
+            w_driv = int((v_driv / tot) * w)
+            w_tow = int((v_tow / tot) * w)
+            w_found = int((v_found / tot) * w)
+            
+            # Colors from theme
+            c_dev = Theme.BORDER.value[idx]
+            c_turb = Theme.INFO.value[idx]
+            c_driv = Theme.SUCCESS.value[idx]
+            c_tow = Theme.ACCENT.value[idx]
+            c_found = Theme.CONCRETE.value[idx]
+            c_install = Theme.ALERT.value[idx]
+            
+            self.capex_canvas.create_rectangle(0, 0, w_dev, h, fill=c_dev, outline="")
+            self.capex_canvas.create_rectangle(w_dev, 0, w_dev + w_turb, h, fill=c_turb, outline="")
+            self.capex_canvas.create_rectangle(w_dev + w_turb, 0, w_dev + w_turb + w_driv, h, fill=c_driv, outline="")
+            self.capex_canvas.create_rectangle(w_dev + w_turb + w_driv, 0, w_dev + w_turb + w_driv + w_tow, h, fill=c_tow, outline="")
+            self.capex_canvas.create_rectangle(w_dev + w_turb + w_driv + w_tow, 0, w_dev + w_turb + w_driv + w_tow + w_found, h, fill=c_found, outline="")
+            self.capex_canvas.create_rectangle(w_dev + w_turb + w_driv + w_tow + w_found, 0, w, h, fill=c_install, outline="")
+        else:
+            # Fallback for tuple/list
+            w_turb = int((caps[0] / tot) * w)
+            w_driv = int((caps[1] / tot) * w)
+            w_tow = int((caps[2] / tot) * w)
 
-        # Colors from theme
-        c_turb = Theme.INFO.value[idx]
-        c_driv = Theme.SUCCESS.value[idx]
-        c_tow = Theme.ACCENT.value[idx]
-        c_found = Theme.CONCRETE.value[idx]
+            c_turb = Theme.INFO.value[idx]
+            c_driv = Theme.SUCCESS.value[idx]
+            c_tow = Theme.ACCENT.value[idx]
+            c_found = Theme.CONCRETE.value[idx]
 
-        self.capex_canvas.create_rectangle(0, 0, w_turb, h, fill=c_turb, outline="")
-        self.capex_canvas.create_rectangle(w_turb, 0, w_turb + w_driv, h, fill=c_driv, outline="")
-        self.capex_canvas.create_rectangle(w_turb + w_driv, 0, w_turb + w_driv + w_tow, h, fill=c_tow, outline="")
-        self.capex_canvas.create_rectangle(w_turb + w_driv + w_tow, 0, w, h, fill=c_found, outline="")
+            self.capex_canvas.create_rectangle(0, 0, w_turb, h, fill=c_turb, outline="")
+            self.capex_canvas.create_rectangle(w_turb, 0, w_turb + w_driv, h, fill=c_driv, outline="")
+            self.capex_canvas.create_rectangle(w_turb + w_driv, 0, w_turb + w_driv + w_tow, h, fill=c_tow, outline="")
+            self.capex_canvas.create_rectangle(w_turb + w_driv + w_tow, 0, w, h, fill=c_found, outline="")

@@ -19,7 +19,7 @@ class StructuralReport:
 
 @dataclass(frozen=True)
 class FinancialReport:
-    capex_components: tuple[float, float, float, float]
+    capex_components: dict[str,float]
     total_capex: float
     annual_opex: float
     annual_revenue: float
@@ -282,7 +282,7 @@ class StructuralService:
 
 class FinancialService:
     @staticmethod
-    def calculate_capex(env: SiteEnvironment, turbine: WindTurbine, rated_power_kw: float) -> tuple[float, tuple[float, float, float, float]]:
+    def calculate_capex(env: SiteEnvironment, turbine: WindTurbine, rated_power: float) -> tuple[float, dict[str, float]]:
         """
         Calculate total capital expenditure (CAPEX) for the turbine park.
         
@@ -295,20 +295,43 @@ class FinancialService:
             total_capex [k€] and a tuple of its components:
             (turbine_costs, drivetrain_nacelle, tower, foundation_site) [k€].
         """
-        rated_power_mw = rated_power_kw / 1000.0
-        diam = turbine.rotor_diameter
-        tower_h = turbine.height
+
+
+        # Sätt offshore-faktorer
+        if env.is_offshore:
+            mar_factor = 1.15       # Marinised turbine
+            found_factor = 2.5      # significantly more costly fundament in water
+            install_factor = 3.0    # More expensive: ships and logistics 
+        else:
+            mar_factor = 1.0
+            found_factor = 1.0
+            install_factor = 1.0
+
+        devex = 200+50*(rated_power/1000) # permits for setting up base and building
+
+        # Applicera marinisering på själva verket
+        rotor_cost = 900.0 * (turbine.rotor_diameter / 90.0) ** 3 * mar_factor
+        drivetrain_nacelle = 800.0 * (rated_power / 3.0) * turbine.drivetrain_modifier * mar_factor
+        tower = 700.0 * ((turbine.height/ 90.0) * (turbine.rotor_diameter/ 90.0) ** 2) * turbine.nacelle_mass_modifier * mar_factor
         
-        turbine_costs = 900.0 * (env.wo_param / 7.5) ** 3 * (diam / 90.0) ** 3.5
-        drivetrain_nacelle = 800.0 * (env.wo_param / 7.0) * (rated_power_mw / 3.0) * (diam / 90.0) * turbine.drivetrain_modifier
-        tower = (
-            700.0 * (env.wo_param / 7.0) ** 2.5 * (diam / 90.0) ** 2 * (tower_h / 90.0) ** 2 + 300.0
-        ) * turbine.nacelle_mass_modifier
-        foundation_site = 300.0 * (diam / 90.0 * tower_h / 100.0) ** 0.5 * turbine.nacelle_mass_modifier
+        # Applicera fundament-faktor
+        foundation_site = (300.0 * ((turbine.height/ 90.0) * (turbine.rotor_diameter / 90.0) ** 2)) * found_factor
         
-        total_capex = (turbine_costs + drivetrain_nacelle + tower + foundation_site) * env.turbine_count + env.installation_costs
+        # Applicera installations-faktor
+        installation = env.installation_costs * install_factor
+
+        total_capex = devex + rotor_cost + drivetrain_nacelle + tower + foundation_site + env.installation_costs
         
-        return total_capex, (turbine_costs, drivetrain_nacelle, tower, foundation_site)
+        components = {
+            "devex": devex,
+            "rotor": rotor_cost,
+            "drivetrain": drivetrain_nacelle,
+            "tower": tower,
+            "foundation": foundation_site,
+            "installation": env.installation_costs
+        }
+        
+        return total_capex, components
 
     @staticmethod
     def calculate_opex(env: SiteEnvironment, turbine: WindTurbine, rated_power_kw: float) -> float:
@@ -401,7 +424,7 @@ class SimulationResult:
     rna_mass: float # [kg]
 
     # Ekonomi
-    capex_components: tuple # (X, Y, Z, W) representing costs for turbine, drivetrain, tower, foundation [k€]
+    capex_components: dict[str,float] # Dict representing costs for devex, rotor, drivetrain, tower, foundation, installation [k€]
     total_capex: float  # k€
     annual_opex: float  # k€/år
     annual_revenue: float  # k€/år
@@ -470,6 +493,7 @@ if __name__ == "__main__":
                 roughness = 0.2,
                 survival_gust = 60,
                 k_factor = 2.0,
+                is_offshore = False,
                 turbine_count = 1,
                 electricity_price = 29,
                 green_certificate = 1.0,
@@ -486,6 +510,7 @@ if __name__ == "__main__":
                 roughness = 0.10,
                 survival_gust = 60.0,
                 k_factor = 2.0,
+                is_offshore = False,
                 turbine_count = 1,
                 electricity_price = 40.0,
                 green_certificate = 2.0,

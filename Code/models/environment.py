@@ -23,6 +23,7 @@ class DefaultEnvironments(Enum):
                     green_certificate = 1.0,       # €/MWh
                     inflation = 2.0,               # %
                     interest = 3.0,                # %
+                    is_offshore=False
                 )
             
             case DefaultEnvironments.ARCTIC_GALE:
@@ -33,6 +34,7 @@ class DefaultEnvironments(Enum):
                     k_factor = 2.0,                # lägre variabilitet på öppet hav
                     electricity_price = 60,        # €/MWh
                     green_certificate = 1.0,       # €/MWh
+                    is_offshore= True
                 )
 
             
@@ -44,6 +46,7 @@ class DefaultEnvironments(Enum):
                     k_factor = 1.8,                # mer variabel vind inlandet
                     electricity_price = 50,        # €/MWh
                     green_certificate = 1.0,       # €/MWh
+                    is_offshore=False
                 )
 
             case DefaultEnvironments.THE_COMMUNITY_COOPERATIVE:
@@ -54,6 +57,7 @@ class DefaultEnvironments(Enum):
                     k_factor = 2.4,                # mycket stabil vind
                     electricity_price = 48,        # €/MWh (matchar lägre budgetförutsättningar)
                     green_certificate = 1.0,       # €/MWh
+                    is_offshore=False
                 )
         return env
 
@@ -64,6 +68,7 @@ class SiteEnvironment:
     roughness: float  # Surface roughness length z0 [mm] (t.ex. 0.01 för hav)
     survival_gust: float  # Stormbyar för överlevnad [m/s] (t.ex. 60m/s)
     k_factor: float  # Weibull shape parameter k for wind distrobution
+    is_offshore: bool
 
 
     # Ekonomi & Marknad
