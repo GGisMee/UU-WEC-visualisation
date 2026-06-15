@@ -15,6 +15,7 @@ class StructuralReport:
     slenderness_ratio: float   # [-]
     breaking_utilization: float         # [-] Breaking factor
     buckeling_utilization: float         # [-] Breaking factor
+    rna_mass: float            # [kg] Rotor Nacelle Assembly mass
 
 @dataclass(frozen=True)
 class FinancialReport:
@@ -166,8 +167,7 @@ class StructuralService:
 
 
     @staticmethod
-    def buckeling(turbine: WindTurbine, max_load: float) -> float:
-        break_stress = 1e6 # [Pa] For steel
+    def buckeling(turbine: WindTurbine, max_load: float, rna_mass: float) -> float:
         E = 210000e6          # [Pa] Young's modulus for steel
         steel_density = 7850  # [kg/m³] Structural steel density
         g = 9.82              # [m/s²] Gravitational acceleratio
@@ -180,7 +180,7 @@ class StructuralService:
         R_z = R_base - ((R_base - R_top) / turbine.height) * z_levels
 
         moment_z = max_load * (turbine.height - z_levels) # [kNm]
-        I_z = np.pi/4 * (R_z**4 - (R_z - wall_thickness)**4)
+        I_z = np.pi/4 * (R_z**4 - (R_z - wall_thickness)**4) # [m]
 
         # 2. CROSS-SECTIONAL PROPERTIES [cite: 81, 84]
         area = np.pi * (R_z**2-(R_z**2- wall_thickness)**2)        # [m²] Steel cross-sectional area
@@ -195,7 +195,7 @@ class StructuralService:
         
         # 5. ACTUAL STRESSES 
         sigma_c = vertical_load_z / area   # [Pa] Axial compressive stress from weight
-        sigma_b = moment_z / w_z           # [Pa] Bending compressive stress from wind
+        sigma_b = 1000*moment_z / w_z           # [Pa] Bending compressive stress from wind
         
         # 6. NASA SP-8007 IMPERFECTION REDUCTION [cite: 198, 250]
         phi = (1.0 / 16.0) * np.sqrt(R_z / wall_thickness)                  # [-] Slankhetsparameter (dimensionless) 
@@ -212,15 +212,15 @@ class StructuralService:
         interaction = R_c + R_b            # [-] Total buckling interaction [cite: 438]
         
         # Find critical location
-        idx_max = np.argmax(interaction)
-        max_interaction = interaction[idx_max]
-        critical_height = z[idx_max]
+        max_interaction = np.max(interaction)
+        
+        return float(max_interaction)
 
         
 
     @staticmethod
     def breaking(turbine: WindTurbine, max_load: float) -> float:
-        break_stress = 1e6 # [Pa] For steel
+        break_stress = 235e6 # [Pa] For steel
         steps = 100
         z_levels = np.linspace(0, turbine.height, steps)
         wall_thickness = turbine.wall_thickness
@@ -238,19 +238,44 @@ class StructuralService:
         return float(breaking_utilization)
 
     @staticmethod
-    def evaluate_integrity(turbine: WindTurbine, climate: WindClimate, env: SiteEnvironment) -> StructuralReport:
+    def calculate_rna_mass(turbine: WindTurbine, rated_power: float) -> float:
+        """
+        Estimates the Rotor Nacelle Assembly (RNA) mass using empirical scaling.
+        
+        Args:
+            turbine: Wind turbine configuration.
+            rated_power: Rated power [kW].
+            
+        Returns:
+            RNA mass [kg].
+        """
+        # 1. Rotor Mass (Blades + Hub)
+        # NREL empirical scaling: ~0.13 * D^2.4
+        # We use a slightly higher coefficient (~0.5) so a 130m rotor is roughly 60 tons.
+        rotor_mass = 0.5 * (turbine.rotor_diameter ** 2.4)
+        
+        # 2. Nacelle Mass
+        # Base mass of 45 kg per kW of rated power, scaled by the drivetrain modifier
+        base_nacelle_mass = 45.0 * rated_power
+        actual_nacelle_mass = base_nacelle_mass * turbine.nacelle_mass_modifier
+        return float(rotor_mass + actual_nacelle_mass)
+
+    @staticmethod
+    def evaluate_integrity(turbine: WindTurbine, climate: WindClimate, env: SiteEnvironment, rated_power: float) -> StructuralReport:
         aerodynamical_load, storm_load = StructuralService.calculate_loads(turbine, climate.rated_wind_speed, env.survival_gust)
         max_load = max(aerodynamical_load, storm_load)
-
-        buckeling_utilization = StructuralService.breaking(turbine, max_load)
-        breaking_utilization = StructuralService.buckeling(turbine, max_load)
+        
+        breaking_utilization = StructuralService.breaking(turbine, max_load)
+        rna_mass = StructuralService.calculate_rna_mass(turbine, rated_power)
+        buckeling_utilization = StructuralService.buckeling(turbine, max_load, rna_mass)
         
         return StructuralReport(
             aerodynamical_load=aerodynamical_load,
             storm_load=storm_load,
             slenderness_ratio=turbine.slenderness_ratio,
             breaking_utilization=breaking_utilization,
-            buckeling_utilization=buckeling_utilization
+            buckeling_utilization=buckeling_utilization,
+            rna_mass=rna_mass
         )
 
 
@@ -369,9 +394,10 @@ class SimulationResult:
     # Krafter & Hållfasthet
     aerodynamical_load: float  # kN
     storm_load: float  # kN
-    mean_wall_thickness: float # mm
     slenderness_ratio: float # [-]
-    utilization: float # [-]
+    breaking_utilization: float # [-]
+    buckeling_utilization: float # [-]
+    rna_mass: float # [kg]
 
     # Ekonomi
     capex_components: tuple # (X, Y, Z, W) representing costs for turbine, drivetrain, tower, foundation [k€]
@@ -392,7 +418,7 @@ def simulate(turbine: WindTurbine, env: SiteEnvironment) -> SimulationResult:
     generated_energy, rated_power, capacity_factor= EnergyService.calculate_production(turbine, climate)
     
     # 3. Structural evaluation (single turbine geometry)
-    structural_report = StructuralService.evaluate_integrity(turbine, climate, env)
+    structural_report = StructuralService.evaluate_integrity(turbine, climate, env, rated_power)
     
     # 4. Financial evaluation (for the park)
     financial_report = FinancialService.evaluate_finance(env, turbine, rated_power, generated_energy)
@@ -413,9 +439,10 @@ def simulate(turbine: WindTurbine, env: SiteEnvironment) -> SimulationResult:
         capacity_factor=capacity_factor,
         aerodynamical_load=structural_report.aerodynamical_load,
         storm_load=structural_report.storm_load,
-        mean_wall_thickness=structural_report.mean_wall_thickness,
         slenderness_ratio=structural_report.slenderness_ratio,
-        utilization=structural_report.utilization,
+        breaking_utilization=structural_report.breaking_utilization,
+        buckeling_utilization=structural_report.buckeling_utilization,
+        rna_mass=structural_report.rna_mass,
         capex_components=financial_report.capex_components,
         total_capex=financial_report.total_capex,
         annual_opex=financial_report.annual_opex,
@@ -463,7 +490,7 @@ if __name__ == "__main__":
                 green_certificate = 2.0,
                 financial_additional_part = 0.07,
             )
-            turbine = WindTurbine(rotor_diameter=131, height=120, solidity=0.04, blades = 3,  gearbox= Gearbox.NONE, generator=Generator.DFIG)
+            turbine = WindTurbine(rotor_diameter=131, height=120, solidity=0.04, blades = 3,  gearbox= Gearbox.MEDIUM_SPEED, generator=Generator.SYNCHRONOUS)
             print(env)
             print(turbine)
             print('\n', SimulationEngine.simulate(turbine, env))

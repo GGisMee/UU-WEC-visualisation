@@ -83,10 +83,6 @@ class SiteEnvironment:
         z0 = self.roughness / 1000.0
         return float(self.avg_wind_10 * np.log(height / z0) / np.log(10.0 / z0))
 
-
-
-
-
 class SSNGenerator:
     @staticmethod
     def validate(ssn: str) -> bool:
@@ -107,9 +103,6 @@ class SSNGenerator:
        
         env.avg_wind_10 = abs(int((6+D/10)*10)/10-int(31.9+int(PIN/100)/2)*1.2/50)
         env.roughness = M*D 
-
-
-        
 
 
     @staticmethod
