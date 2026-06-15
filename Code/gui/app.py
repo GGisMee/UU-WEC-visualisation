@@ -2,7 +2,7 @@
 import os
 import customtkinter as ctk
 import tkinter as tk
-from models.turbine import WindTurbine
+from models.turbine import WindTurbine, Generator, Gearbox
 from models.environment import SiteEnvironment, DefaultEnvironments, SSNGenerator
 from models.simulation import SimulationEngine
 from models.mission import DefaultMissions
@@ -44,8 +44,8 @@ class UnifiedSimulatorApp(ctk.CTk):
             height=105.0, 
             solidity=3.5, 
             blades=3, 
-            gearbox="Medium-Speed", 
-            generator="DFIG"
+            gearbox=Gearbox.MEDIUM_SPEED, 
+            generator=Generator.DFIG
         )
         self.environment = DefaultEnvironments.SANDBOX.create()
         self.active_mission_name = "Free Play Sandbox"
@@ -235,12 +235,6 @@ class UnifiedSimulatorApp(ctk.CTk):
             self.lbl_runs.configure(text="∞ / ∞", text_color=Theme.SUCCESS.value)
             self.lbl_mission_desc.configure(text="Free Play Sandbox: Explore WEC layouts with no run limits.")
             # Set default turbine properties
-            self.turbine.diameter = 95.0
-            self.turbine.height = 105.0
-            self.turbine.solidity = 3.5
-            self.turbine.blades = 3
-            self.turbine.gearbox = "Medium-Speed"
-            self.turbine.generator = "DFIG"
         
         elif choice == "The Arctic Gale":
             self.environment = DefaultEnvironments.ARCTIC_GALE.create()
@@ -249,13 +243,6 @@ class UnifiedSimulatorApp(ctk.CTk):
             self.lbl_mission_desc.configure(
                 text="Mission A: Design a storm-hardened offshore WEC. Goal: Safety Margin >= 1.0 (mean thickness <= 150mm) AND Profit Margin >= 10%. Max 6 runs!"
             )
-            # Preset initial dimensions
-            self.turbine.diameter = 80.0
-            self.turbine.height = 90.0
-            self.turbine.solidity = 3.0
-            self.turbine.blades = 3
-            self.turbine.gearbox = "Medium-Speed"
-            self.turbine.generator = "DFIG"
             
         elif choice == "The Gentle Breeze":
             self.environment = DefaultEnvironments.THE_GENTLE_BREEZE.create()
@@ -264,13 +251,7 @@ class UnifiedSimulatorApp(ctk.CTk):
             self.lbl_mission_desc.configure(
                 text="Mission B: Optimize for low-wind forest site. Goal: Energy >= 1,800 MWh AND Capacity Factor >= 35% AND CAPEX < 5,000 k€. Max 6 runs!"
             )
-            # Preset initial dimensions
-            self.turbine.diameter = 110.0
-            self.turbine.height = 120.0
-            self.turbine.solidity = 4.0
-            self.turbine.blades = 3
-            self.turbine.gearbox = "High-Speed"
-            self.turbine.generator = "Synchronous"
+
 
         elif choice == "The Community Cooperative":
             self.environment = DefaultEnvironments.THE_COMMUNITY_COOPERATIVE.create()
@@ -279,14 +260,6 @@ class UnifiedSimulatorApp(ctk.CTk):
             self.lbl_mission_desc.configure(
                 text="Mission C: Build a community WEC. Goal: Profit Margin >= 5% AND Mean Wall Thickness <= 120.0 mm. Max 6 runs!"
             )
-            # Preset initial dimensions
-            self.turbine.diameter = 95.0
-            self.turbine.height = 100.0
-            self.turbine.solidity = 3.5
-            self.turbine.blades = 3
-            self.turbine.gearbox = "Medium-Speed"
-            self.turbine.generator = "Asynchronous"
-
         # 2. Update panel child frames
         self.console.environment = self.environment
         self.console.update_from_models()

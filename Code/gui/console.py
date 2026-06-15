@@ -6,6 +6,7 @@ from typing import Callable
 from models.turbine import WindTurbine
 from models.environment import SiteEnvironment, SSNGenerator
 from gui.theme import Theme
+from models.turbine import Generator, Gearbox
 
 class ConsolePanel(ctk.CTkFrame):
     """
@@ -73,8 +74,8 @@ class ConsolePanel(ctk.CTkFrame):
         self.height_var = tk.DoubleVar(value=turbine.height)
         self.solidity_var = tk.DoubleVar(value=turbine.solidity)
         self.blades_var = tk.StringVar(value=f"{turbine.blades} Blades")
-        self.gearbox_var = tk.StringVar(value=turbine.gearbox)
-        self.generator_var = tk.StringVar(value=turbine.generator)
+        self.gearbox_var = tk.StringVar(value=turbine.gearbox.value)
+        self.generator_var = tk.StringVar(value=turbine.generator.value)
 
         # Tracers for input changes
         self.ssn_var.trace_add("write", self.on_ssn_trace)
@@ -363,8 +364,8 @@ class ConsolePanel(ctk.CTkFrame):
         *args : tuple
             Variable arguments from Tkinter event.
         """
-        self.turbine.gearbox = self.gearbox_var.get()
-        self.turbine.generator = self.generator_var.get()
+        self.turbine.gearbox = Gearbox(self.gearbox_var.get())
+        self.turbine.generator = Generator(self.generator_var.get())
         self.update_drivetrain_desc()
         self.on_change()
 
@@ -393,8 +394,8 @@ class ConsolePanel(ctk.CTkFrame):
         self.height_var.set(self.turbine.height)
         self.solidity_var.set(self.turbine.solidity)
         self.blades_var.set(f"{self.turbine.blades} Blades")
-        self.gearbox_var.set(self.turbine.gearbox)
-        self.generator_var.set(self.turbine.generator)
+        self.gearbox_var.set(self.turbine.gearbox.value)
+        self.generator_var.set(self.turbine.generator.value)
 
         # Update physical spec labels
         self.lbl_diam_val.configure(text=f"Rotor Diameter: {self.turbine.diameter:.1f} m")
@@ -440,8 +441,8 @@ class ConsolePanel(ctk.CTkFrame):
         self.env_rows["roughness"].configure(text=f"{env.roughness:.2f} mm" if env.roughness else "- mm")
         self.env_rows["survival"].configure(text=f"{env.survival_gust:.1f} m/s" if env.survival_gust else "- m/s")
         self.env_rows["weibull_k"].configure(text=f"{env.k_factor:.2f}" if env.k_factor else "-")
-        self.env_rows["downtime"].configure(text=f"{env.downtime:.1f} %" if env.downtime is not None else "- %")
-        self.env_rows["lifetime"].configure(text=f"{env.lifetime} yrs" if env.lifetime else "- yrs")
+        self.env_rows["downtime"].configure(text=f"{self.turbine.downtime:.1f} %" if self.turbine.downtime is not None else "- %")
+        self.env_rows["lifetime"].configure(text=f"{self.turbine.lifetime} yrs" if self.turbine.lifetime else "- yrs")
         self.env_rows["price"].configure(text=f"{env.electricity_price} €/MWh" if env.electricity_price is not None else "- €/MWh")
         self.env_rows["green_cert"].configure(text=f"{env.green_certificate} €/MWh" if env.green_certificate is not None else "- €/MWh")
         self.env_rows["inflation"].configure(text=f"{env.inflation:.1f} %" if env.inflation is not None else "- %")

@@ -3,9 +3,9 @@ from dataclasses import dataclass
 import numpy as np
 from scipy.special import gamma
 from scipy.optimize import root_scalar
-from NewCode.models.turbine import WindTurbine
-from NewCode.models.environment import SiteEnvironment
-import NewCode.config
+from models.turbine import WindTurbine, Gearbox, Generator
+from models.environment import SiteEnvironment
+import config
 from collections import namedtuple
 
 @dataclass
@@ -57,12 +57,12 @@ class SimulationEngine:
         # 4. Ekonomikalkyl (CAPEX, OPEX och NPV med geometrisk serie för inflation/ränta)
         total_capex, capital_cost_components = SimulationEngine._capital_costs(turbine, env, rated_power)
         
-        annual_opex, operational_maintenance_cost_components = SimulationEngine._operational_maintenance(env, rated_power)
+        annual_opex, operational_maintenance_cost_components = SimulationEngine._operational_maintenance(turbine, env, rated_power)
         annual_savings, annual_revenue= SimulationEngine._annual_earnings(env, generated_energy, annual_opex)
 
         # Profits here are NPV
-        profits, margin = SimulationEngine._calculate_profits(total_capex, annual_savings, env)
-        IRR = SimulationEngine.IRR(total_capex, annual_savings, env.lifetime)
+        profits, margin = SimulationEngine._calculate_profits(total_capex, annual_savings, env, turbine)
+        IRR = SimulationEngine.IRR(total_capex, annual_savings,turbine.lifetime)
 
 
 
@@ -111,7 +111,7 @@ class SimulationEngine:
 
         # Hours of the year
         possible_hours = distrobution * 8760
-        availability = 1.0 - (env.downtime if env.downtime < 1.0 else env.downtime / 100.0)
+        availability = 1.0 - (turbine.downtime if turbine.downtime < 1.0 else turbine.downtime / 100.0)
         available_hours = availability * possible_hours
 
         return wind_nacelle, k,C,wind_speeds, possible_hours, available_hours
@@ -139,7 +139,7 @@ class SimulationEngine:
     def energy_production(turbine:WindTurbine, env:SiteEnvironment, wind_speeds, cut_in, cut_out, rated_speed, energy_per_m2, available_hours):
         swept_area = np.pi * (turbine.diameter / 2) ** 2
 
-        rated_power = 0.62 * rated_speed**3 * swept_area / 1000 * env.capture_efficiency*env.drivetrain_efficiency
+        rated_power = 0.62 * rated_speed**3 * swept_area / 1000 *turbine.capture_efficiency*turbine.drivetrain_efficiency
         
         conditions = [
             wind_speeds <= cut_in,  # values below cut_in, therefore set to 0 below
@@ -149,14 +149,14 @@ class SimulationEngine:
             wind_speeds > cut_out,  # values above cut_out
         ]
 
-        availability = 1.0 - (env.downtime if env.downtime < 1.0 else env.downtime / 100.0)
+        availability = 1.0 - (turbine.downtime if turbine.downtime < 1.0 else turbine.downtime / 100.0)
 
         alternatives = [
             0,  # Shut off, zone 1
             energy_per_m2
             * swept_area
-            * env.capture_efficiency
-            * env.drivetrain_efficiency
+            * turbine.capture_efficiency
+            * turbine.drivetrain_efficiency
             * availability,  # zone 2
             rated_power
             * available_hours,  # zone 3, Since between rated and cutout. Energy output will just be rated_power*available_hours. Constant.
@@ -276,9 +276,8 @@ class SimulationEngine:
         turbine_costs = 900 * (env.wo_param / 7.5) ** 3 * (diam / 90) ** 3.5
 
         # prop to power*diam
-        drivetrain_nacell = (
-            800 * (env.wo_param / 7) * rated_power / 3 * diam / 90
-        )
+        drivetrain_nacell = 800 * (env.wo_param / 7) * rated_power / 3 * diam / 90 * turbine.drivetrain_modifier
+        
 
         # prop to diam^2 * height^2
         tower = (
@@ -287,10 +286,10 @@ class SimulationEngine:
             * (diam / 90) ** 2
             * (tower_H / 90) ** 2
             + 300
-        )
+        ) * turbine.nacelle_mass_modifier
 
         # prop to (diam*height)^0.5
-        foundation_site = 300 * (diam / 90 * tower_H / 100) ** (1 / 2)
+        foundation_site = 300 * (diam / 90 * tower_H / 100) ** (1 / 2) * turbine.nacelle_mass_modifier
 
         total_capex = (turbine_costs+drivetrain_nacell+tower+foundation_site) * env.turbine_count
 
@@ -298,7 +297,7 @@ class SimulationEngine:
 
 
     @staticmethod
-    def _operational_maintenance(env:SiteEnvironment, rated_power) -> tuple:
+    def _operational_maintenance(turbine:WindTurbine, env:SiteEnvironment, rated_power) -> tuple[float, tuple]:
         """
         Calculate annual operational and maintenance (O&M) costs.
 
@@ -306,16 +305,18 @@ class SimulationEngine:
 
         Returns
         -------
+        float:
+            Total of below 
         tuple:
             Tuple of costs for (in k€)
-            1. Total of below 
             2. maintenance
             3. insurance
-            4. land lease and decommissioning.
+            4. land lease
+            5. fund decommissioning.
         """
         total_power_MW = (rated_power / 1000) * env.turbine_count
         # prop to PP
-        maintenance = 600 * (total_power_MW / 20)
+        maintenance = 600 * (total_power_MW / 20) * turbine.opex_modifier
         # prop to sqrt(PP)
         insurance = 100 * (total_power_MW / 20) ** 0.5
         # prop to number of WECs
@@ -324,7 +325,7 @@ class SimulationEngine:
 
         annual_opex = maintenance+insurance+land_cost+fund_decomissioning
 
-        return maintenance, insurance, land_cost, fund_decomissioning
+        return annual_opex, (maintenance, insurance, land_cost, fund_decomissioning)
 
     @staticmethod
     def _annual_earnings(env:SiteEnvironment, generated_energy, operational_maintenance_costs) -> tuple[float, float]:
@@ -346,7 +347,7 @@ class SimulationEngine:
         return annual_income - operational_maintenance_costs, annual_income
 
     @staticmethod
-    def _calculate_profits(total_capex: float, annual_savings: float, env:SiteEnvironment) -> tuple[float, float]:
+    def _calculate_profits(total_capex: float, annual_savings: float, env:SiteEnvironment, turbine:WindTurbine) -> tuple[float, float]:
         """
         Calculate total project profit and margin over its lifetime.
 
@@ -370,7 +371,7 @@ class SimulationEngine:
         interest = env.interest
         inflation = env.inflation
         ### calculate lifetime
-        lifetime = env.lifetime  # in years
+        lifetime = turbine.lifetime  # in years
 
         # proximity_number = 0.5
         # Ingen reduction då vi bara räknar på en
@@ -449,17 +450,13 @@ if __name__ == "__main__":
                 roughness = 0.10,
                 survival_gust = 60,
                 k_factor = 2.0,
-                downtime = 0.02,
-                capture_efficiency = 0.44,
-                drivetrain_efficiency = 0.92,
                 turbine_count = 1,
                 electricity_price = 40,
                 green_certificate =2,
                 financial_additional_part = 0.07,
-                lifetime = 22,
             )
             #! Får fixa enums eller något för gearbox_type och generator
-            turbine = WindTurbine(diameter=131, height=120, solidity=0.04, blades = 3,  gearbox= "None", generator="DFIG")
+            turbine = WindTurbine(diameter=131, height=120, solidity=0.04, blades = 3,  gearbox= Gearbox.NONE, generator=Generator.DFIG)
             print(env)
             print(turbine)
             print('\n', SimulationEngine.simulate(turbine, env))
