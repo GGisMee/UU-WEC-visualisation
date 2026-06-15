@@ -99,9 +99,8 @@ class CADCanvas(ctk.CTkFrame):
         hub_y = ground_y - int(real_height * draw_scale)
         rotor_r = int((real_rotor_diam / 2) * draw_scale)
 
-        # 3. Check structural stress safety (either forced by simulation or live approximation)
-        moment = (real_solidity / 3.0) * (real_rotor_diam / 90.0) * (real_height / 90.0)**2
-        is_unsafe = self.is_unsafe or (moment > 2.2)
+        # 3. Check structural stress safety (rely on model simulation results)
+        is_unsafe = self.is_unsafe
         
         tower_fill = Theme.DANGER.value[idx] if is_unsafe else steel_color
         tower_outline = Theme.DANGER.value[idx] if is_unsafe else base_color

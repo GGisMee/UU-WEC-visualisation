@@ -35,6 +35,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         
         self.title("Wind Power Simulator Pro")
         self.geometry("1200x750")
+        self.minsize(1000, 700)
         self.configure(fg_color=Theme.BG_MAIN.value)
         ctk.set_appearance_mode("dark")
 
@@ -58,35 +59,44 @@ class UnifiedSimulatorApp(ctk.CTk):
         # --- LAYOUT GRID CONFIGURATION ---
         self.grid_rowconfigure(0, weight=0)  # Header
         self.grid_rowconfigure(1, weight=1)  # Core Workspace panels
-        self.grid_columnconfigure(0, weight=0)  # Left Console (width=320)
-        self.grid_columnconfigure(1, weight=1)  # Center CAD Drawing
-        self.grid_columnconfigure(2, weight=0)  # Right Analytics (width=420)
+        self.grid_columnconfigure(0, weight=1)
 
         # --- WIDGET CREATION ---
         self.create_header()
 
+        mode_idx = 0 if ctk.get_appearance_mode() == "Light" else 1
+        self.paned_window = tk.PanedWindow(
+            self, 
+            orient=tk.HORIZONTAL, 
+            sashwidth=6,
+            sashrelief=tk.FLAT,
+            bg=Theme.BG_MAIN.value[mode_idx],
+            bd=0
+        )
+        self.paned_window.grid(row=1, column=0, sticky="nsew", padx=5, pady=(5, 10))
+
         # Instantiate modular panel frames
         self.console = ConsolePanel(
-            self,
+            self.paned_window,
             self.turbine,
             self.environment,
             on_change_callback=self.on_inputs_changed,
             on_ssn_callback=self.on_ssn_changed
         )
-        self.console.grid(row=1, column=0, sticky="nsw", padx=(10, 5), pady=(5, 10))
+        self.paned_window.add(self.console, minsize=320, stretch="never")
 
         self.cad_canvas = CADCanvas(
-            self, 
+            self.paned_window, 
             self.turbine,
             on_simulate_click=self.run_simulation
         )
-        self.cad_canvas.grid(row=1, column=1, sticky="nsew", padx=5, pady=(5, 10))
+        self.paned_window.add(self.cad_canvas, minsize=400, stretch="always")
 
         self.analytics = AnalyticsPanel(
-            self,
+            self.paned_window,
             on_simulate_click=self.run_simulation
         )
-        self.analytics.grid(row=1, column=2, sticky="nsew", padx=(5, 10), pady=(5, 10))
+        self.paned_window.add(self.analytics, minsize=420, stretch="never")
 
         # Apply initial values to console views
         self.on_mission_change("Free Play Sandbox")
@@ -220,6 +230,8 @@ class UnifiedSimulatorApp(ctk.CTk):
     def update_theme_drawings(self):
         """Redraws manual tk.Canvas drawings with new theme color tokens."""
         self.configure(fg_color=Theme.BG_MAIN.value)
+        mode_idx = 0 if ctk.get_appearance_mode() == "Light" else 1
+        self.paned_window.configure(bg=Theme.BG_MAIN.value[mode_idx])
         self.cad_canvas.update_geometry()
         self.console.update_from_models()
         self.analytics.draw_performance_curves()
@@ -292,11 +304,11 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.console.set_inputs_enabled(False)
         self.analytics.show_loading(True, "Initializing wind tunnel aerodynamic grid...")
 
-        # Step-by-step loading progress animation
-        self.after(500, lambda: self.analytics.set_loading_status("Integrating wind speed probability using Weibull factors..."))
-        self.after(1200, lambda: self.analytics.set_loading_status("Calculating beam bending moments on structural tower base..."))
-        self.after(2000, lambda: self.analytics.set_loading_status("Compiling financial CAPEX ledger and NPV margin predictions..."))
-        self.after(3000, self.complete_simulation)
+        # Step-by-step loading progress animation, do not remove "usually" comments below
+        self.after(0, lambda: self.analytics.set_loading_status("Integrating wind speed probability using Weibull factors...")) # usually 500
+        self.after(0, lambda: self.analytics.set_loading_status("Calculating beam bending moments on structural tower base...")) # usually 1200 
+        self.after(0, lambda: self.analytics.set_loading_status("Compiling financial CAPEX ledger and NPV margin predictions...")) # usually 2000
+        self.after(0, self.complete_simulation) # usually 3000
 
     def complete_simulation(self):
         # Re-enable inputs
@@ -317,8 +329,8 @@ class UnifiedSimulatorApp(ctk.CTk):
         # 3. Update Views
         self.analytics.display_results(result)
         
-        # Unsafe check: chosen wall thickness is less than required, OR required exceeds 150mm limit
-        is_unsafe = (result.mean_wall_thickness > self.turbine.wall_thickness * 1000.0) or (result.mean_wall_thickness > 150.0)
+        # Unsafe check: buckling or breaking utilization exceeds 1.0
+        is_unsafe = (result.buckeling_utilization > 1.0) or (result.breaking_utilization > 1.0)
         self.cad_canvas.update_safety_state(is_unsafe)
 
         # 4. Grade & Profit Scorecard Updates
@@ -353,21 +365,27 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.check_mission_targets(result)
 
     def check_mission_targets(self, result):
+        # -------------------------------------------------------------------
+        # TODO: EXTRACT MISSION LOGIC TO challenge.py
+        # These evaluations should be moved to a dedicated evaluator class
+        # (e.g. MissionEvaluator in challenge.py) to decouple from the GUI.
+        # -------------------------------------------------------------------
         if self.active_mission_name == "Free Play Sandbox":
             return
 
         margin_pct = result.margin * 100.0
-        thick = result.mean_wall_thickness
+        buckeling = result.buckeling_utilization
+        breaking = result.breaking_utilization
         profits = result.npv_profit
 
         if self.active_mission_name == "The Arctic Gale":
-            success = (thick <= 150.0) and (thick <= self.turbine.wall_thickness * 1000.0) and (margin_pct >= 10.0) and (profits > 0)
+            success = (buckeling <= 1.0) and (breaking <= 1.0) and (margin_pct >= 10.0) and (profits > 0)
             if success:
                 self.show_dialog(
                     "Mission Accomplished!", 
                     f"Congratulations! You successfully designed an offshore WEC that can survive arctic storm gusts.\n\n"
-                    f"• Mean Wall Thickness: {thick:.1f} mm (Required: <= 150 mm)\n"
-                    f"• Chosen Thickness: {self.turbine.wall_thickness * 1000.0:.1f} mm\n"
+                    f"• Buckling Utilization: {buckeling:.2f} (Required: <= 1.0)\n"
+                    f"• Breaking Utilization: {breaking:.2f} (Required: <= 1.0)\n"
                     f"• Profit Margin: {margin_pct:.1f}% (Required: >= 10.0%)\n"
                     f"• Lifetime Profit: {profits:,.1f} k€"
                 )
@@ -383,8 +401,8 @@ class UnifiedSimulatorApp(ctk.CTk):
                 self.show_dialog(
                     "Simulation Complete",
                     f"Objectives not yet fully met.\n\n"
-                    f"• Mean Wall Thickness: {thick:.1f} / 150 mm {'(OK)' if thick <= 150 else '(FAILED)'}\n"
-                    f"• Chosen Thickness: {self.turbine.wall_thickness * 1000.0:.1f} mm {'(OK)' if thick <= self.turbine.wall_thickness * 1000.0 else f'(FAILED: Needs >= {thick:.1f} mm)'}\n"
+                    f"• Buckling Utilization: {buckeling:.2f} / 1.0 {'(OK)' if buckeling <= 1.0 else '(FAILED)'}\n"
+                    f"• Breaking Utilization: {breaking:.2f} / 1.0 {'(OK)' if breaking <= 1.0 else '(FAILED)'}\n"
                     f"• Profit Margin: {margin_pct:.1f}% / 10.0% {'(OK)' if margin_pct >= 10.0 else '(FAILED)'}\n\n"
                     f"Runs Remaining: {self.runs_remaining}. Adjust parameters and try again!", 
                     is_err=True
@@ -395,7 +413,7 @@ class UnifiedSimulatorApp(ctk.CTk):
             cf_pct = result.capacity_factor * 100.0
             tot_capex = result.total_capex
             
-            success = (aep >= 1800.0) and (cf_pct >= 35.0) and (tot_capex < 5000.0) and (thick <= self.turbine.wall_thickness * 1000.0)
+            success = (aep >= 1800.0) and (cf_pct >= 35.0) and (tot_capex < 5000.0) and (buckeling <= 1.0) and (breaking <= 1.0)
             if success:
                 self.show_dialog(
                     "Mission Accomplished!", 
@@ -403,7 +421,7 @@ class UnifiedSimulatorApp(ctk.CTk):
                     f"• Energy Generated: {aep:,.1f} MWh (Required: >= 1,800 MWh)\n"
                     f"• Capacity Factor: {cf_pct:.1f}% (Required: >= 35.0%)\n"
                     f"• Total CAPEX: {tot_capex:,.1f} k€ (Required: < 5,000 k€)\n"
-                    f"• Chosen Thickness: {self.turbine.wall_thickness * 1000.0:.1f} mm (Required: >= {thick:.1f} mm)"
+                    f"• Safety: OK"
                 )
             elif self.runs_remaining == 0:
                 self.show_dialog(
@@ -420,19 +438,19 @@ class UnifiedSimulatorApp(ctk.CTk):
                     f"• Energy Generated: {aep:,.1f} / 1,800 MWh {'(OK)' if aep >= 1800.0 else '(FAILED)'}\n"
                     f"• Capacity Factor: {cf_pct:.1f}% / 35.0% {'(OK)' if cf_pct >= 35.0 else '(FAILED)'}\n"
                     f"• Total CAPEX: {tot_capex:,.1f} / 5,000 k€ {'(OK)' if tot_capex < 5000.0 else '(FAILED)'}\n"
-                    f"• Chosen Thickness: {self.turbine.wall_thickness * 1000.0:.1f} mm {'(OK)' if thick <= self.turbine.wall_thickness * 1000.0 else f'(FAILED: Needs >= {thick:.1f} mm)'}\n\n"
+                    f"• Safety Check: {'(OK)' if (buckeling <= 1.0 and breaking <= 1.0) else '(FAILED: Structure unsafe)'}\n\n"
                     f"Runs Remaining: {self.runs_remaining}. Adjust parameters and try again!", 
                     is_err=True
                 )
 
         elif self.active_mission_name == "The Community Cooperative":
-            success = (margin_pct >= 5.0) and (thick <= 120.0) and (thick <= self.turbine.wall_thickness * 1000.0)
+            success = (margin_pct >= 5.0) and (buckeling <= 1.0) and (breaking <= 1.0)
             if success:
                 self.show_dialog(
                     "Mission Accomplished!", 
                     f"Excellent work! You engineered a community-friendly WEC that is safe and profitable.\n\n"
-                    f"• Mean Wall Thickness: {thick:.1f} mm (Required: <= 120 mm)\n"
-                    f"• Chosen Thickness: {self.turbine.wall_thickness * 1000.0:.1f} mm\n"
+                    f"• Buckling Utilization: {buckeling:.2f} (Required: <= 1.0)\n"
+                    f"• Breaking Utilization: {breaking:.2f} (Required: <= 1.0)\n"
                     f"• Profit Margin: {margin_pct:.1f}% (Required: >= 5.0%)\n"
                     f"• Lifetime Profit: {profits:,.1f} k€"
                 )
@@ -440,7 +458,7 @@ class UnifiedSimulatorApp(ctk.CTk):
                 self.show_dialog(
                     "Mission Failed", 
                     "You ran out of simulation runs without meeting the criteria.\n\n"
-                    "TIP: To keep thickness low onshore, avoid extreme heights and large rotor diameters. "
+                    "TIP: To keep structure safe onshore, avoid extreme heights and large rotor diameters. "
                     "Optimize rotor diameter slightly for maximum revenue at low storm loads.", 
                     is_err=True
                 )
@@ -448,8 +466,8 @@ class UnifiedSimulatorApp(ctk.CTk):
                 self.show_dialog(
                     "Simulation Complete",
                     f"Objectives not yet fully met.\n\n"
-                    f"• Mean Wall Thickness: {thick:.1f} / 120 mm {'(OK)' if thick <= 120 else '(FAILED)'}\n"
-                    f"• Chosen Thickness: {self.turbine.wall_thickness * 1000.0:.1f} mm {'(OK)' if thick <= self.turbine.wall_thickness * 1000.0 else f'(FAILED: Needs >= {thick:.1f} mm)'}\n"
+                    f"• Buckling Utilization: {buckeling:.2f} / 1.0 {'(OK)' if buckeling <= 1.0 else '(FAILED)'}\n"
+                    f"• Breaking Utilization: {breaking:.2f} / 1.0 {'(OK)' if breaking <= 1.0 else '(FAILED)'}\n"
                     f"• Profit Margin: {margin_pct:.1f}% / 5.0% {'(OK)' if margin_pct >= 5.0 else '(FAILED)'}\n\n"
                     f"Runs Remaining: {self.runs_remaining}. Adjust parameters and try again!", 
                     is_err=True

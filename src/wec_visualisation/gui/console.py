@@ -7,6 +7,7 @@ from src.wec_visualisation.models.turbine import WindTurbine
 from src.wec_visualisation.models.environment import SiteEnvironment, SSNGenerator
 from src.wec_visualisation.gui.theme import Theme
 from src.wec_visualisation.models.turbine import Generator, Gearbox
+from src.wec_visualisation.gui.components import LabeledSlider, MetricRow
 
 class ConsolePanel(ctk.CTkFrame):
     """
@@ -146,40 +147,14 @@ class ConsolePanel(ctk.CTkFrame):
 
         # Sliders
         # Rotor Diameter
-        self.lbl_rotor_diameter_val = ctk.CTkLabel(p_tab, text=f"Rotor Diameter: {self.turbine.rotor_diameter:.1f} m", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
-        self.lbl_rotor_diameter_val.pack(anchor="w", padx=5, pady=(5, 0))
-        self.slider_rotor_diameter = ctk.CTkSlider(
-            p_tab, 
-            from_=30, 
-            to=150, 
-            number_of_steps=120, 
-            variable=self.rotor_diameter_var, 
-            command=self.on_slider_move,
-            progress_color=Theme.SLIDER_PROGRESS.value,
-            button_color=Theme.SLIDER_BUTTON.value,
-            button_hover_color=Theme.SLIDER_BUTTON_HOVER.value,
-            fg_color=Theme.SLIDER_BG.value
-        )
+        self.slider_rotor_diameter = LabeledSlider(p_tab, "Rotor Diameter: {value:.1f} m", self.rotor_diameter_var, 30, 150, 120, self.on_slider_move)
         self.slider_rotor_diameter.pack(fill="x", padx=5, pady=(0, 10))
 
         # Solidity
-        self.lbl_solidity_val = ctk.CTkLabel(p_tab, text=f"Rotor Solidity: {self.turbine.solidity:.1f} %", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
-        self.lbl_solidity_val.pack(anchor="w", padx=5, pady=(5, 0))
-        self.slider_solidity = ctk.CTkSlider(
-            p_tab, 
-            from_=1, 
-            to=10, 
-            number_of_steps=90, 
-            variable=self.solidity_var, 
-            command=self.on_slider_move,
-            progress_color=Theme.SLIDER_PROGRESS.value,
-            button_color=Theme.SLIDER_BUTTON.value,
-            button_hover_color=Theme.SLIDER_BUTTON_HOVER.value,
-            fg_color=Theme.SLIDER_BG.value
-        )
+        self.slider_solidity = LabeledSlider(p_tab, "Rotor Solidity: {value:.1f} %", self.solidity_var, 1, 10, 90, self.on_slider_move)
         self.slider_solidity.pack(fill="x", padx=5, pady=(0, 10))
 
-        # Tower dimensions container (Hub Height, Top Diameter, Bottom Diameter stacked in a box)
+        # Tower dimensions container
         self.tower_box = ctk.CTkFrame(
             p_tab, 
             fg_color=Theme.BOX_BG.value, 
@@ -188,7 +163,6 @@ class ConsolePanel(ctk.CTkFrame):
         )
         self.tower_box.pack(fill="x", padx=5, pady=(5, 10))
 
-        # Title/Label for the Tower group
         ctk.CTkLabel(
             self.tower_box, 
             text="TOWER GEOMETRY", 
@@ -197,91 +171,19 @@ class ConsolePanel(ctk.CTkFrame):
         ).pack(anchor="w", padx=10, pady=(8, 2))
 
         # 1. Hub Height
-        self.lbl_height_val = ctk.CTkLabel(
-            self.tower_box, 
-            text=f"Hub Height: {self.turbine.height:.1f} m", 
-            font=Theme.fonts.BODY_BOLD, 
-            text_color=Theme.TEXT_MAIN.value
-        )
-        self.lbl_height_val.pack(anchor="w", padx=10, pady=(4, 0))
-        self.slider_height = ctk.CTkSlider(
-            self.tower_box, 
-            from_=40, 
-            to=160, 
-            number_of_steps=120, 
-            variable=self.height_var, 
-            command=self.on_slider_move,
-            progress_color=Theme.SLIDER_PROGRESS.value,
-            button_color=Theme.SLIDER_BUTTON.value,
-            button_hover_color=Theme.SLIDER_BUTTON_HOVER.value,
-            fg_color=Theme.SLIDER_BG.value
-        )
+        self.slider_height = LabeledSlider(self.tower_box, "Hub Height: {value:.1f} m", self.height_var, 40, 160, 120, self.on_slider_move)
         self.slider_height.pack(fill="x", padx=10, pady=(0, 8))
 
         # 2. Top Diameter
-        self.lbl_top_diam_val = ctk.CTkLabel(
-            self.tower_box, 
-            text=f"Top Diameter: {self.turbine.top_diameter:.2f} m", 
-            font=Theme.fonts.BODY_BOLD, 
-            text_color=Theme.TEXT_MAIN.value
-        )
-        self.lbl_top_diam_val.pack(anchor="w", padx=10, pady=(4, 0))
-        self.slider_top_diam = ctk.CTkSlider(
-            self.tower_box, 
-            from_=1, 
-            to=8, 
-            number_of_steps=65, 
-            variable=self.top_diameter_var, 
-            command=self.on_slider_move,
-            progress_color=Theme.SLIDER_PROGRESS.value,
-            button_color=Theme.SLIDER_BUTTON.value,
-            button_hover_color=Theme.SLIDER_BUTTON_HOVER.value,
-            fg_color=Theme.SLIDER_BG.value
-        )
+        self.slider_top_diam = LabeledSlider(self.tower_box, "Top Diameter: {value:.2f} m", self.top_diameter_var, 1, 8, 65, self.on_slider_move)
         self.slider_top_diam.pack(fill="x", padx=10, pady=(0, 8))
 
         # 3. Bottom Diameter
-        self.lbl_bottom_diam_val = ctk.CTkLabel(
-            self.tower_box, 
-            text=f"Base Diameter: {self.turbine.bottom_diameter:.2f} m", 
-            font=Theme.fonts.BODY_BOLD, 
-            text_color=Theme.TEXT_MAIN.value
-        )
-        self.lbl_bottom_diam_val.pack(anchor="w", padx=10, pady=(4, 0))
-        self.slider_bottom_diam = ctk.CTkSlider(
-            self.tower_box, 
-            from_=1, 
-            to=12, 
-            number_of_steps=100, 
-            variable=self.bottom_diameter_var, 
-            command=self.on_slider_move,
-            progress_color=Theme.SLIDER_PROGRESS.value,
-            button_color=Theme.SLIDER_BUTTON.value,
-            button_hover_color=Theme.SLIDER_BUTTON_HOVER.value,
-            fg_color=Theme.SLIDER_BG.value
-        )
+        self.slider_bottom_diam = LabeledSlider(self.tower_box, "Base Diameter: {value:.2f} m", self.bottom_diameter_var, 1, 12, 100, self.on_slider_move)
         self.slider_bottom_diam.pack(fill="x", padx=10, pady=(0, 8))
 
         # 4. Wall Thickness
-        self.lbl_wall_thickness_val = ctk.CTkLabel(
-            self.tower_box, 
-            text=f"Wall Thickness: {self.turbine.wall_thickness * 1000.0:.1f} mm", 
-            font=Theme.fonts.BODY_BOLD, 
-            text_color=Theme.TEXT_MAIN.value
-        )
-        self.lbl_wall_thickness_val.pack(anchor="w", padx=10, pady=(4, 0))
-        self.slider_wall_thickness = ctk.CTkSlider(
-            self.tower_box, 
-            from_=10, 
-            to=250, 
-            number_of_steps=240, 
-            variable=self.wall_thickness_var, 
-            command=self.on_slider_move,
-            progress_color=Theme.SLIDER_PROGRESS.value,
-            button_color=Theme.SLIDER_BUTTON.value,
-            button_hover_color=Theme.SLIDER_BUTTON_HOVER.value,
-            fg_color=Theme.SLIDER_BG.value
-        )
+        self.slider_wall_thickness = LabeledSlider(self.tower_box, "Wall Thickness: {value:.1f} mm", self.wall_thickness_var, 10, 250, 240, self.on_slider_move)
         self.slider_wall_thickness.pack(fill="x", padx=10, pady=(0, 10))
 
 
@@ -373,13 +275,9 @@ class ConsolePanel(ctk.CTkFrame):
         ]
 
         for key, text, init in env_labels:
-            row = ctk.CTkFrame(self.env_scroll, fg_color="transparent")
+            row = MetricRow(self.env_scroll, text, init)
             row.pack(fill="x", pady=2, padx=2)
-            
-            ctk.CTkLabel(row, text=text, font=Theme.fonts.MUTED, text_color=Theme.TEXT_MUTED.value).pack(side="left")
-            val_lbl = ctk.CTkLabel(row, text=init, font=Theme.fonts.MUTED_BOLD, text_color=Theme.TEXT_MAIN.value)
-            val_lbl.pack(side="right")
-            self.env_rows[key] = val_lbl
+            self.env_rows[key] = row
 
         # Mission Objectives box
         self.objectives_box = ctk.CTkFrame(
@@ -420,14 +318,6 @@ class ConsolePanel(ctk.CTkFrame):
         *args : tuple
             Variable arguments from Tkinter event.
         """
-        # Update labels instantly
-        self.lbl_rotor_diameter_val.configure(text=f"Rotor Diameter: {self.rotor_diameter_var.get():.1f} m")
-        self.lbl_height_val.configure(text=f"Hub Height: {self.height_var.get():.1f} m")
-        self.lbl_top_diam_val.configure(text=f"Top Diameter: {self.top_diameter_var.get():.2f} m")
-        self.lbl_bottom_diam_val.configure(text=f"Base Diameter: {self.bottom_diameter_var.get():.2f} m")
-        self.lbl_wall_thickness_val.configure(text=f"Wall Thickness: {self.wall_thickness_var.get():.1f} mm")
-        self.lbl_solidity_val.configure(text=f"Rotor Solidity: {self.solidity_var.get():.1f} %")
-
         # Update model directly
         self.turbine.rotor_diameter = self.rotor_diameter_var.get()
         self.turbine.height = self.height_var.get()
@@ -498,13 +388,13 @@ class ConsolePanel(ctk.CTkFrame):
         self.gearbox_var.set(self.turbine.gearbox.value)
         self.generator_var.set(self.turbine.generator.value)
 
-        # Update physical spec labels
-        self.lbl_rotor_diameter_val.configure(text=f"Rotor Diameter: {self.turbine.rotor_diameter:.1f} m")
-        self.lbl_height_val.configure(text=f"Hub Height: {self.turbine.height:.1f} m")
-        self.lbl_top_diam_val.configure(text=f"Top Diameter: {self.turbine.top_diameter:.2f} m")
-        self.lbl_bottom_diam_val.configure(text=f"Base Diameter: {self.turbine.bottom_diameter:.2f} m")
-        self.lbl_wall_thickness_val.configure(text=f"Wall Thickness: {self.turbine.wall_thickness * 1000.0:.1f} mm")
-        self.lbl_solidity_val.configure(text=f"Rotor Solidity: {self.turbine.solidity:.1f} %")
+        # Update physical spec labels via components
+        self.slider_rotor_diameter.update_label()
+        self.slider_height.update_label()
+        self.slider_top_diam.update_label()
+        self.slider_bottom_diam.update_label()
+        self.slider_wall_thickness.update_label()
+        self.slider_solidity.update_label()
 
         # Update views
         self.update_env_view()
@@ -541,16 +431,16 @@ class ConsolePanel(ctk.CTkFrame):
             wind_hub = 0.0
 
         # Update environment labels
-        self.env_rows["avg_wind"].configure(text=f"{env.avg_wind_10:.1f} m/s (Hub: {wind_hub:.1f} m/s)" if env.avg_wind_10 else "- m/s")
-        self.env_rows["roughness"].configure(text=f"{env.roughness:.2f} mm" if env.roughness else "- mm")
-        self.env_rows["survival"].configure(text=f"{env.survival_gust:.1f} m/s" if env.survival_gust else "- m/s")
-        self.env_rows["weibull_k"].configure(text=f"{env.k_factor:.2f}" if env.k_factor else "-")
-        self.env_rows["downtime"].configure(text=f"{self.turbine.downtime:.1f} %" if self.turbine.downtime is not None else "- %")
-        self.env_rows["lifetime"].configure(text=f"{self.turbine.lifetime} yrs" if self.turbine.lifetime else "- yrs")
-        self.env_rows["price"].configure(text=f"{env.electricity_price} €/MWh" if env.electricity_price is not None else "- €/MWh")
-        self.env_rows["green_cert"].configure(text=f"{env.green_certificate} €/MWh" if env.green_certificate is not None else "- €/MWh")
-        self.env_rows["inflation"].configure(text=f"{env.inflation:.1f} %" if env.inflation is not None else "- %")
-        self.env_rows["interest"].configure(text=f"{env.interest:.1f} %" if env.interest is not None else "- %")
+        self.env_rows["avg_wind"].set_value(f"{env.avg_wind_10:.1f} m/s (Hub: {wind_hub:.1f} m/s)" if env.avg_wind_10 else "- m/s")
+        self.env_rows["roughness"].set_value(f"{env.roughness:.2f} mm" if env.roughness else "- mm")
+        self.env_rows["survival"].set_value(f"{env.survival_gust:.1f} m/s" if env.survival_gust else "- m/s")
+        self.env_rows["weibull_k"].set_value(f"{env.k_factor:.2f}" if env.k_factor else "-")
+        self.env_rows["downtime"].set_value(f"{self.turbine.downtime:.1f} %" if self.turbine.downtime is not None else "- %")
+        self.env_rows["lifetime"].set_value(f"{self.turbine.lifetime} yrs" if self.turbine.lifetime else "- yrs")
+        self.env_rows["price"].set_value(f"{env.electricity_price} €/MWh" if env.electricity_price is not None else "- €/MWh")
+        self.env_rows["green_cert"].set_value(f"{env.green_certificate} €/MWh" if env.green_certificate is not None else "- €/MWh")
+        self.env_rows["inflation"].set_value(f"{env.inflation:.1f} %" if env.inflation is not None else "- %")
+        self.env_rows["interest"].set_value(f"{env.interest:.1f} %" if env.interest is not None else "- %")
 
     def set_objectives_text(self, text: str):
         """
@@ -573,12 +463,12 @@ class ConsolePanel(ctk.CTkFrame):
             True to enable inputs, False to disable.
         """
         state = "normal" if enabled else "disabled"
-        self.slider_rotor_diameter.configure(state=state)
-        self.slider_height.configure(state=state)
-        self.slider_top_diam.configure(state=state)
-        self.slider_bottom_diam.configure(state=state)
-        self.slider_wall_thickness.configure(state=state)
-        self.slider_solidity.configure(state=state)
+        self.slider_rotor_diameter.configure_slider(state=state)
+        self.slider_height.configure_slider(state=state)
+        self.slider_top_diam.configure_slider(state=state)
+        self.slider_bottom_diam.configure_slider(state=state)
+        self.slider_wall_thickness.configure_slider(state=state)
+        self.slider_solidity.configure_slider(state=state)
         self.seg_blades.configure(state=state)
         self.combo_gearbox.configure(state=state)
         self.combo_generator.configure(state=state)

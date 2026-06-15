@@ -433,6 +433,21 @@ class SimulationResult:
     margin: float  # [%]
     payback_years: float # [y]
 
+    def get_weibull_prob(self, v:np.ndarray) ->np.ndarray:
+        k = self.weibull_k
+        C = self.weibull_C
+        return (k / C) * ((v / C) ** (k - 1)) * np.exp(-((v / C) ** k))
+
+    def get_power_at_wind_speed(self, v: float) -> float:
+        if v < self.cut_in_speed or v >= self.cut_out_speed:
+            return 0.0
+        if v < self.rated_wind_speed:
+            # cubic interpolation
+            if self.rated_wind_speed <= self.cut_in_speed:
+                return self.rated_power
+            return self.rated_power * ((v - self.cut_in_speed) / (self.rated_wind_speed - self.cut_in_speed)) ** 3
+        return self.rated_power
+
 
 def simulate(turbine: WindTurbine, env: SiteEnvironment) -> SimulationResult:
     # 1. Wind climate calculations
