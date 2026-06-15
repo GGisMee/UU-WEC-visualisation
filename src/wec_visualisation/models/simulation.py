@@ -517,6 +517,17 @@ if __name__ == "__main__":
                 financial_additional_part = 0.07,
             )
             turbine = WindTurbine(rotor_diameter=131, height=120, solidity=0.04, blades = 3,  gearbox= Gearbox.MEDIUM_SPEED, generator=Generator.SYNCHRONOUS)
-            print(env)
-            print(turbine)
-            print('\n', SimulationEngine.simulate(turbine, env))
+        case 2:
+            env = SiteEnvironment(
+                avg_wind_10=7.0,
+                roughness=0.1,
+                survival_gust=59.5,
+                
+
+            )
+            turbine = 2
+
+    
+    print(env)
+    print(turbine)
+    print('\n', SimulationEngine.simulate(turbine, env))
