@@ -3,8 +3,8 @@ import customtkinter as ctk
 import tkinter as tk
 import math
 from typing import Callable
-from src.wec_visualisation.models.turbine import WindTurbine
-from src.wec_visualisation.gui.theme import Theme
+from wec_visualisation.models.turbine import WindTurbine
+from wec_visualisation.gui.theme import Theme
 
 class CADCanvas(ctk.CTkFrame):
     def __init__(self, parent, turbine: WindTurbine, on_simulate_click: Callable):

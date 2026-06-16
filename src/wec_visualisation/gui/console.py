@@ -3,11 +3,11 @@ import customtkinter as ctk
 import tkinter as tk
 import math
 from typing import Callable
-from src.wec_visualisation.models.turbine import WindTurbine
-from src.wec_visualisation.models.environment import SiteEnvironment, SSNGenerator
-from src.wec_visualisation.gui.theme import Theme
-from src.wec_visualisation.models.turbine import Generator, Gearbox
-from src.wec_visualisation.gui.components import LabeledSlider, MetricRow
+from wec_visualisation.models.turbine import WindTurbine
+from wec_visualisation.models.environment import SiteEnvironment, SSNGenerator
+from wec_visualisation.gui.theme import Theme
+from wec_visualisation.models.turbine import Generator, Gearbox
+from wec_visualisation.gui.components import LabeledSlider, MetricRow
 
 class ConsolePanel(ctk.CTkFrame):
     """
@@ -404,13 +404,7 @@ class ConsolePanel(ctk.CTkFrame):
         """
         Update the informational description text for the selected drivetrain options.
         """
-        gear = self.gearbox_var.get()
-        gen = self.generator_var.get()
-        if gear == "None (Direct Drive)":
-            desc = f"Direct Drive + {gen}: No gearbox eliminates high-wear parts and reduces maintenance. However, the multi-pole generator increases weight and structural CAPEX."
-        else:
-            desc = f"{gear} + {gen}: Geared drivetrain configuration. Standard, cost-effective design with a lighter nacelle, but requires scheduled gearbox inspections."
-        self.lbl_drivetrain_desc.configure(text=desc)
+        self.lbl_drivetrain_desc.configure(text=self.turbine.generator_gearbox_description)
 
     def update_env_view(self):
         """

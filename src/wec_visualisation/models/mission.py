@@ -1,8 +1,8 @@
 # models/challenge.py
 from dataclasses import dataclass
-from src.wec_visualisation.models.environment import SiteEnvironment
-from src.wec_visualisation.models.simulation import SimulationResult
-from src.wec_visualisation.models.environment import SSNGenerator
+from wec_visualisation.models.environment import SiteEnvironment
+from wec_visualisation.models.simulation import SimulationResult
+from wec_visualisation.models.environment import SSNGenerator
 from enum import Enum
 
 class DefaultMissions(Enum):
@@ -28,7 +28,10 @@ class DefaultMissions(Enum):
                     name="Arctic Gale",
                     description="Design a wind farm that can withstand the worlds strongest sustained winds",
                     env=env,
-                    constraints={},
+                    constraints={ # True => OK, False => Fail
+                        "utilization": lambda utilization: utilization >= 1.5, 
+                        "margin": lambda margin: margin >= 0, 
+                    },
                     max_runs=6
                     )
                 
@@ -37,7 +40,13 @@ class DefaultMissions(Enum):
                     name="The Gentle Breeze",
                     description="Design a wind farm for high energy production in low-wind conditions",
                     env=env,
-                    constraints={},
+                    constraints={
+                        "tip_height": lambda tip_height:tip_height <= 160, # [m]
+                        "generated_energy": lambda generated_energy: generated_energy >= 5500, # [MWh]
+                        "total_capex": lambda total_capex: total_capex <= 3000 # [M$]
+                        
+                        
+                    },
                     max_runs=6
                     )
 

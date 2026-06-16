@@ -2,14 +2,14 @@
 import os
 import customtkinter as ctk
 import tkinter as tk
-from src.wec_visualisation.models.turbine import WindTurbine, Generator, Gearbox
-from src.wec_visualisation.models.environment import SiteEnvironment, DefaultEnvironments, SSNGenerator
-from src.wec_visualisation.models.simulation import SimulationEngine
-from src.wec_visualisation.models.mission import DefaultMissions
-from src.wec_visualisation.gui.console import ConsolePanel
-from src.wec_visualisation.gui.canvas import CADCanvas
-from src.wec_visualisation.gui.analytics import AnalyticsPanel
-from src.wec_visualisation.gui.theme import Theme
+from wec_visualisation.models.turbine import WindTurbine, Generator, Gearbox
+from wec_visualisation.models.environment import SiteEnvironment, DefaultEnvironments, SSNGenerator
+from wec_visualisation.models.simulation import SimulationEngine
+from wec_visualisation.models.mission import DefaultMissions
+from wec_visualisation.gui.console import ConsolePanel
+from wec_visualisation.gui.canvas import CADCanvas
+from wec_visualisation.gui.analytics import AnalyticsPanel
+from wec_visualisation.gui.theme import Theme
 
 def load_scale_factor():
     try:
@@ -37,7 +37,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.geometry("1200x750")
         self.minsize(1000, 700)
         self.configure(fg_color=Theme.BG_MAIN.value)
-        ctk.set_appearance_mode("dark")
+        ctk.set_appearance_mode("system")
 
         # --- STATE INITIALIZATION ---
         self.turbine = WindTurbine(
@@ -121,7 +121,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         
         ctk.CTkLabel(
             left_header, 
-            text="MISSION / CHALLENGE SELECTOR", 
+            text="MISSION / ENVIRONMENT SELECTOR", 
             font=Theme.fonts.HEADER, 
             text_color=Theme.ACCENT.value
         ).pack(anchor="w")
@@ -175,7 +175,7 @@ class UnifiedSimulatorApp(ctk.CTk):
             font=Theme.fonts.MUTED
         )
         self.theme_menu.pack(anchor="w")
-        self.theme_menu.set("Dark")
+        self.theme_menu.set("System")
 
         # 1. R&D Runs Remaining Scorecard
         self.runs_card = ctk.CTkFrame(right_header, fg_color=Theme.BG_INPUT.value, width=130, height=52, border_width=1, border_color=Theme.BORDER.value)
@@ -295,7 +295,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         if self.runs_remaining is not None and self.runs_remaining <= 0:
             self.show_dialog(
                 "Out of R&D Budget", 
-                "You have used all 6 simulation runs for this challenge.\nPlease select a new mission or restart.", 
+                "You have used all 6 simulation runs for this mission.\nPlease select a new mission or restart.", 
                 is_err=True
             )
             return
@@ -327,7 +327,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.simulation_out_of_date = False
 
         # 3. Update Views
-        self.analytics.display_results(result)
+        self.analytics.display_results(result, self.turbine.swept_area)
         
         # Unsafe check: buckling or breaking utilization exceeds 1.0
         is_unsafe = (result.buckeling_utilization > 1.0) or (result.breaking_utilization > 1.0)
@@ -366,9 +366,9 @@ class UnifiedSimulatorApp(ctk.CTk):
 
     def check_mission_targets(self, result):
         # -------------------------------------------------------------------
-        # TODO: EXTRACT MISSION LOGIC TO challenge.py
+        # TODO: EXTRACT MISSION LOGIC TO mission.py
         # These evaluations should be moved to a dedicated evaluator class
-        # (e.g. MissionEvaluator in challenge.py) to decouple from the GUI.
+        # (e.g. MissionEvaluator in mission.py) to decouple from the GUI.
         # -------------------------------------------------------------------
         if self.active_mission_name == "Free Play Sandbox":
             return

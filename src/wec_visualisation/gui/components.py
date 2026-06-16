@@ -1,6 +1,6 @@
 import customtkinter as ctk
 from typing import Callable, Any
-from src.wec_visualisation.gui.theme import Theme
+from wec_visualisation.gui.theme import Theme
 
 class LabeledSlider(ctk.CTkFrame):
     """

@@ -4,9 +4,9 @@ import numpy as np
 from scipy.special import gamma
 from scipy.optimize import root_scalar
 
-from src.wec_visualisation.models.turbine import WindTurbine, Gearbox, Generator
-from src.wec_visualisation.models.environment import SiteEnvironment, SSNGenerator
-import src.wec_visualisation.config as config
+from wec_visualisation.models.turbine import WindTurbine, Gearbox, Generator
+from wec_visualisation.models.environment import SiteEnvironment, SSNGenerator
+import wec_visualisation.config as config
 
 @dataclass(frozen=True)
 class StructuralReport:
@@ -450,6 +450,17 @@ class SimulationResult:
 
 
 def simulate(turbine: WindTurbine, env: SiteEnvironment) -> SimulationResult:
+    """Processes turbine and env data and calculates SimulationResult.
+    Calculates wind climate behaviour, energy production, structural integrity and finances.
+    
+    Parameters:
+        turbine: data about the turbine itself
+        env: Data about the environment where the turbine is working
+    
+    -------
+    Returns:
+        SimulationResult
+            simulation_result"""
     # 1. Wind climate calculations
     climate = ClimateService.calculate_wind_climate(env, turbine)
     

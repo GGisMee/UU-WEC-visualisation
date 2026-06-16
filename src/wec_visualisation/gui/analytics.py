@@ -7,8 +7,8 @@ import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from src.wec_visualisation.models.simulation import SimulationResult
-from src.wec_visualisation.gui.theme import Theme
+from wec_visualisation.models.simulation import SimulationResult
+from wec_visualisation.gui.theme import Theme
 
 class AnalyticsPanel(ctk.CTkFrame):
     def __init__(self, parent, on_simulate_click):
@@ -220,7 +220,7 @@ class AnalyticsPanel(ctk.CTkFrame):
     def set_loading_status(self, text: str):
         self.lbl_loading_status.configure(text=text)
 
-    def display_results(self, result: SimulationResult):
+    def display_results(self, result: SimulationResult, swept_area:float):
         """Displays simulated variables and plots curves."""
         self.last_result = result
         self.show_warning_banner(False)
@@ -229,9 +229,7 @@ class AnalyticsPanel(ctk.CTkFrame):
         # 1. Update Audit Tab
         self.audit_rows["hub_wind"].configure(text=f"{result.wind_nacelle:.1f} m/s")
         
-        # Calculate swept area from parent turbine
-        swept = self.parent_turbine_swept_area()
-        self.audit_rows["swept_area"].configure(text=f"{swept:,.1f} m²")
+        self.audit_rows["swept_area"].configure(text=f"{swept_area:,.1f} m²")
         self.audit_rows["rated_power"].configure(text=f"{result.rated_power:,.1f} kW")
         self.audit_rows["cap_factor"].configure(text=f"{result.capacity_factor * 100:.1f} %")
         self.audit_rows["thrust_load"].configure(text=f"{result.aerodynamical_load:,.1f} kN")
@@ -270,8 +268,6 @@ class AnalyticsPanel(ctk.CTkFrame):
         # Display IRR
         irr_val = result.IRR
         irr_text = f"{irr_val * 100:.1f} %" if hasattr(irr_val, '__float__') or isinstance(irr_val, float) else "- %"
-        if hasattr(irr_val, 'root'):
-            irr_text = f"{irr_val.root * 100:.1f} %"
         self.ledger_rows["irr"].configure(text=irr_text)
 
         # Profit Margin
@@ -283,18 +279,8 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.draw_performance_curves()
         self.redraw_capex_bar()
 
-    def parent_turbine_swept_area(self) -> float:
-        parent = self.master
-        while parent and not hasattr(parent, "turbine"):
-            parent = parent.master
-        if parent and hasattr(parent, "turbine"):
-            return parent.turbine.swept_area
-        return 0.0
-
-    # ==========================================
-    # CHART DRAWING LOOPS (matplotlib)
-    # ==========================================
     def clear_charts(self):
+        """Matplotlib chart drawing loops"""
         self.charts_fig.clear()
         mode = ctk.get_appearance_mode()
         idx = 0 if mode == "Light" else 1
