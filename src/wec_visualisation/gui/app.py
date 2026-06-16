@@ -201,9 +201,9 @@ class UnifiedSimulatorApp(ctk.CTk):
             SSNGenerator.apply_ssn_to_env(ssn, self.environment)
             self.console.update_from_models()
             self.on_inputs_changed()
-            self.console.lbl_mission_desc.configure(
-                text=f"Sandbox: Environment updated via birthdate (SSN month/day: {ssn[4:6]}/{ssn[6:8]}).\n"
-                     f"Medelvind: {self.environment.avg_wind_10:.1f} m/s, Råhet: {self.environment.roughness:.1f} mm."
+            self.console.info_mission.set_text(
+                f"Sandbox: Environment updated via birthdate (SSN month/day: {ssn[4:6]}/{ssn[6:8]}).\n"
+                f"Medelvind: {self.environment.avg_wind_10:.1f} m/s, Råhet: {self.environment.roughness:.1f} mm."
             )
 
     def on_theme_change(self, choice: str):

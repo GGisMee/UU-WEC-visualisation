@@ -11,13 +11,12 @@ from wec_visualisation.gui.components import LabeledSlider, MetricRow, TextInfoB
 
 class ConstraintRow(ctk.CTkFrame):
     """
-    A reusable row for displaying a mission constraint, showing:
     - Status symbol: green ✓ (passed), red ✗ (failed), or gray — (pending)
     - Constraint name (left)
     - Target requirement and/or actual evaluated value (right)
     """
     def __init__(self, parent, constraint_name: str, target_text: str, passed: bool | None, actual_text: str | None = None):
-        super().__init__(parent, fg_color="transparent")
+        super().__init__(parent, fg_color=Theme.BG_SURFACE.value)
         
         # Status Symbol (✓, ✗, —)
         if passed is None:
@@ -120,6 +119,7 @@ class ConsolePanel(ctk.CTkFrame):
             border_width=1, 
             border_color=Theme.BORDER.value
         )
+        self._tracked_widgets = []
         self.turbine = turbine
         self.environment = environment
         self.on_change = on_change_callback
@@ -166,7 +166,7 @@ class ConsolePanel(ctk.CTkFrame):
         # 2. Main Tabs Widget
         self.tabs = ctk.CTkTabview(
             self, 
-            fg_color="transparent",
+            fg_color=Theme.BG_SURFACE.value,
             segmented_button_fg_color=Theme.BOX_BG.value,
             segmented_button_selected_color=Theme.TAB_SELECTED.value,
             segmented_button_selected_hover_color=Theme.TAB_SELECTED_HOVER.value,
@@ -179,16 +179,18 @@ class ConsolePanel(ctk.CTkFrame):
         m_tab = self.tabs.add("Mission")
         
         # Main scrollable frame to prevent layout clipping and inner scrollbars
-        self.mission_scroll = ctk.CTkScrollableFrame(m_tab, fg_color="transparent")
+        self.mission_scroll = ctk.CTkScrollableFrame(m_tab, fg_color=Theme.BG_SURFACE.value)
         self.mission_scroll.pack(fill="both", expand=True)
 
         # Select Active Mission label
-        ctk.CTkLabel(
+        lbl = ctk.CTkLabel(
             self.mission_scroll, 
             text="Select Active Mission:", 
             font=Theme.fonts.BODY_BOLD, 
             text_color=Theme.TEXT_MAIN.value
-        ).pack(anchor="w", padx=5, pady=(5, 2))
+        )
+        lbl.pack(anchor="w", padx=5, pady=(5, 2))
+        self._tracked_widgets.append(lbl)
         
         self.mission_menu = ctk.CTkOptionMenu(
             self.mission_scroll, 
@@ -256,17 +258,19 @@ class ConsolePanel(ctk.CTkFrame):
         self.lbl_env_weibull.grid(row=3, column=1, padx=10, pady=(2, 6), sticky="w")
 
         # Mission Constraints label
-        ctk.CTkLabel(
+        lbl = ctk.CTkLabel(
             self.mission_scroll, 
             text="Mission Constraints:", 
             font=Theme.fonts.BODY_BOLD, 
             text_color=Theme.TEXT_MAIN.value
-        ).pack(anchor="w", padx=5, pady=(5, 2))
+        )
+        lbl.pack(anchor="w", padx=5, pady=(5, 2))
+        self._tracked_widgets.append(lbl)
         
         # Regular frame (since parent is already scrollable, avoiding nested scrollbars)
         self.constraints_scroll = ctk.CTkFrame(
             self.mission_scroll, 
-            fg_color="transparent"
+            fg_color=Theme.BG_SURFACE.value
         )
         self.constraints_scroll.pack(fill="x", expand=True, padx=5, pady=5)
 
@@ -277,7 +281,9 @@ class ConsolePanel(ctk.CTkFrame):
         # TAB 1: PHYSICAL SPECS
         # ==========================================
         # Designer Name
-        ctk.CTkLabel(p_tab, text="Designer Name", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value).pack(anchor="w", padx=5, pady=(5, 0))
+        lbl = ctk.CTkLabel(p_tab, text="Designer Name", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value)
+        lbl.pack(anchor="w", padx=5, pady=(5, 0))
+        self._tracked_widgets.append(lbl)
         self.ent_name = ctk.CTkEntry(
             p_tab, 
             textvariable=self.name_var, 
@@ -287,6 +293,11 @@ class ConsolePanel(ctk.CTkFrame):
             text_color=Theme.TEXT_MAIN.value
         )
         self.ent_name.pack(fill="x", padx=5, pady=(0, 5))
+
+        # General Title
+        lbl = ctk.CTkLabel(p_tab, text="Physical Details", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value)
+        lbl.pack(anchor="w", padx=5, pady=(15, 2))
+        self._tracked_widgets.append(lbl)
 
         # SSN Field
         ctk.CTkLabel(p_tab, text="SSN (YYYYMMDDXXXX)", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value).pack(anchor="w", padx=5, pady=(2, 0))
@@ -343,7 +354,9 @@ class ConsolePanel(ctk.CTkFrame):
 
 
         # Blades Count Segmented Button
-        ctk.CTkLabel(p_tab, text="Number of Blades", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value).pack(anchor="w", padx=5, pady=(5, 0))
+        lbl = ctk.CTkLabel(p_tab, text="Number of Blades", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value)
+        lbl.pack(anchor="w", padx=5, pady=(5, 0))
+        self._tracked_widgets.append(lbl)
         self.seg_blades = ctk.CTkSegmentedButton(
             p_tab, 
             values=["2 Blades", "3 Blades", "4 Blades"], 
@@ -360,7 +373,18 @@ class ConsolePanel(ctk.CTkFrame):
         # ==========================================
         # TAB 2: DRIVETRAIN
         # ==========================================
-        ctk.CTkLabel(d_tab, text="Gearbox Technology", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value).pack(anchor="w", padx=5, pady=(10, 2))
+        lbl = ctk.CTkLabel(
+            d_tab, 
+            text="POWER CONVERSION SYSTEM", 
+            font=Theme.fonts.HEADER, 
+            text_color=Theme.TEXT_MUTED.value
+        )
+        lbl.pack(anchor="w", padx=5, pady=(10, 5))
+        self._tracked_widgets.append(lbl)
+
+        lbl = ctk.CTkLabel(d_tab, text="Gearbox Technology", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
+        lbl.pack(anchor="w", padx=5, pady=(10, 2))
+        self._tracked_widgets.append(lbl)
         self.combo_gearbox = ctk.CTkOptionMenu(
             d_tab, 
             values=["None (Direct Drive)", "Medium-Speed", "High-Speed"],
@@ -373,7 +397,9 @@ class ConsolePanel(ctk.CTkFrame):
         )
         self.combo_gearbox.pack(fill="x", padx=5, pady=(0, 15))
 
-        ctk.CTkLabel(d_tab, text="Generator Type", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value).pack(anchor="w", padx=5, pady=(10, 2))
+        lbl = ctk.CTkLabel(d_tab, text="Generator Type", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
+        lbl.pack(anchor="w", padx=5, pady=(10, 2))
+        self._tracked_widgets.append(lbl)
         self.combo_generator = ctk.CTkOptionMenu(
             d_tab, 
             values=["Synchronous", "Asynchronous", "DFIG"],
@@ -458,9 +484,6 @@ class ConsolePanel(ctk.CTkFrame):
         if SSNGenerator.validate(ssn):
             self.on_ssn(ssn)
 
-    # ==========================================
-    # PUBLIC/VIEW INTERFACES
-    # ==========================================
     def update_from_models(self):
         """
         Update all GUI variables and elements to match current model values.
@@ -570,6 +593,7 @@ class ConsolePanel(ctk.CTkFrame):
                 justify="center"
             )
             lbl.pack(pady=20, fill="x")
+            self._tracked_widgets.append(lbl)
             return
 
         if report is None:
@@ -582,6 +606,7 @@ class ConsolePanel(ctk.CTkFrame):
                     passed=None
                 )
                 row.pack(fill="x", pady=4)
+                self._tracked_widgets.append(row)
         else:
             # Show evaluations
             for eval_res in report.evaluations:
@@ -593,6 +618,7 @@ class ConsolePanel(ctk.CTkFrame):
                     actual_text=eval_res.actual_value_text
                 )
                 row.pack(fill="x", pady=4)
+                self._tracked_widgets.append(row)
 
     def set_inputs_enabled(self, enabled: bool):
         """

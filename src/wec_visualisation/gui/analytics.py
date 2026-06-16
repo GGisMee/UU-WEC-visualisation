@@ -22,6 +22,7 @@ class AnalyticsPanel(ctk.CTkFrame):
         )
         self.on_simulate = on_simulate_click
         self.last_result = None
+        self._tracked_widgets = []
 
         # Prevent auto-shrinking
         self.pack_propagate(False)
@@ -39,7 +40,7 @@ class AnalyticsPanel(ctk.CTkFrame):
         # Main Tabview
         self.tabs = ctk.CTkTabview(
             self, 
-            fg_color="transparent",
+            fg_color=Theme.BG_SURFACE.value,
             segmented_button_fg_color=Theme.BOX_BG.value,
             segmented_button_selected_color=Theme.TAB_SELECTED.value,
             segmented_button_selected_hover_color=Theme.TAB_SELECTED_HOVER.value,
@@ -56,7 +57,7 @@ class AnalyticsPanel(ctk.CTkFrame):
         # ==========================================
         # TAB 1: PERFORMANCE CHARTS
         # ==========================================
-        self.charts_frame = ctk.CTkFrame(ch_tab, fg_color="transparent")
+        self.charts_frame = ctk.CTkFrame(ch_tab, fg_color=Theme.BG_SURFACE.value)
         self.charts_frame.pack(fill="both", expand=True, padx=5, pady=5)
         
         self.charts_fig = Figure(figsize=(4, 6), dpi=100)
@@ -83,10 +84,12 @@ class AnalyticsPanel(ctk.CTkFrame):
         ]
         
         for key, label, init_val in audit_defs:
-            row = ctk.CTkFrame(self.audit_scroll, fg_color="transparent")
+            row = ctk.CTkFrame(self.audit_scroll, fg_color=Theme.BG_SURFACE.value)
             row.pack(fill="x", pady=4, padx=5)
             
-            ctk.CTkLabel(row, text=label, font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value).pack(side="left")
+            lbl = ctk.CTkLabel(row, text=label, font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value)
+            lbl.pack(side="left")
+            self._tracked_widgets.append(lbl)
             val_lbl = ctk.CTkLabel(row, text=init_val, font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
             val_lbl.pack(side="right")
             self.audit_rows[key] = val_lbl
@@ -108,8 +111,10 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.ledger_scroll.pack(fill="both", expand=True)
 
         # Cost breakdown bar chart area
-        ctk.CTkLabel(self.ledger_scroll, text="CAPEX COST ALLOCATION BREAKDOWN", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value).pack(anchor="w", padx=5, pady=(5, 2))
-        self.capex_frame = ctk.CTkFrame(self.ledger_scroll, fg_color="transparent", height=30)
+        lbl = ctk.CTkLabel(self.ledger_scroll, text="CAPEX COST ALLOCATION BREAKDOWN", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value)
+        lbl.pack(anchor="w", padx=5, pady=(5, 2))
+        self._tracked_widgets.append(lbl)
+        self.capex_frame = ctk.CTkFrame(self.ledger_scroll, fg_color=Theme.BG_SURFACE.value, height=30)
         self.capex_frame.pack(fill="x", padx=5, pady=(0, 10))
         self.capex_frame.pack_propagate(False)
         self.capex_fig = Figure(figsize=(5, 0.3), dpi=100)
@@ -135,13 +140,15 @@ class AnalyticsPanel(ctk.CTkFrame):
             is_bold = len(item) == 4
             key, label, init_val = item[0], item[1], item[2]
             
-            row = ctk.CTkFrame(self.ledger_scroll, fg_color="transparent")
+            row = ctk.CTkFrame(self.ledger_scroll, fg_color=Theme.BG_SURFACE.value)
             row.pack(fill="x", pady=4, padx=5)
             
             lbl_weight = Theme.fonts.BODY_BOLD if is_bold else Theme.fonts.BODY
             lbl_color = Theme.TEXT_MAIN.value if is_bold else Theme.TEXT_MUTED.value
             
-            ctk.CTkLabel(row, text=label, font=lbl_weight, text_color=lbl_color).pack(side="left")
+            lbl = ctk.CTkLabel(row, text=label, font=lbl_weight, text_color=lbl_color)
+            lbl.pack(side="left")
+            self._tracked_widgets.append(lbl)
             val_lbl = ctk.CTkLabel(row, text=init_val, font=Theme.fonts.BODY_BOLD, text_color=Theme.INFO.value if is_bold else Theme.TEXT_MAIN.value)
             val_lbl.pack(side="right")
             self.ledger_rows[key] = val_lbl
@@ -161,15 +168,17 @@ class AnalyticsPanel(ctk.CTkFrame):
 
         # Loading Overlay (covers entire panel during simulation run)
         self.loading_overlay = ctk.CTkFrame(self, fg_color=Theme.BG_SURFACE.value, corner_radius=0)
-        self.loading_container = ctk.CTkFrame(self.loading_overlay, fg_color="transparent")
+        self.loading_container = ctk.CTkFrame(self.loading_overlay, fg_color=Theme.BG_SURFACE.value)
         self.loading_container.place(relx=0.5, rely=0.45, anchor="center")
 
-        ctk.CTkLabel(
+        lbl = ctk.CTkLabel(
             self.loading_container, 
             text="SUPERCOMPUTER SIMULATION RUNNING", 
             font=Theme.fonts.SUBTITLE, 
             text_color=Theme.ACCENT.value
-        ).pack(pady=5)
+        )
+        lbl.pack(pady=5)
+        self._tracked_widgets.append(lbl)
         
         self.lbl_loading_status = ctk.CTkLabel(
             self.loading_container, 
@@ -194,6 +203,7 @@ class AnalyticsPanel(ctk.CTkFrame):
     # ==========================================
     # CONTROLLER INTERFACES
     # ==========================================
+
     def show_warning_banner(self, show: bool):
         if show:
             self.warning_banner.place(relx=0, rely=0.92, relwidth=1, relheight=0.08)
