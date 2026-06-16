@@ -279,7 +279,7 @@ class ConsolePanel(ctk.CTkFrame):
         # ==========================================
         # Designer Name
         lbl = ctk.CTkLabel(p_tab, text="Designer Name", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value)
-        lbl.pack(anchor="w", padx=5, pady=(5, 0))
+        lbl.pack(anchor="w", padx=5, pady=(2, 0))
         self._tracked_widgets.append(lbl)
         self.ent_name = ctk.CTkEntry(
             p_tab, 
@@ -289,12 +289,7 @@ class ConsolePanel(ctk.CTkFrame):
             border_color=Theme.BORDER.value,
             text_color=Theme.TEXT_MAIN.value
         )
-        self.ent_name.pack(fill="x", padx=5, pady=(0, 5))
-
-        # General Title
-        lbl = ctk.CTkLabel(p_tab, text="Physical Details", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value)
-        lbl.pack(anchor="w", padx=5, pady=(15, 2))
-        self._tracked_widgets.append(lbl)
+        self.ent_name.pack(fill="x", padx=5, pady=(0, 2))
 
         # SSN Field
         ctk.CTkLabel(p_tab, text="SSN (YYYYMMDDXXXX)", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value).pack(anchor="w", padx=5, pady=(2, 0))
@@ -306,7 +301,7 @@ class ConsolePanel(ctk.CTkFrame):
             border_color=Theme.BORDER.value,
             text_color=Theme.TEXT_MAIN.value
         )
-        self.ent_ssn.pack(fill="x", padx=5, pady=(0, 10))
+        self.ent_ssn.pack(fill="x", padx=5, pady=(0, 5))
 
         # Sliders
         self.sliders = {}
@@ -316,7 +311,7 @@ class ConsolePanel(ctk.CTkFrame):
         ]
         for key, title, var, min_v, max_v, steps in main_sliders:
             slider = LabeledSlider(p_tab, title, var, min_v, max_v, steps, self.on_slider_move)
-            slider.pack(fill="x", padx=5, pady=(0, 10))
+            slider.pack(fill="x", padx=5, pady=1)
             self.sliders[key] = slider
 
         # Tower dimensions container
@@ -326,7 +321,7 @@ class ConsolePanel(ctk.CTkFrame):
             border_width=1, 
             border_color=Theme.BORDER.value
         )
-        self.tower_box.pack(fill="x", padx=5, pady=(5, 10))
+        self.tower_box.pack(fill="x", padx=5, pady=(2, 5))
 
         lbl = ctk.CTkLabel(
             self.tower_box, 
@@ -334,7 +329,7 @@ class ConsolePanel(ctk.CTkFrame):
             font=Theme.fonts.HEADER, 
             text_color=Theme.ACCENT.value
         )
-        lbl.pack(anchor="w", padx=10, pady=(8, 2))
+        lbl.pack(anchor="w", padx=10, pady=(4, 2))
         self._tracked_widgets.append(lbl)
 
         tower_sliders = [
@@ -345,14 +340,14 @@ class ConsolePanel(ctk.CTkFrame):
         ]
         for key, title, var, min_v, max_v, steps in tower_sliders:
             slider = LabeledSlider(self.tower_box, title, var, min_v, max_v, steps, self.on_slider_move)
-            pb = 10 if key == "wall_thickness" else 8
+            pb = 5 if key == "wall_thickness" else 1
             slider.pack(fill="x", padx=10, pady=(0, pb))
             self.sliders[key] = slider
 
 
         # Blades Count Segmented Button
         lbl = ctk.CTkLabel(p_tab, text="Number of Blades", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value)
-        lbl.pack(anchor="w", padx=5, pady=(5, 0))
+        lbl.pack(anchor="w", padx=5, pady=(2, 0))
         self._tracked_widgets.append(lbl)
         self.seg_blades = ctk.CTkSegmentedButton(
             p_tab, 
@@ -365,7 +360,7 @@ class ConsolePanel(ctk.CTkFrame):
             unselected_hover_color=Theme.BG_MAIN.value,
             text_color=Theme.TEXT_MAIN.value
         )
-        self.seg_blades.pack(fill="x", padx=5, pady=5)
+        self.seg_blades.pack(fill="x", padx=5, pady=(0, 2))
 
         # ==========================================
         # TAB 2: DRIVETRAIN

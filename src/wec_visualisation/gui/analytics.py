@@ -173,7 +173,7 @@ class AnalyticsPanel(ctk.CTkFrame):
 
         lbl = ctk.CTkLabel(
             self.loading_container, 
-            text="SUPERCOMPUTER SIMULATION RUNNING", 
+            text="SIMULATION RUNNING", 
             font=Theme.fonts.SUBTITLE, 
             text_color=Theme.ACCENT.value
         )
@@ -182,7 +182,7 @@ class AnalyticsPanel(ctk.CTkFrame):
         
         self.lbl_loading_status = ctk.CTkLabel(
             self.loading_container, 
-            text="Initializing wind tunnel aerodynamic grid...", 
+            text="Initializing wind aerodynamic grid...", 
             font=Theme.fonts.BODY, 
             text_color=Theme.TEXT_MAIN.value
         )

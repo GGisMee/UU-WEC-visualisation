@@ -21,7 +21,7 @@ class LabeledSlider(ctk.CTkFrame):
             font=Theme.fonts.BODY_BOLD, 
             text_color=Theme.TEXT_MAIN.value
         )
-        self.label.pack(anchor="w", padx=0, pady=(4, 0))
+        self.label.pack(anchor="w", padx=0, pady=(2, 0))
         
         # Slider
         self.slider = ctk.CTkSlider(
@@ -36,7 +36,7 @@ class LabeledSlider(ctk.CTkFrame):
             button_hover_color=Theme.SLIDER_BUTTON_HOVER.value,
             fg_color=Theme.SLIDER_BG.value
         )
-        self.slider.pack(fill="x", padx=0, pady=(0, 8))
+        self.slider.pack(fill="x", padx=0, pady=(0, 2))
         
     def _on_change(self, val):
         self.label.configure(text=self.label_template.format(value=self.variable.get()))
