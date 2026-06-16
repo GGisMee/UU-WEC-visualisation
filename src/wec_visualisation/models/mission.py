@@ -88,7 +88,7 @@ class DefaultMissions(Enum):
             case DefaultMissions.SANDBOX:
                 return Mission(
                     name="Sandbox",
-                    description="Free play sandbox: explore turbine sizes and parameters with unlimited simulation runs at Lillgrund, a shallow water site in Öresund, Sweden.",
+                    description="Sandbox: explore turbine sizes and parameters with unlimited simulation runs at Lillgrund, a shallow water site in Öresund, Sweden.",
                     env=env,
                     constraints=[],
                     max_runs=None
@@ -96,7 +96,7 @@ class DefaultMissions(Enum):
                 
             case DefaultMissions.ARCTIC_GALE:
                 return Mission(
-                    name="Arctic Gale",
+                    name="The Arctic Gale",
                     description="Design a storm-hardened offshore turbine at Dogger Bank in the North Sea. This site features strong, sustained winds but is prone to extreme arctic storm gusts and waves.",
                     env=env,
                     constraints=[

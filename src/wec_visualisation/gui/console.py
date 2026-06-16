@@ -3,6 +3,7 @@ import customtkinter as ctk
 import tkinter as tk
 import math
 from typing import Callable
+from wec_visualisation.models.mission import Mission
 from wec_visualisation.models.turbine import WindTurbine
 from wec_visualisation.models.environment import SiteEnvironment, SSNGenerator
 from wec_visualisation.gui.theme import Theme
@@ -195,7 +196,7 @@ class ConsolePanel(ctk.CTkFrame):
         self.mission_menu = ctk.CTkOptionMenu(
             self.mission_scroll, 
             values=[
-                "Free Play Sandbox", 
+                "Sandbox", 
                 "The Arctic Gale", 
                 "The Gentle Breeze", 
                 "The Community Cooperative"
@@ -553,19 +554,11 @@ class ConsolePanel(ctk.CTkFrame):
             text=f"{env.k_factor:.2f}" if env.k_factor else "-"
         )
 
-    def update_mission_view(self, mission, report=None):
+    def update_mission_view(self, mission:Mission, report=None):
         """
         Updates the mission selection UI, active description, and constraints list.
         """
-        # Ensure dropdown value matches the mission
-        display_names = {
-            "Sandbox": "Free Play Sandbox",
-            "Arctic Gale": "The Arctic Gale",
-            "The Gentle Breeze": "The Gentle Breeze",
-            "The Community Cooperative": "The Community Cooperative"
-        }
-        name_to_set = display_names.get(mission.name, mission.name)
-        self.mission_menu.set(name_to_set)
+        self.mission_menu.set(mission.name)
 
         self.info_mission.set_text(mission.description)
 

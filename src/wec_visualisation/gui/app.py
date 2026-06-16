@@ -100,7 +100,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.paned_window.add(self.analytics, minsize=420, stretch="never")
 
         # Apply initial values to console views
-        self.on_mission_change("Free Play Sandbox")
+        self.on_mission_change("Sandbox")
 
     def create_header(self):
         # Header main container
@@ -131,7 +131,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         
         self.lbl_active_mission = ctk.CTkLabel(
             left_header, 
-            text="Free Play Sandbox",
+            text="Sandbox",
             font=Theme.fonts.TITLE,
             text_color=Theme.ACCENT.value,
             padx=0,
@@ -227,7 +227,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.analytics.show_warning_banner(True)
 
         # 1. Map selection names to Environment & Mission configurations
-        if choice == "Free Play Sandbox":
+        if choice == "Sandbox":
             self.environment = DefaultEnvironments.SANDBOX.create()
             self.active_mission = DefaultMissions.SANDBOX.create(self.environment)
             self.runs_remaining = None
@@ -347,7 +347,7 @@ class UnifiedSimulatorApp(ctk.CTk):
             )
         elif self.runs_remaining == 0:
             tip = ""
-            if self.active_mission.name == "Arctic Gale":
+            if self.active_mission.name == "The Arctic Gale":
                 tip = "TIP: The storm bending moments are too high. Try reducing Rotor Solidity or Rotor Diameter to decrease wind surface area and load."
             elif self.active_mission.name == "The Gentle Breeze":
                 tip = "TIP: To increase power in low-wind regimes, you need a larger Rotor Diameter. To stay under budget, keep the Hub Height compact and choose a cost-effective Drivetrain."

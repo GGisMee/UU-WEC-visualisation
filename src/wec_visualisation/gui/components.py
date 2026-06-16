@@ -102,7 +102,7 @@ class TextInfoBox(ctk.CTkFrame):
         self.textbox = ctk.CTkTextbox(
             self,
             font=Theme.fonts.MUTED,
-            text_color=Theme.TEXT_MUTED.value,
+            text_color=Theme.TEXT_MUTED.value, # type: ignore
             fg_color="transparent",
             wrap="word",
             height=height,

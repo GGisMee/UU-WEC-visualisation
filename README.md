@@ -119,7 +119,7 @@ The application features four default missions with varied wind resources and cr
 
 ### Environmental Parameters per Mission
 
-| Parameter | U1: Sandbox (Lillgrund) | U2: Arctic Gale (Dogger Bank) | U3: Gentle Breeze (Smöla/Forest) | U4: Community Co-op (Markbygden) |
+| Parameter | U1: Sandbox (Lillgrund) | U2: The Arctic Gale (Dogger Bank) | U3: Gentle Breeze (Smöla/Forest) | U4: Community Co-op (Markbygden) |
 | :--- | :--- | :--- | :--- | :--- |
 | **Avg. Wind Speed (10m)** | 7.0 m/s | 8.5 m/s | 4.5 m/s | 5.5 m/s |
 | **Surface Roughness (z0)** | 0.2 mm | 0.2 mm | 500.0 mm | 30.0 mm |
@@ -134,7 +134,7 @@ The application features four default missions with varied wind resources and cr
 
 * **Mission 1 (Sandbox)**:
   * No constraints. Free exploration. (Entering a valid SSN updates the environment parameters deterministically).
-* **Mission 2 (Arctic Gale)**:
+* **Mission 2 (The Arctic Gale)**:
   * **Buckling Utilization $\le$ 1.0** (Tower buckling integrity)
   * **Breaking Utilization $\le$ 1.0** (Tower structural bending strength)
   * **Profit Margin $\ge$ 10.0 %** (NPV profit relative to CAPEX)
