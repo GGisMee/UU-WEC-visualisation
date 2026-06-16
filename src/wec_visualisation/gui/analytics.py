@@ -9,6 +9,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from wec_visualisation.models.simulation import SimulationResult
 from wec_visualisation.gui.theme import Theme
+from wec_visualisation.gui.components import TextInfoBox
 
 class AnalyticsPanel(ctk.CTkFrame):
     def __init__(self, parent, on_simulate_click):
@@ -91,22 +92,14 @@ class AnalyticsPanel(ctk.CTkFrame):
             self.audit_rows[key] = val_lbl
 
         # Guidelines Box
-        guidelines_box = ctk.CTkFrame(
-            self.audit_scroll, 
-            fg_color=Theme.BOX_BG.value, 
-            corner_radius=6,
-            border_width=1,
-            border_color=Theme.BORDER.value
-        )
-        guidelines_box.pack(fill="x", pady=10, padx=5)
-        ctk.CTkLabel(guidelines_box, text="DESIGN GUIDELINES", font=Theme.fonts.HEADER, text_color=Theme.ACCENT.value).pack(anchor="w", padx=10, pady=(8, 2))
-        
         desc_guidelines = (
             "• Buckling and Breaking utilizations must not exceed 1.0.\n"
             "• High solidity blades increase storm torque significantly, requiring thicker tower walls.\n"
             "• Increasing hub height yields higher wind speeds (Wind Shear) but raises gravity bending loads."
         )
-        ctk.CTkLabel(guidelines_box, text=desc_guidelines, font=Theme.fonts.MUTED, text_color=Theme.TEXT_MUTED.value, justify="left").pack(anchor="w", padx=10, pady=(0, 8))
+        info_guidelines = TextInfoBox(self.audit_scroll, "DESIGN GUIDELINES", height=85)
+        info_guidelines.pack(fill="x", pady=10, padx=5)
+        info_guidelines.set_text(desc_guidelines)
 
         # ==========================================
         # TAB 3: FINANCIAL LEDGER

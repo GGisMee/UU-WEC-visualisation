@@ -7,7 +7,7 @@ from wec_visualisation.models.turbine import WindTurbine
 from wec_visualisation.models.environment import SiteEnvironment, SSNGenerator
 from wec_visualisation.gui.theme import Theme
 from wec_visualisation.models.turbine import Generator, Gearbox
-from wec_visualisation.gui.components import LabeledSlider, MetricRow
+from wec_visualisation.gui.components import LabeledSlider, MetricRow, TextInfoBox
 
 class ConstraintRow(ctk.CTkFrame):
     """
@@ -210,24 +210,8 @@ class ConsolePanel(ctk.CTkFrame):
         self.mission_menu.pack(anchor="w", padx=5, pady=(2, 10))
         
         # Mission Description frame
-        self.desc_frame = ctk.CTkFrame(
-            self.mission_scroll, 
-            fg_color=Theme.BOX_BG.value, 
-            corner_radius=6,
-            border_width=1,
-            border_color=Theme.BORDER.value
-        )
-        self.desc_frame.pack(fill="x", padx=5, pady=(0, 10))
-        
-        self.lbl_mission_desc = ctk.CTkLabel(
-            self.desc_frame, 
-            text="",
-            font=Theme.fonts.MUTED,
-            text_color=Theme.TEXT_MUTED.value,
-            justify="left",
-            wraplength=320
-        )
-        self.lbl_mission_desc.pack(padx=10, pady=10, fill="both", expand=True)
+        self.info_mission = TextInfoBox(self.mission_scroll, "MISSION DESCRIPTION", height=70)
+        self.info_mission.pack(fill="x", padx=5, pady=(0, 10))
 
         # Compact Environment & Economics Box
         self.env_box = ctk.CTkFrame(
@@ -403,24 +387,8 @@ class ConsolePanel(ctk.CTkFrame):
         self.combo_generator.pack(fill="x", padx=5, pady=(0, 15))
 
         # Drivetrain description frame
-        drivetrain_info = ctk.CTkFrame(
-            d_tab, 
-            fg_color=Theme.BOX_BG.value, 
-            corner_radius=6, 
-            border_width=1, 
-            border_color=Theme.BORDER.value
-        )
-        drivetrain_info.pack(fill="both", expand=True, padx=5, pady=10)
-        
-        self.lbl_drivetrain_desc = ctk.CTkLabel(
-            drivetrain_info, 
-            text="",
-            font=Theme.fonts.MUTED,
-            text_color=Theme.TEXT_MUTED.value,
-            wraplength=320,
-            justify="left"
-        )
-        self.lbl_drivetrain_desc.pack(padx=10, pady=10, fill="both", expand=True)
+        self.info_drivetrain = TextInfoBox(d_tab, "DRIVETRAIN OVERVIEW", height=70)
+        self.info_drivetrain.pack(fill="both", expand=True, padx=5, pady=10)
 
 
 
@@ -524,7 +492,7 @@ class ConsolePanel(ctk.CTkFrame):
         """
         Update the informational description text for the selected drivetrain options.
         """
-        self.lbl_drivetrain_desc.configure(text=self.turbine.generator_gearbox_description)
+        self.info_drivetrain.set_text(self.turbine.generator_gearbox_description)
 
     def update_env_view(self):
         """
@@ -584,7 +552,7 @@ class ConsolePanel(ctk.CTkFrame):
         name_to_set = display_names.get(mission.name, mission.name)
         self.mission_menu.set(name_to_set)
 
-        self.lbl_mission_desc.configure(text=mission.description)
+        self.info_mission.set_text(mission.description)
 
         # Update the environment view for the current active mission
         self.update_env_view()

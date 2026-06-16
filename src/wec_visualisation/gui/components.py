@@ -8,7 +8,7 @@ class LabeledSlider(ctk.CTkFrame):
     and a slider to modify it.
     """
     def __init__(self, parent, label_template: str, variable: ctk.DoubleVar, 
-                 from_: float, to: float, number_of_steps: int, command: Callable, **kwargs):
+                 from_:int, to:int, number_of_steps: int, command: Callable, **kwargs):
         super().__init__(parent, fg_color="transparent", **kwargs)
         self.label_template = label_template
         self.variable = variable
@@ -73,3 +73,46 @@ class MetricRow(ctk.CTkFrame):
             self.val_lbl.configure(text=text, text_color=text_color)
         else:
             self.val_lbl.configure(text=text, text_color=self.default_val_color)
+
+class TextInfoBox(ctk.CTkFrame):
+    """
+    A reusable frame that contains a title and a responsive, read-only textbox
+    for displaying multiline descriptions.
+    """
+    def __init__(self, parent, title_text: str, height: int = 70, **kwargs):
+        super().__init__(
+            parent,
+            fg_color=Theme.BOX_BG.value,
+            corner_radius=6,
+            border_width=1,
+            border_color=Theme.BORDER.value,
+            **kwargs
+        )
+        
+        # Title Label
+        self.lbl_title = ctk.CTkLabel(
+            self,
+            text=title_text,
+            font=Theme.fonts.HEADER,
+            text_color=Theme.ACCENT.value
+        )
+        self.lbl_title.pack(anchor="w", padx=10, pady=(8, 2))
+        
+        # Textbox for responsive wrapping
+        self.textbox = ctk.CTkTextbox(
+            self,
+            font=Theme.fonts.MUTED,
+            text_color=Theme.TEXT_MUTED.value,
+            fg_color="transparent",
+            wrap="word",
+            height=height
+        )
+        self.textbox.pack(anchor="w", fill="both", expand=True, padx=10, pady=(0, 8))
+        self.textbox.configure(state="disabled")
+
+    def set_text(self, text: str):
+        """Update the text safely by temporarily enabling the textbox."""
+        self.textbox.configure(state="normal")
+        self.textbox.delete("1.0", "end")
+        self.textbox.insert("1.0", text)
+        self.textbox.configure(state="disabled")
