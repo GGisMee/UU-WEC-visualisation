@@ -9,7 +9,7 @@ from typing import Callable
 
 @dataclass
 class ConstraintEvaluation:
-    """Bär resultatet av en utvärderad constraint"""
+    """Carries the result of an evaluated constraint"""
     constraint_name: str
     target_text: str
     passed: bool
@@ -23,29 +23,29 @@ class Constraint:
     target: float              # E.g. 5.0
     unit: str                  # E.g. "M€"  
     display_text: tuple[str, str]          # E.g ("Failed, too high:", "CAPEX well managed:")
-    value_getter: Callable[[WindTurbine, SimulationResult], float] # Funktion för att hämta faktiskt värde
+    value_getter: Callable[[WindTurbine, SimulationResult], float] # Function to get actual value
     
     def evaluate(self, turbine: WindTurbine, result: SimulationResult) -> ConstraintEvaluation:
         val = self.value_getter(turbine, result)
         
-        # Utvärdera utifrån operatorn
+        # Evaluate based on operator
         if self.check == "<=": passed = val <= self.target
         elif self.check == ">=": passed = val >= self.target
         elif self.check == "<": passed = val < self.target
         elif self.check == ">": passed = val > self.target
         else: passed = False
         
-        # Bygg ihop texten ("Bra jobbat: 4.5 M€" eller "För högt: 6.2 M€")
         text_prefix = self.display_text[1] if passed else self.display_text[0]
         
-        # Om värdet är väldigt stort, formatera utan decimaler (annars 1-2 decimaler)
+        # Format values > 1000 without decimals, else 1-2 decimals
         formatted_val = f"{val:,.0f}" if val > 1000 else f"{val:.2f}"
+        unit_suffix = f" {self.unit}" if self.unit else ""
         
         return ConstraintEvaluation(
             constraint_name=self.constraint_name,
-            target_text=f"{self.check} {self.target} {self.unit}",
+            target_text=f"{self.check} {self.target} {self.unit}".strip(),
             passed=passed,
-            actual_value_text=f"{text_prefix} {formatted_val} {self.unit} {self.check} {self.target} {self.unit}"
+            actual_value_text=f"{formatted_val}{unit_suffix} ({text_prefix})"
         )
         
 @dataclass
@@ -60,10 +60,10 @@ class Mission:
     description: str
     env: SiteEnvironment 
     constraints: list[Constraint] # List of constraint evaluator methods
-    max_runs: int | None # None <=> Evigt
+    max_runs: int | None # None <=> Infinite
 
     def evaluate(self, turbine: WindTurbine, result: SimulationResult) -> MissionReport:
-        """Utvärderar om simuleringen klarade uppdragets mål."""
+        """Evaluates if the simulation cleared the mission goals."""
         evals = []
         success = True
         
@@ -83,7 +83,7 @@ class DefaultMissions(Enum):
     THE_COMMUNITY_COOPERATIVE = "the_community_cooperative"
 
     def create(self, env: SiteEnvironment) -> Mission:
-        # Matchar enum-värdet och returnerar rätt Mission
+        # Match enum value and return the correct Mission
         match self:
             case DefaultMissions.SANDBOX:
                 return Mission(
@@ -103,19 +103,19 @@ class DefaultMissions(Enum):
                         Constraint(
                             constraint_name="Buckling Utilization",
                             check="<=", target=1.0, unit="",
-                            display_text=("Kollapsrisk:", "Struktur OK:"),
+                            display_text=("Buckling risk", "Structure OK"),
                             value_getter=lambda turbine, result: result.buckeling_utilization
                         ),
                         Constraint(
                             constraint_name="Breaking Utilization",
                             check="<=", target=1.0, unit="",
-                            display_text=("Risk för brott:", "Struktur OK:"),
+                            display_text=("Breaking risk", "Structure OK"),
                             value_getter=lambda turbine, result: result.breaking_utilization
                         ),
                         Constraint(
                             constraint_name="Profit Margin",
                             check=">=", target=10.0, unit="%",
-                            display_text=("För låg marginal:", "Marginal uppfylld:"),
+                            display_text=("Margin too low", "Margin met"),
                             value_getter=lambda turbine, result: result.margin * 100.0
                         )
                     ],
@@ -129,43 +129,43 @@ class DefaultMissions(Enum):
                     env=env,
                     constraints=[
                         Constraint(
-                            constraint_name="Totalhöjd",
+                            constraint_name="Total Height",
                             check="<=", target=160.0, unit="m",
-                            display_text=("För högt!", "Klarar zonkrav:"),
+                            display_text=("Too high", "Height OK"),
                             value_getter=lambda turbine, result: turbine.height + (turbine.rotor_diameter / 2)
                         ),
                         Constraint(
-                            constraint_name="Årlig Produktion",
+                            constraint_name="Annual Production",
                             check=">=", target=1800.0, unit="MWh",
-                            display_text=("För lite energi:", "Bra produktion:"),
+                            display_text=("Low production", "Production OK"),
                             value_getter=lambda turbine, result: result.generated_energy
                         ),
                         Constraint(
                             constraint_name="Total CAPEX",
                             check="<", target=5000.0, unit="k€",
-                            display_text=("För dyrt:", "Inom budget:"),
+                            display_text=("Budget exceeded", "Within budget"),
                             value_getter=lambda turbine, result: result.total_capex
                         )
                     ],
                     max_runs=6
                     )
-
+ 
             case DefaultMissions.THE_COMMUNITY_COOPERATIVE:
                 return Mission(
                     name="The Community Cooperative",
-                    description="Onshore plattlandskap nära ett litet samhälle.",
+                    description="Onshore flat land near a small community.",
                     env=env,
                     constraints=[
                         Constraint(
                             constraint_name="Profit Margin",
                             check=">=", target=5.0, unit="%",
-                            display_text=("Går med förlust/för låg vinst:", "Ekonomi OK:"),
+                            display_text=("Low profit margin", "Margin OK"),
                             value_getter=lambda turbine, result: result.margin * 100.0
                         ),
                         Constraint(
                             constraint_name="Buckling Utilization",
                             check="<=", target=1.0, unit="",
-                            display_text=("Kollapsrisk:", "Struktur OK:"),
+                            display_text=("Buckling risk", "Structure OK"),
                             value_getter=lambda turbine, result: result.buckeling_utilization
                         )
                     ],

@@ -9,6 +9,59 @@ from wec_visualisation.gui.theme import Theme
 from wec_visualisation.models.turbine import Generator, Gearbox
 from wec_visualisation.gui.components import LabeledSlider, MetricRow
 
+class ConstraintRow(ctk.CTkFrame):
+    """
+    A reusable row for displaying a mission constraint, showing:
+    - Status symbol: green ✓ (passed), red ✗ (failed), or gray — (pending)
+    - Constraint name (left)
+    - Target requirement and/or actual evaluated value (right)
+    """
+    def __init__(self, parent, constraint_name: str, target_text: str, passed: bool | None, actual_text: str | None = None):
+        super().__init__(parent, fg_color="transparent")
+        
+        # Status Symbol (✓, ✗, —)
+        if passed is None:
+            symbol = "—"
+            color = Theme.TEXT_MUTED.value
+        elif passed:
+            symbol = "✓"
+            color = Theme.SUCCESS.value
+        else:
+            symbol = "✗"
+            color = Theme.DANGER.value
+            
+        self.lbl_status = ctk.CTkLabel(
+            self,
+            text=symbol,
+            font=(Theme.fonts.family, 14, "bold"),
+            text_color=color,
+            width=20
+        )
+        self.lbl_status.pack(side="left", padx=(0, 5))
+        
+        # Constraint Name (Left-aligned)
+        self.lbl_name = ctk.CTkLabel(
+            self,
+            text=constraint_name,
+            font=Theme.fonts.BODY_BOLD,
+            text_color=Theme.TEXT_MAIN.value,
+            anchor="w"
+        )
+        self.lbl_name.pack(side="left", padx=5)
+        
+        # Detail / Result Text (Right-aligned)
+        detail_text = actual_text if actual_text else f"Req: {target_text}"
+        self.lbl_details = ctk.CTkLabel(
+            self,
+            text=detail_text,
+            font=Theme.fonts.MUTED,
+            text_color=Theme.TEXT_MUTED.value,
+            anchor="e",
+            justify="right"
+        )
+        self.lbl_details.pack(side="right", fill="x", expand=True, padx=(5, 0))
+
+
 class ConsolePanel(ctk.CTkFrame):
     """
     A control console panel frame for the Wind Power Simulator.
@@ -26,6 +79,8 @@ class ConsolePanel(ctk.CTkFrame):
         Callback function triggered when parameters change.
     on_ssn : Callable
         Callback function triggered when a valid SSN is entered.
+    on_mission_change_callback : Callable
+        Callback function triggered when the active mission changes.
     """
 
     def __init__(
@@ -34,7 +89,8 @@ class ConsolePanel(ctk.CTkFrame):
         turbine: WindTurbine, 
         environment: SiteEnvironment, 
         on_change_callback: Callable,
-        on_ssn_callback: Callable
+        on_ssn_callback: Callable,
+        on_mission_change_callback: Callable
     ):
         """
         Initialize the ConsolePanel.
@@ -51,6 +107,8 @@ class ConsolePanel(ctk.CTkFrame):
             Triggered on slider/menu change.
         on_ssn_callback : Callable
             Triggered on valid SSN entry.
+        on_mission_change_callback : Callable
+            Triggered on mission selection change.
         """
         super().__init__(
             parent, 
@@ -63,6 +121,7 @@ class ConsolePanel(ctk.CTkFrame):
         self.environment = environment
         self.on_change = on_change_callback
         self.on_ssn = on_ssn_callback
+        self.on_mission_change_callback = on_mission_change_callback
         
         # Prevent auto-shrinking so panel stays exactly width=320
         self.pack_propagate(False)
@@ -114,9 +173,108 @@ class ConsolePanel(ctk.CTkFrame):
         )
         self.tabs.pack(fill="both", expand=True, padx=5, pady=5)
         
+        m_tab = self.tabs.add("Mission")
+        
+        # Select Active Mission label
+        ctk.CTkLabel(
+            m_tab, 
+            text="Select Active Mission:", 
+            font=Theme.fonts.BODY_BOLD, 
+            text_color=Theme.TEXT_MAIN.value
+        ).pack(anchor="w", padx=5, pady=(5, 2))
+        
+        self.mission_menu = ctk.CTkOptionMenu(
+            m_tab, 
+            values=[
+                "Free Play Sandbox", 
+                "The Arctic Gale", 
+                "The Gentle Breeze", 
+                "The Community Cooperative"
+            ],
+            command=self.on_mission_change_callback,
+            fg_color=Theme.BG_INPUT.value,
+            button_color=Theme.BUTTON_BG.value,
+            button_hover_color=Theme.BUTTON_HOVER.value,
+            text_color=Theme.TEXT_MAIN.value,
+            width=260,
+            height=28,
+            font=Theme.fonts.BODY
+        )
+        self.mission_menu.pack(anchor="w", padx=5, pady=(2, 10))
+        
+        # Mission Description frame
+        self.desc_frame = ctk.CTkFrame(
+            m_tab, 
+            fg_color=Theme.BOX_BG.value, 
+            corner_radius=6,
+            border_width=1,
+            border_color=Theme.BORDER.value
+        )
+        self.desc_frame.pack(fill="x", padx=5, pady=(0, 10))
+        
+        self.lbl_mission_desc = ctk.CTkLabel(
+            self.desc_frame, 
+            text="",
+            font=Theme.fonts.MUTED,
+            text_color=Theme.TEXT_MUTED.value,
+            justify="left",
+            wraplength=260
+        )
+        self.lbl_mission_desc.pack(padx=10, pady=10, fill="both", expand=True)
+
+        # Compact Environment & Economics Box
+        self.env_box = ctk.CTkFrame(
+            m_tab,
+            fg_color=Theme.BOX_BG.value,
+            corner_radius=6,
+            border_width=1,
+            border_color=Theme.BORDER.value
+        )
+        self.env_box.pack(fill="x", padx=5, pady=(0, 10))
+        
+        # Grid layout for compact parameters
+        self.env_box.columnconfigure(0, weight=1)
+        self.env_box.columnconfigure(1, weight=1)
+        
+        # Row 0
+        self.lbl_env_wind = ctk.CTkLabel(self.env_box, text="-", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", justify="left")
+        self.lbl_env_wind.grid(row=0, column=0, padx=10, pady=(6, 2), sticky="w")
+        
+        self.lbl_env_price = ctk.CTkLabel(self.env_box, text="-", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", justify="left")
+        self.lbl_env_price.grid(row=0, column=1, padx=10, pady=(6, 2), sticky="w")
+        
+        # Row 1
+        self.lbl_env_gust = ctk.CTkLabel(self.env_box, text="-", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", justify="left")
+        self.lbl_env_gust.grid(row=1, column=0, padx=10, pady=2, sticky="w")
+        
+        self.lbl_env_rates = ctk.CTkLabel(self.env_box, text="-", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", justify="left")
+        self.lbl_env_rates.grid(row=1, column=1, padx=10, pady=2, sticky="w")
+        
+        # Row 2
+        self.lbl_env_roughness = ctk.CTkLabel(self.env_box, text="-", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", justify="left")
+        self.lbl_env_roughness.grid(row=2, column=0, padx=10, pady=(2, 6), sticky="w")
+        
+        self.lbl_env_project = ctk.CTkLabel(self.env_box, text="-", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", justify="left")
+        self.lbl_env_project.grid(row=2, column=1, padx=10, pady=(2, 6), sticky="w")
+
+        # Mission Constraints label
+        ctk.CTkLabel(
+            m_tab, 
+            text="Mission Constraints:", 
+            font=Theme.fonts.BODY_BOLD, 
+            text_color=Theme.TEXT_MAIN.value
+        ).pack(anchor="w", padx=5, pady=(5, 2))
+        
+        # Scrollable checklist container
+        self.constraints_scroll = ctk.CTkScrollableFrame(
+            m_tab, 
+            fg_color="transparent",
+            height=180
+        )
+        self.constraints_scroll.pack(fill="both", expand=True, padx=5, pady=5)
+
         p_tab = self.tabs.add("Physical Specs")
         d_tab = self.tabs.add("Drivetrain")
-        e_tab = self.tabs.add("Env & Economics")
 
         # ==========================================
         # TAB 1: PHYSICAL SPECS
@@ -251,60 +409,9 @@ class ConsolePanel(ctk.CTkFrame):
         )
         self.lbl_drivetrain_desc.pack(padx=10, pady=10, fill="both", expand=True)
 
-        # ==========================================
-        # TAB 3: ENV & ECONOMICS (READ-ONLY)
-        # ==========================================
-        self.env_scroll = ctk.CTkScrollableFrame(
-            e_tab, 
-            fg_color=Theme.BG_SURFACE.value
-        )
-        self.env_scroll.pack(fill="both", expand=True, padx=2, pady=2)
 
-        self.env_rows = {}
-        env_labels = [
-            ("avg_wind", "Avg Wind (10m):", "- m/s"),
-            ("roughness", "Roughness Length (z0):", "- mm"),
-            ("survival", "Survival Wind Gust:", "- m/s"),
-            ("weibull_k", "Weibull Shape (k):", "-"),
-            ("downtime", "Annual Downtime:", "- %"),
-            ("lifetime", "Project Lifetime:", "- yrs"),
-            ("price", "Electricity Price:", "- €/MWh"),
-            ("green_cert", "Green Certificate:", "- €/MWh"),
-            ("inflation", "Inflation Rate:", "- %"),
-            ("interest", "Interest Rate:", "- %"),
-        ]
 
-        for key, text, init in env_labels:
-            row = MetricRow(self.env_scroll, text, init)
-            row.pack(fill="x", pady=2, padx=2)
-            self.env_rows[key] = row
 
-        # Mission Objectives box
-        self.objectives_box = ctk.CTkFrame(
-            self.env_scroll, 
-            fg_color=Theme.BOX_BG.value, 
-            corner_radius=6,
-            border_width=1,
-            border_color=Theme.BORDER.value
-        )
-        self.objectives_box.pack(fill="x", pady=10, padx=2)
-        
-        ctk.CTkLabel(
-            self.objectives_box, 
-            text="MISSION TARGETS", 
-            font=Theme.fonts.HEADER, 
-            text_color=Theme.ACCENT.value
-        ).pack(anchor="w", padx=8, pady=(6, 2))
-        
-        self.lbl_objectives = ctk.CTkLabel(
-            self.objectives_box, 
-            text="Sandbox: Explore freely.", 
-            font=Theme.fonts.MUTED, 
-            text_color=Theme.TEXT_MUTED.value,
-            wraplength=240,
-            justify="left"
-        )
-        self.lbl_objectives.pack(anchor="w", padx=8, pady=(0, 8))
 
     # ==========================================
     # EVENT HANDLERS
@@ -408,7 +515,7 @@ class ConsolePanel(ctk.CTkFrame):
 
     def update_env_view(self):
         """
-        Update the read-only display rows for environmental and economics values.
+        Update the read-only display labels for environmental and economics values.
         """
         if not self.environment:
             return
@@ -424,28 +531,81 @@ class ConsolePanel(ctk.CTkFrame):
         else:
             wind_hub = 0.0
 
-        # Update environment labels
-        self.env_rows["avg_wind"].set_value(f"{env.avg_wind_10:.1f} m/s (Hub: {wind_hub:.1f} m/s)" if env.avg_wind_10 else "- m/s")
-        self.env_rows["roughness"].set_value(f"{env.roughness:.2f} mm" if env.roughness else "- mm")
-        self.env_rows["survival"].set_value(f"{env.survival_gust:.1f} m/s" if env.survival_gust else "- m/s")
-        self.env_rows["weibull_k"].set_value(f"{env.k_factor:.2f}" if env.k_factor else "-")
-        self.env_rows["downtime"].set_value(f"{self.turbine.downtime:.1f} %" if self.turbine.downtime is not None else "- %")
-        self.env_rows["lifetime"].set_value(f"{self.turbine.lifetime} yrs" if self.turbine.lifetime else "- yrs")
-        self.env_rows["price"].set_value(f"{env.electricity_price} €/MWh" if env.electricity_price is not None else "- €/MWh")
-        self.env_rows["green_cert"].set_value(f"{env.green_certificate} €/MWh" if env.green_certificate is not None else "- €/MWh")
-        self.env_rows["inflation"].set_value(f"{env.inflation:.1f} %" if env.inflation is not None else "- %")
-        self.env_rows["interest"].set_value(f"{env.interest:.1f} %" if env.interest is not None else "- %")
+        # Update environment labels in the compact grid
+        self.lbl_env_wind.configure(
+            text=f"Wind: {env.avg_wind_10:.1f} m/s (Hub: {wind_hub:.1f} m/s)" if env.avg_wind_10 else "Wind: - m/s"
+        )
+        self.lbl_env_price.configure(
+            text=f"Elec. Price: {env.electricity_price} €/MWh" if env.electricity_price is not None else "Elec. Price: - €/MWh"
+        )
+        self.lbl_env_gust.configure(
+            text=f"Survival Gust: {env.survival_gust:.1f} m/s" if env.survival_gust else "Survival Gust: - m/s"
+        )
+        self.lbl_env_rates.configure(
+            text=f"Rates: {env.interest:.1f}% / {env.inflation:.1f}%" if env.interest is not None else "Rates: - %"
+        )
+        self.lbl_env_roughness.configure(
+            text=f"Roughness z0: {env.roughness:.2f} mm" if env.roughness else "Roughness z0: - mm"
+        )
+        self.lbl_env_project.configure(
+            text=f"Lifetime: {self.turbine.lifetime}y / {self.turbine.downtime:.1f}%"
+        )
 
-    def set_objectives_text(self, text: str):
+    def update_mission_view(self, mission, report=None):
         """
-        Set the mission objectives description label text.
-        
-        Parameters
-        ----------
-        text : str
-            The text description to show.
+        Updates the mission selection UI, active description, and constraints list.
         """
-        self.lbl_objectives.configure(text=text)
+        # Ensure dropdown value matches the mission
+        display_names = {
+            "Sandbox": "Free Play Sandbox",
+            "Arctic Gale": "The Arctic Gale",
+            "The Gentle Breeze": "The Gentle Breeze",
+            "The Community Cooperative": "The Community Cooperative"
+        }
+        name_to_set = display_names.get(mission.name, mission.name)
+        self.mission_menu.set(name_to_set)
+
+        self.lbl_mission_desc.configure(text=mission.description)
+
+        # Update the environment view for the current active mission
+        self.update_env_view()
+
+        # Clear existing constraints in the scroll container
+        for child in self.constraints_scroll.winfo_children():
+            child.destroy()
+
+        if not mission.constraints:
+            lbl = ctk.CTkLabel(
+                self.constraints_scroll,
+                text="No constraints for Sandbox mode.\nExplore parameters freely!",
+                font=Theme.fonts.BODY,
+                text_color=Theme.TEXT_MUTED.value,
+                justify="center"
+            )
+            lbl.pack(pady=20, fill="x")
+            return
+
+        if report is None:
+            # Show targets in pending state
+            for c in mission.constraints:
+                row = ConstraintRow(
+                    self.constraints_scroll,
+                    constraint_name=c.constraint_name,
+                    target_text=f"{c.check} {c.target} {c.unit}",
+                    passed=None
+                )
+                row.pack(fill="x", pady=4)
+        else:
+            # Show evaluations
+            for eval_res in report.evaluations:
+                row = ConstraintRow(
+                    self.constraints_scroll,
+                    constraint_name=eval_res.constraint_name,
+                    target_text=eval_res.target_text,
+                    passed=eval_res.passed,
+                    actual_text=eval_res.actual_value_text
+                )
+                row.pack(fill="x", pady=4)
 
     def set_inputs_enabled(self, enabled: bool):
         """
@@ -457,6 +617,7 @@ class ConsolePanel(ctk.CTkFrame):
             True to enable inputs, False to disable.
         """
         state = "normal" if enabled else "disabled"
+        self.mission_menu.configure(state=state)
         self.slider_rotor_diameter.configure_slider(state=state)
         self.slider_height.configure_slider(state=state)
         self.slider_top_diam.configure_slider(state=state)
