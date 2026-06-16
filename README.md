@@ -1,139 +1,171 @@
-# Vindkraftssimulator
+# Wind Power Simulator
 
-En modulär och pedagogisk CustomTkinter-applikation för simulering, dimensionering och analys av vindkraftverk. Verktyget är utformat för att lära studenter grundläggande fysikaliska, mekaniska och ekonomiska avvägningar inom vindkraftsteknik genom spelifierade uppdrag (Missions) och personnummer-baserad parametergenerering.
+A modular and educational CustomTkinter application for the simulation, dimensioning, and analysis of wind turbines. The tool is designed to teach students fundamental physical, mechanical, and economic trade-offs in wind energy engineering through gamified missions and personal-identity-number-based (SSN) parameter generation.
 
 ---
 
-## Arkitektur & Dataflöde
+## Architecture & Data Flow
 
-Systemet bygger på **Domändriven design (DDD)** för att separera data från beräkningslogik och användargränssnitt, vilket förhindrar kodduplicering och underlättar automatiserad testning.
+The system is built using **Domain-Driven Design (DDD)** principles to separate data from calculation logic and the user interface. This structure prevents code duplication and simplifies automated testing.
 
 ```mermaid
 graph TD
-    User[Användarinput / SSN] -->|Skapar presets| Turbine[WindTurbine]
-    User -->|Skapar presets| Env[SiteEnvironment]
+    User[User Input / SSN] -->|Modifies settings| Turbine[WindTurbine]
+    User -->|Selects mission / Enters SSN| Env[SiteEnvironment]
     
-    Turbine -->|Indata| Engine[SimulationEngine]
-    Env -->|Indata| Engine
+    Turbine -->|Inputs| Engine[SimulationEngine]
+    Env -->|Inputs| Engine
     
-    Engine -->|Kör simulering| Result[SimulationResult]
+    Engine -->|Runs simulation| Result[SimulationResult]
     
-    Result -->|Utvärdera mål| Mission[Mission]
-    Result -->|Skicka till UI| GUI[AnalyticsPanel & CADCanvas]
-    Mission -->|Betyg & Feedback| GUI
+    Result -->|Evaluate performance| Mission[Mission]
+    Turbine -->|Evaluate geometric limits| Mission
+    
+    Result -->|Send results to UI| GUI[AnalyticsPanel & CADCanvas]
+    Mission -->|Reports criteria clearance| GUI[ConsolePanel & App scorecards]
 ```
 
-### 1. Domänmodeller (`Code/models/`)
-* **`WindTurbine`**: Representerar vindkraftverkets geometri (diameter, navhöjd, soliditet, antal blad) samt val av drivlina (växellådsteknik och generator).
-* **`SiteEnvironment`**: Innehåller platsens resurser (medelvind, ytråhet, stormbyar, årlig downtime) samt de ekonomiska spelreglerna (elpris, certifikat, ränta, inflation, livslängd).
-* **`SimulationResult`**: En oföränderlig (`frozen=True`) dataclass som innehåller alla beräknade värden från simuleringen (AEP, kapacitetsfaktor, krafter, krävda väggtjocklekar, CAPEX/OPEX-detaljer och NPV-kassaflöden).
+### 1. Domain Models (`src/wec_visualisation/models/`)
+* **`WindTurbine`**: Represents the wind turbine geometry (rotor diameter, hub height, tower top/base diameters, wall thickness, solidity, blade count) and the selected drivetrain components (gearbox and generator).
+* **`SiteEnvironment`**: Contains location-specific resources (average wind speed, surface roughness, survival gust, Weibull shape parameters) and economic rules (electricity price, green certificates, interest rate, inflation rate, lifetime). It also features an integrated social security number parser (`SSNGenerator`) to generate deterministic environmental conditions in Sandbox mode.
+* **`SimulationResult`**: An immutable (`frozen=True`) dataclass containing all computed values from the simulation (AEP, capacity factor, structural forces, utilization rates, detailed CAPEX/OPEX components, and NPV cash flows).
+* **`Mission`**: Defines individual missions, their descriptions, and a list of `Constraint` objects to evaluate turbine designs against specified criteria.
 
-### 2. Beräkningsmotor (`Code/models/simulation.py`)
-* **`SimulationEngine`**: En tillståndslös (stateless) motor som tar emot en `WindTurbine` och en `SiteEnvironment` och utför simuleringen i ett svep:
-  1. **Vindprofil (Wind Shear)**: Beräknar vindhastigheten vid navhöjd utifrån logaritmiska vindprofiler.
-  2. **Weibull-fördelning**: Skapar vindfördelningskurvan över årets 8760 timmar.
-  3. **Energiproduktion**: Integrerar effektkurvan (med Betz gränser) för att beräkna årlig energiproduktion (AEP).
-  4. **Hållfasthet (Alternativ A)**: Beräknar böjmomentet längs tornet under driftlaster och stormbyar. Dimensionerar tornets minsta väggtjocklek ($t_{\text{krävd}}$) för att hålla en **fast säkerhetsfaktor på 1.5** mot stålgränsen (160 MPa). Tornets totala vikt (massa) och CAPEX beräknas direkt utifrån denna tjocklek.
-  5. **Ekonomi**: Beräknar CAPEX-komponenter, årliga driftskostnader (OPEX), elintäkter samt Net Present Value (NPV) med geometrisk serie över turbinens livslängd.
+### 2. Calculation Engine & Services (`src/wec_visualisation/models/simulation.py`)
+* **`SimulationEngine`**: A stateless engine that executes the simulation by delegating tasks to three specialized service classes:
+  1. **`ClimateService`**: Calculates the average wind speed at hub height using logarithmic wind shear formulas and constructs the Weibull distribution of wind speed operational hours.
+  2. **`EnergyService`**: Integrates the turbine's power curve (taking Betz limits and interpolated coefficient of performance $C_p$ into account) to compute the Annual Energy Production (AEP) and capacity factor.
+  3. **`StructuralService`**: Computes aerodynamic and survival storm loads on the tower, estimates the Rotor Nacelle Assembly (RNA) mass, and performs structural limit state evaluations: **Breaking Utilization** (bending stress vs. a 235 MPa steel yield strength) and **Buckling Utilization** (compressive and bending buckling risk using NASA SP-8007 imperfection reductions).
+  4. **`FinancialService`**: Computes capital expenditure (CAPEX) allocations (devex, rotor, drivetrain, tower, foundation, installation), annual operating costs (OPEX), revenues, Internal Rate of Return (IRR), and Net Present Value (NPV) profit margins over the turbine's lifetime.
 
 ---
 
-## Filstruktur
+## File Structure
 
-Projektets struktur är uppdelat i en tydlig Model-View-Controller-struktur under mappen `Code/`:
+The project code is organized inside `src/wec_visualisation/` as follows:
 
 ```text
 uu_proj/
-└── Code/
-    ├── main.py                 # Startpunkt för applikationen
-    ├── config.py               # Fysikaliska och ekonomiska konstanter
-    │
-    ├── models/                 # --- DOMÄN- och BERÄKNINGSMODELLER ---
-    │   ├── turbine.py          # Turbin-modellen (egenskaper & geometri)
-    │   ├── environment.py      # Miljö- och ekonomiska platsparametrar
-    │   ├── simulation.py       # Fysik/ekonomi-motor & resultat-dataclass
-    │   └── challenge.py        # Uppdragsdefinitioner & utvärdering
-    │
-    ├── utils/                  # --- HJÄLPFUNKTIONER ---
-    │   └── ssn.py              # Personnummer-tolkare & validerare
-    │
-    └── gui/                    # --- CUSTOMTKINTER LAYOUT ---
-        ├── app.py              # Huvudfönstret (kontrollerar state & koordinering)
-        ├── console.py          # Vänsterpanelen (sliders och flikar)
-        ├── canvas.py           # Mittenpanelen (CAD-skiss & turbinrotation)
-        └── analytics.py        # Högerpanelen (Weibull/effektkurvor & tabeller)
+├── pyproject.toml              # Dependency management and project configuration (uv/pip)
+├── README.md                   # This documentation file
+└── src/
+    └── wec_visualisation/
+        ├── main.py                 # Application entry point
+        ├── config.py               # Central physical and economic constants
+        │
+        ├── models/                 # --- DOMAIN & CALCULATION MODELS ---
+        │   ├── turbine.py          # Turbine model, drivetrain specs, and geometric calculations
+        │   ├── environment.py      # Site parameters, default scenarios, and SSNGenerator
+        │   ├── simulation.py       # Climate, energy, structure, and finance services
+        │   └── mission.py          # Mission and constraint evaluation logic (Constraint & Mission)
+        │
+        ├── gui/                    # --- CUSTOMTKINTER LAYOUT (MVC) ---
+        │   ├── app.py              # Central controller app (coordinates state, callbacks, and modals)
+        │   ├── console.py          # Left panel (mission menu, sliders for geometry, drivetrain dropdowns, SSN field)
+        │   ├── canvas.py           # Center panel (interactive blueprint, animated rotation, and safety indicator)
+        │   ├── analytics.py        # Right panel (Matplotlib charts for Weibull/power curves, financial/structural reports)
+        │   ├── components.py       # Reusable custom widgets (LabeledSlider, MetricRow)
+        │   ├── theme.py            # Styling themes (e.g., FusionTheme, Futuristic) and font parameters
+        │   └── f.css               # Styling stylesheet for custom components
+        │
+        └── snippets/               # Utility scripts and prototyping scrap files (e.g., capture_efficiency.py)
 ```
 
 ---
 
-## Gränssnittsstruktur (UI Structure)
+## Interface Structure (UI)
 
-Gränssnittet är uppdelat i ett trepanelssystem i CustomTkinter och använder ett **händelsestyrt gränssnittsmönster (Event-Driven UI)** där panelerna är frikopplade och kommunicerar via huvudkontrollern (`app.py`):
+The UI is divided into a three-panel workspace in CustomTkinter using an **Event-Driven UI** pattern where panels are decoupled and communicate through the main controller (`app.py`):
 
-1. **Vänsterpanelen (`ConsolePanel` / `console.py`)**: 
-   * Hanterar användarinmatning genom flikar (Physical Specs, Drivetrain, Scenario Conditions).
-   * Sliders för elpris, livslängd, inflation och ränta är dolda/låsta under uppdragsläget och styrs av scenariot för att tvinga fram teknisk optimering.
-   * Innehåller fält för personnummer (SSN) för att generera deterministiska miljöförutsättningar i Sandbox-läget.
-2. **Mittenpanelen (`CADCanvas` / `canvas.py`)**:
-   * Ritar upp en skalenlig teknisk ritning av turbinen med måttpilar (höjd, diameter) live när användaren drar i sliders.
-   * Innehåller en animationsloop som roterar bladen (där rotationshastigheten beror på turbinens fysikaliska parametrar).
-   * Visar röd varningsfärg på tornet vid överskridna konstruktionsgränser.
-3. **Högerpanelen (`AnalyticsPanel` / `analytics.py`)**:
-   * Innehåller "Commit & Run Simulation"-knappen med en kort tidsfördröjning (diagnostic loading bar) för att bryta trial-and-error-fiddling och uppmuntra till egna manuella beräkningar.
-   * Ritar upp den matematiskt korrekta Weibull-kurvan och turbinens effektkurva.
-   * Visar den finansiella rapporten (CAPEX-fördelning, intäkter, marginaler, NPV) samt en strukturell revisionslogg (Audit Log) som varnar för överskridna tillverknings- eller miljöregler.
+1. **Left Panel (`ConsolePanel` / `console.py`)**:
+   * **Mission Tab**: Allows selection of active missions, displays environmental parameters, and renders a live checklist showing constraint status (Passed ✓, Failed ✗, or Pending —).
+   * **Physical Specs Tab**: Adjusts physical parameters (Rotor Diameter, Solidity, Hub Height, Top/Base Diameters, Wall Thickness, and Blade Count) using interactive sliders. Includes an SSN input field for generating custom sandbox environments.
+   * **Drivetrain Tab**: Selects the gearbox technology and generator type, and displays a technical description of the combination.
+2. **Center Panel (`CADCanvas` / `canvas.py`)**:
+   * Renders a live CAD-style blueprint of the turbine matching current slider dimensions.
+   * Runs an animation loop that rotates the blades at a speed matching the turbine's physics.
+   * Highlights the tower structure in red and displays an "UNSAFE" warning if the structural limits (breaking or buckling utilization) exceed 1.0.
+3. **Right Panel (`AnalyticsPanel` / `analytics.py`)**:
+   * Displays a warning bar when inputs have changed to prompt a simulation rerun.
+   * Houses the "Run Simulation" button which runs a simulated progress status sequence to represent complex computations.
+   * **Performance Charts**: Plots the wind Weibull distribution and the turbine's power curve (showing Cut-in and Cut-out margins).
+   * **Engineering Audit**: Details mechanical forces, loads, and utilization ratios.
+   * **Financial Ledger**: Lists itemized CAPEX costs, OPEX, annual revenues, IRR, and margins, alongside a horizontal color-coded CAPEX allocation bar.
 
 ---
 
-## Spelregler & Uppdrag (Missions)
+## Drivetrain Compatibility & Modifiers
 
-Drivlinans olika teknologier (Direct Drive vs. växellåda, samt synkron-, DFIG- eller asynkrongenerator) påverkar kostnad, underhåll (OPEX), driftstopp (downtime), verkningsgrad ($C_p$) och nacelle-vikt (vilket belastar tornet). Detta tvingar fram olika optimala geometrier och drivline-kombinationer i de olika uppdragen.
+The selection of drivetrain technologies (Direct Drive vs. geared systems, and synchronous, asynchronous, or doubly-fed induction generators) dictates efficiency, maintenance overheads (OPEX), downtime, and nacelle mass.
 
-### Drivline-kompatibilitet
-För att spegla verklig ingenjörskonst är vissa kombinationer blockerade i appen:
-* **Asynchronous (SCIG)** kan **endast** användas med **High-Speed** växellåda.
-* **DFIG** kan användas med **High-Speed** eller **Medium-Speed** växellåda.
-* **Synchronous** är kompatibel med **alla** växellådsval (Direct Drive, Medium-Speed, High-Speed).
+### Drivetrain Configurations Lookup Table
 
-### Uppdragsöversikt och Parametrar
+| Gearbox | Generator | Efficiency | Downtime | CAPEX Mod. | OPEX Mod. | RNA Mass Mod. | Status / Classification |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **High-Speed** | **DFIG** | 94 % | 5.0 % | 1.00 | 1.00 | 1.00 | Realistic / Standard |
+| **Medium-Speed** | **Synchronous** | 95 % | 3.0 % | 1.08 | 0.80 | 0.85 | Realistic / Optimized |
+| **None (Direct Drive)** | **Synchronous** | 96 % | 2.0 % | 1.25 | 0.50 | 1.50 | Realistic / Heavy & Costly |
+| **High-Speed** | **Asynchronous** | 88 % | 6.0 % | 0.90 | 1.15 | 1.05 | Realistic / Basic Induction |
+| **Medium-Speed** | **Asynchronous** | 89 % | 5.0 % | 1.00 | 1.10 | 1.00 | Realistic / Vibration-Reduced |
+| **None (Direct Drive)** | **DFIG** | 70 % | 20.0 % | 3.00 | 2.00 | 2.50 | Unrealistic (Heavily Penalized) |
+| **Medium-Speed** | **DFIG** | 90 % | 6.0 % | 1.15 | 1.10 | 1.10 | Unrealistic (Heavily Penalized) |
+| **None (Direct Drive)** | **Asynchronous** | 50 % | 30.0 % | 4.00 | 3.00 | 4.00 | Unrealistic (Heavily Penalized) |
 
-| Parameter | U1: Sandbox (Lillgrund) | U2: Arctic Gale (Dogger Bank) | U3: Gentle Breeze (Smöla/Skog) | U4: Community Co-op (Markbygden) |
+---
+
+## Game Rules & Mission Overview
+
+The application features four default missions with varied wind resources and criteria. All missions (except Sandbox) limit R&D budgets to **exactly 6 simulation runs**.
+
+### Environmental Parameters per Mission
+
+| Parameter | U1: Sandbox (Lillgrund) | U2: Arctic Gale (Dogger Bank) | U3: Gentle Breeze (Smöla/Forest) | U4: Community Co-op (Markbygden) |
 | :--- | :--- | :--- | :--- | :--- |
-| **avg_wind_10** | 7.0 m/s | 8.5 m/s | 4.5 m/s | 5.5 m/s |
-| **roughness** | 0.2 mm | 0.2 mm | 500.0 mm | 30.0 mm |
-| **survival_gust** | 59.5 m/s | 65.0 m/s | 50.0 m/s | 50.0 m/s |
-| **k_factor** | 1.84 | 2.0 | 1.8 | 2.4 |
-| **lifetime** | 25 år | 25 år | 25 år | 25 år |
-| **downtime** | 5.0 % | 8.0 % | 4.0 % | 3.0 % |
-| **capture_eff** ($C_p$) | 0.45 | 0.47 | 0.42 | 0.43 |
-| **drivetrain_eff** | 0.94 | 0.95 | 0.93 | 0.92 |
-| **electricity_price** | 55 €/MWh | 60 €/MWh | 50 €/MWh | 48 €/MWh |
+| **Avg. Wind Speed (10m)** | 7.0 m/s | 8.5 m/s | 4.5 m/s | 5.5 m/s |
+| **Surface Roughness (z0)** | 0.2 mm | 0.2 mm | 500.0 mm | 30.0 mm |
+| **Survival Gust ($V_{\text{gust}}$)** | 59.5 m/s | 65.0 m/s | 50.0 m/s | 50.0 m/s |
+| **Weibull shape (k)** | 1.84 | 2.0 | 1.8 | 2.4 |
+| **Electricity Price** | 55 €/MWh | 60 €/MWh | 50 €/MWh | 48 €/MWh |
+| **Green Certificates** | 1.0 €/MWh | 1.0 €/MWh | 1.0 €/MWh | 1.0 €/MWh |
+| **Location Type** | Onshore (Coastline) | Offshore | Onshore (Dense Forest) | Onshore (Agricultural Land) |
+| **Max R&D Runs** | Infinite | 6 | 6 | 6 |
 
-### Särskilda Regler & Samhällskrav per Uppdrag:
-* **Uppdrag 1 (Sandbox)**: Inga restriktioner för höjd eller tjocklek. Fritt fram att testa.
-* **Uppdrag 2 (Arctic Gale)**: **Tornets bastjocklek max 100 mm** (fast SF 1.5). Inga höjdgränser. Mål: NPV > 0. (Optimalt: *Medium-Speed + DFIG*).
-* **Uppdrag 3 (Gentle Breeze)**: **Totalhöjden (Tip Height = H + D/2) max 160 m**. Mål: AEP $\ge 1800\text{ MWh}$ och CAPEX < 5.0 M€. (Optimalt: *High-Speed + Synchronous* på grund av stark vindgradient).
-* **Uppdrag 4 (Community Co-op)**: **Totalhöjd max 140 m** OCH **Diameter max 90 m** (buller- och skuggbegränsning). Mål: CAPEX < 3.8 M€ och NPV > 0. (Optimalt: *High-Speed + Asynchronous*).
+### Specific Success Constraints per Mission
+
+* **Mission 1 (Sandbox)**:
+  * No constraints. Free exploration. (Entering a valid SSN updates the environment parameters deterministically).
+* **Mission 2 (Arctic Gale)**:
+  * **Buckling Utilization $\le$ 1.0** (Tower buckling integrity)
+  * **Breaking Utilization $\le$ 1.0** (Tower structural bending strength)
+  * **Profit Margin $\ge$ 10.0 %** (NPV profit relative to CAPEX)
+* **Mission 3 (The Gentle Breeze)**:
+  * **Total Height (Tip Height = Hub Height + Rotor Radius) $\le$ 160.0 m**
+  * **Annual Energy Production (AEP) $\ge$ 1800.0 MWh**
+  * **Total CAPEX $<$ 5000.0 k€ (5.0 M€)**
+* **Mission 4 (The Community Cooperative)**:
+  * **Profit Margin $\ge$ 5.0 %** (NPV profit relative to CAPEX)
+  * **Buckling Utilization $\le$ 1.0** (Tower buckling integrity)
 
 ---
 
-## Projektplanering & Roadmap
+## Project Planning & Roadmap
 
-Utvecklingen är uppdelad i fyra milstolpar (milestones) enligt [broader_plan.md](file:///home/gustavg/Projects/uu_proj/Tankar/New%20Format/broader_plan.md):
+The development workflow is organized into the following milestones:
 
-### Milstolpe 1: Beräkningsmotor & Konstanter (Klart)
-* Centralisera alla fysikaliska och ekonomiska konstanter till `Code/config.py`.
-* Implementera fullständiga formler för vindskjuvning, Weibull, Betz-effektkurva, balkböjning av tornet samt fullständiga CAPEX/OPEX/NPV-kalkyler i `Code/models/simulation.py`.
+### Milestone 1: Calculation Engine & Constants (Completed)
+* Centralize all physical and economic constants in `src/wec_visualisation/config.py`.
+* Implement algorithms for wind shear, Weibull distributions, power curve generation, tower bending stress, buckling analysis, and detailed CAPEX/OPEX/NPV calculations in `src/wec_visualisation/models/simulation.py`.
 
-### Milstolpe 2: Modulär CustomTkinter GUI-integration (Pågående)
-* Dela upp det monolitiska gränssnittet till de fristående klasserna i `Code/gui/`: `ConsolePanel`, `CADCanvas` och `AnalyticsPanel`.
-* Koppla samman panelerna med händelsestyrda callbacks i `app.py` och säkerställa att ritningar och diagram uppdateras baserat på faktiska simulationsobjekt.
-* Implementera uppdragsbegränsningar och drivline-kompatibilitet i gränssnittet.
+### Milestone 2: Modular CustomTkinter GUI Integration (Completed)
+* Split the monolithic prototype UI into dedicated modules under `src/wec_visualisation/gui/`: `ConsolePanel`, `CADCanvas`, and `AnalyticsPanel`.
+* Create a central theme and reusable component framework (`theme.py` and `components.py`) to support dark/light appearance switching and typography definitions.
+* Interconnect workspace panels using an event-driven callback structure inside `app.py`.
 
-### Milstolpe 3: Spelmekanik & SSN-logik (Nästa steg)
-* Implementera `SSNGenerator` för personnummer-parsing.
-* Bygga in de fyra uppdragens checklistor, utvärderingslogik och gränser (t.ex. totalhöjd, tjocklek, budget och simuleringsräknare).
+### Milestone 3: Game Mechanics, Missions & SSN Logic (In Progress / Current Step)
+* Move mission constraints checking to a domain model (`models/mission.py`) utilizing generic `Constraint` objects.
+* Embed `SSNGenerator` directly in `models/environment.py` to calculate birthdate-based custom wind resources.
+* Implement scorecard indicators for cleared constraints, remaining simulation runs, and accumulated NPV profit in the topbar header.
 
-### Milstolpe 4: Verification & Paketering
-* Skriva enhetstester för att säkerställa att Python-beräkningarna matchar referenskalkylerna i Excel.
-* Lägga till robust felhantering och paketera applikationen till en fristående `.exe`-fil med PyInstaller för distribution till studenterna.
+### Milestone 4: Verification, Testing & Packaging (Next Step)
+* Write unit tests to verify that the Python calculations for structural and economic parameters match reference spreadsheet calculations.
+* Build and package the application into a standalone executable (`.exe` / `.app`) using PyInstaller.
