@@ -121,7 +121,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         
         ctk.CTkLabel(
             left_header, 
-            text="MISSION / ENVIRONMENT SELECTOR", 
+            text="MISSION & ENVIRONMENT SELECTOR", 
             font=Theme.fonts.HEADER, 
             text_color=Theme.ACCENT.value
         ).pack(anchor="w")
