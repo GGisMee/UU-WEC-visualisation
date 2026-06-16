@@ -84,7 +84,7 @@ class UnifiedSimulatorApp(ctk.CTk):
             on_ssn_callback=self.on_ssn_changed,
             on_mission_change_callback=self.on_mission_change
         )
-        self.paned_window.add(self.console, minsize=320, stretch="never")
+        self.paned_window.add(self.console, minsize=380, stretch="never")
 
         self.cad_canvas = CADCanvas(
             self.paned_window, 
@@ -124,14 +124,18 @@ class UnifiedSimulatorApp(ctk.CTk):
             left_header, 
             text="ACTIVE MISSION", 
             font=Theme.fonts.HEADER, 
-            text_color=Theme.TEXT_MUTED.value
+            text_color=Theme.TEXT_MUTED.value,
+            padx=0,
+            height=12
         ).pack(anchor="w")
         
         self.lbl_active_mission = ctk.CTkLabel(
             left_header, 
             text="Free Play Sandbox",
             font=Theme.fonts.TITLE,
-            text_color=Theme.ACCENT.value
+            text_color=Theme.ACCENT.value,
+            padx=0,
+            height=20
         )
         self.lbl_active_mission.pack(anchor="w", pady=(2, 0))
 
@@ -159,28 +163,28 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.theme_menu.set("System")
 
         # 1. R&D Runs Remaining Scorecard
-        self.runs_card = ctk.CTkFrame(right_header, fg_color=Theme.BG_INPUT.value, width=130, height=52, border_width=1, border_color=Theme.BORDER.value)
+        self.runs_card = ctk.CTkFrame(right_header, fg_color=Theme.BG_INPUT.value, width=140, height=60, border_width=1, border_color=Theme.BORDER.value)
         self.runs_card.pack(side="left", padx=5)
         self.runs_card.pack_propagate(False)
-        ctk.CTkLabel(self.runs_card, text="R&D RUNS REMAINING", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value).pack(pady=(4, 0))
-        self.lbl_runs = ctk.CTkLabel(self.runs_card, text="∞ / ∞", font=Theme.fonts.TITLE, text_color=Theme.SUCCESS.value)
-        self.lbl_runs.pack()
+        ctk.CTkLabel(self.runs_card, text="R&D RUNS REMAINING", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=14, pady=0, padx=0).pack(pady=(10, 2))
+        self.lbl_runs = ctk.CTkLabel(self.runs_card, text="∞ / ∞", font=Theme.fonts.TITLE, text_color=Theme.SUCCESS.value, height=22, pady=0, padx=0)
+        self.lbl_runs.pack(pady=(0, 10))
 
         # 2. Constraints Met Scorecard
-        self.constraints_card = ctk.CTkFrame(right_header, fg_color=Theme.BG_INPUT.value, width=120, height=52, border_width=1, border_color=Theme.BORDER.value)
+        self.constraints_card = ctk.CTkFrame(right_header, fg_color=Theme.BG_INPUT.value, width=140, height=60, border_width=1, border_color=Theme.BORDER.value)
         self.constraints_card.pack(side="left", padx=5)
         self.constraints_card.pack_propagate(False)
-        ctk.CTkLabel(self.constraints_card, text="CONSTRAINTS MET", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value).pack(pady=(4, 0))
-        self.lbl_constraints_met = ctk.CTkLabel(self.constraints_card, text="N/A", font=Theme.fonts.TITLE, text_color=Theme.TEXT_MUTED.value)
-        self.lbl_constraints_met.pack()
+        ctk.CTkLabel(self.constraints_card, text="CONSTRAINTS MET", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=14, pady=0, padx=0).pack(pady=(10, 2))
+        self.lbl_constraints_met = ctk.CTkLabel(self.constraints_card, text="N/A", font=Theme.fonts.TITLE, text_color=Theme.TEXT_MUTED.value, height=22, pady=0, padx=0)
+        self.lbl_constraints_met.pack(pady=(0, 10))
 
         # 3. Lifetime Profit Scorecard
-        self.profit_card = ctk.CTkFrame(right_header, fg_color=Theme.BG_INPUT.value, width=140, height=52, border_width=1, border_color=Theme.BORDER.value)
+        self.profit_card = ctk.CTkFrame(right_header, fg_color=Theme.BG_INPUT.value, width=140, height=60, border_width=1, border_color=Theme.BORDER.value)
         self.profit_card.pack(side="left", padx=5)
         self.profit_card.pack_propagate(False)
-        ctk.CTkLabel(self.profit_card, text="LIFETIME PROFIT", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value).pack(pady=(4, 0))
-        self.lbl_profit = ctk.CTkLabel(self.profit_card, text="- k€", font=Theme.fonts.TITLE, text_color=Theme.TEXT_MUTED.value)
-        self.lbl_profit.pack()
+        ctk.CTkLabel(self.profit_card, text="LIFETIME PROFIT", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=14, pady=0, padx=0).pack(pady=(10, 2))
+        self.lbl_profit = ctk.CTkLabel(self.profit_card, text="- k€", font=Theme.fonts.TITLE, text_color=Theme.TEXT_MUTED.value, height=22, pady=0, padx=0)
+        self.lbl_profit.pack(pady=(0, 10))
 
     # ==========================================
     # CONTROLLER EVENT HANDLING

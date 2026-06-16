@@ -35,7 +35,8 @@ class ConstraintRow(ctk.CTkFrame):
             text=symbol,
             font=(Theme.fonts.family, 14, "bold"),
             text_color=color,
-            width=20
+            width=20,
+            padx=0
         )
         self.lbl_status.pack(side="left", padx=(0, 5))
         
@@ -45,7 +46,8 @@ class ConstraintRow(ctk.CTkFrame):
             text=constraint_name,
             font=Theme.fonts.BODY_BOLD,
             text_color=Theme.TEXT_MAIN.value,
-            anchor="w"
+            anchor="w",
+            padx=0
         )
         self.lbl_name.pack(side="left", padx=5)
         
@@ -57,7 +59,8 @@ class ConstraintRow(ctk.CTkFrame):
             font=Theme.fonts.MUTED,
             text_color=Theme.TEXT_MUTED.value,
             anchor="e",
-            justify="right"
+            justify="right",
+            padx=0
         )
         self.lbl_details.pack(side="right", fill="x", expand=True, padx=(5, 0))
 
@@ -112,7 +115,7 @@ class ConsolePanel(ctk.CTkFrame):
         """
         super().__init__(
             parent, 
-            width=320, 
+            width=380, 
             fg_color=Theme.BG_SURFACE.value, 
             border_width=1, 
             border_color=Theme.BORDER.value
@@ -123,7 +126,7 @@ class ConsolePanel(ctk.CTkFrame):
         self.on_ssn = on_ssn_callback
         self.on_mission_change_callback = on_mission_change_callback
         
-        # Prevent auto-shrinking so panel stays exactly width=320
+        # Prevent auto-shrinking so panel stays exactly width=380
         self.pack_propagate(False)
         self.grid_propagate(False)
 
@@ -175,16 +178,20 @@ class ConsolePanel(ctk.CTkFrame):
         
         m_tab = self.tabs.add("Mission")
         
+        # Main scrollable frame to prevent layout clipping and inner scrollbars
+        self.mission_scroll = ctk.CTkScrollableFrame(m_tab, fg_color="transparent")
+        self.mission_scroll.pack(fill="both", expand=True)
+
         # Select Active Mission label
         ctk.CTkLabel(
-            m_tab, 
+            self.mission_scroll, 
             text="Select Active Mission:", 
             font=Theme.fonts.BODY_BOLD, 
             text_color=Theme.TEXT_MAIN.value
         ).pack(anchor="w", padx=5, pady=(5, 2))
         
         self.mission_menu = ctk.CTkOptionMenu(
-            m_tab, 
+            self.mission_scroll, 
             values=[
                 "Free Play Sandbox", 
                 "The Arctic Gale", 
@@ -196,7 +203,7 @@ class ConsolePanel(ctk.CTkFrame):
             button_color=Theme.BUTTON_BG.value,
             button_hover_color=Theme.BUTTON_HOVER.value,
             text_color=Theme.TEXT_MAIN.value,
-            width=260,
+            width=320,
             height=28,
             font=Theme.fonts.BODY
         )
@@ -204,7 +211,7 @@ class ConsolePanel(ctk.CTkFrame):
         
         # Mission Description frame
         self.desc_frame = ctk.CTkFrame(
-            m_tab, 
+            self.mission_scroll, 
             fg_color=Theme.BOX_BG.value, 
             corner_radius=6,
             border_width=1,
@@ -218,13 +225,13 @@ class ConsolePanel(ctk.CTkFrame):
             font=Theme.fonts.MUTED,
             text_color=Theme.TEXT_MUTED.value,
             justify="left",
-            wraplength=260
+            wraplength=320
         )
         self.lbl_mission_desc.pack(padx=10, pady=10, fill="both", expand=True)
 
         # Compact Environment & Economics Box
         self.env_box = ctk.CTkFrame(
-            m_tab,
+            self.mission_scroll,
             fg_color=Theme.BOX_BG.value,
             corner_radius=6,
             border_width=1,
@@ -232,46 +239,52 @@ class ConsolePanel(ctk.CTkFrame):
         )
         self.env_box.pack(fill="x", padx=5, pady=(0, 10))
         
-        # Grid layout for compact parameters
+        # Grid layout for compact parameters (5 rows x 2 columns)
         self.env_box.columnconfigure(0, weight=1)
         self.env_box.columnconfigure(1, weight=1)
         
-        # Row 0
-        self.lbl_env_wind = ctk.CTkLabel(self.env_box, text="-", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", justify="left")
-        self.lbl_env_wind.grid(row=0, column=0, padx=10, pady=(6, 2), sticky="w")
+        # Row 0: Site Type & Elec Price
+        self.lbl_env_site = ctk.CTkLabel(self.env_box, text="Site Type: -", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", padx=0)
+        self.lbl_env_site.grid(row=0, column=0, padx=10, pady=(6, 2), sticky="w")
         
-        self.lbl_env_price = ctk.CTkLabel(self.env_box, text="-", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", justify="left")
+        self.lbl_env_price = ctk.CTkLabel(self.env_box, text="Elec. Price: -", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", padx=0)
         self.lbl_env_price.grid(row=0, column=1, padx=10, pady=(6, 2), sticky="w")
         
-        # Row 1
-        self.lbl_env_gust = ctk.CTkLabel(self.env_box, text="-", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", justify="left")
-        self.lbl_env_gust.grid(row=1, column=0, padx=10, pady=2, sticky="w")
+        # Row 1: Avg Wind (10m) & Lifetime
+        self.lbl_env_wind = ctk.CTkLabel(self.env_box, text="Wind (10m): -", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", padx=0)
+        self.lbl_env_wind.grid(row=1, column=0, padx=10, pady=2, sticky="w")
         
-        self.lbl_env_rates = ctk.CTkLabel(self.env_box, text="-", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", justify="left")
-        self.lbl_env_rates.grid(row=1, column=1, padx=10, pady=2, sticky="w")
+        self.lbl_env_lifetime = ctk.CTkLabel(self.env_box, text="Lifetime: -", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", padx=0)
+        self.lbl_env_lifetime.grid(row=1, column=1, padx=10, pady=2, sticky="w")
         
-        # Row 2
-        self.lbl_env_roughness = ctk.CTkLabel(self.env_box, text="-", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", justify="left")
-        self.lbl_env_roughness.grid(row=2, column=0, padx=10, pady=(2, 6), sticky="w")
+        # Row 2: Survival Gust & Downtime
+        self.lbl_env_gust = ctk.CTkLabel(self.env_box, text="Survival Gust: -", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", padx=0)
+        self.lbl_env_gust.grid(row=2, column=0, padx=10, pady=2, sticky="w")
         
-        self.lbl_env_project = ctk.CTkLabel(self.env_box, text="-", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", justify="left")
-        self.lbl_env_project.grid(row=2, column=1, padx=10, pady=(2, 6), sticky="w")
+        self.lbl_env_downtime = ctk.CTkLabel(self.env_box, text="Downtime: -", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", padx=0)
+        self.lbl_env_downtime.grid(row=2, column=1, padx=10, pady=2, sticky="w")
+        
+        # Row 3: Roughness & Weibull Shape
+        self.lbl_env_roughness = ctk.CTkLabel(self.env_box, text="Roughness (z0): -", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", padx=0)
+        self.lbl_env_roughness.grid(row=3, column=0, padx=10, pady=(2, 6), sticky="w")
+        
+        self.lbl_env_weibull = ctk.CTkLabel(self.env_box, text="Weibull k: -", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", padx=0)
+        self.lbl_env_weibull.grid(row=3, column=1, padx=10, pady=(2, 6), sticky="w")
 
         # Mission Constraints label
         ctk.CTkLabel(
-            m_tab, 
+            self.mission_scroll, 
             text="Mission Constraints:", 
             font=Theme.fonts.BODY_BOLD, 
             text_color=Theme.TEXT_MAIN.value
         ).pack(anchor="w", padx=5, pady=(5, 2))
         
-        # Scrollable checklist container
-        self.constraints_scroll = ctk.CTkScrollableFrame(
-            m_tab, 
-            fg_color="transparent",
-            height=180
+        # Regular frame (since parent is already scrollable, avoiding nested scrollbars)
+        self.constraints_scroll = ctk.CTkFrame(
+            self.mission_scroll, 
+            fg_color="transparent"
         )
-        self.constraints_scroll.pack(fill="both", expand=True, padx=5, pady=5)
+        self.constraints_scroll.pack(fill="x", expand=True, padx=5, pady=5)
 
         p_tab = self.tabs.add("Physical Specs")
         d_tab = self.tabs.add("Drivetrain")
@@ -404,7 +417,7 @@ class ConsolePanel(ctk.CTkFrame):
             text="",
             font=Theme.fonts.MUTED,
             text_color=Theme.TEXT_MUTED.value,
-            wraplength=260,
+            wraplength=320,
             justify="left"
         )
         self.lbl_drivetrain_desc.pack(padx=10, pady=10, fill="both", expand=True)
@@ -532,23 +545,29 @@ class ConsolePanel(ctk.CTkFrame):
             wind_hub = 0.0
 
         # Update environment labels in the compact grid
-        self.lbl_env_wind.configure(
-            text=f"Wind: {env.avg_wind_10:.1f} m/s (Hub: {wind_hub:.1f} m/s)" if env.avg_wind_10 else "Wind: - m/s"
-        )
+        site_type = "Offshore" if env.is_offshore else "Onshore"
+        self.lbl_env_site.configure(text=f"Site Type: {site_type}")
+        
         self.lbl_env_price.configure(
             text=f"Elec. Price: {env.electricity_price} €/MWh" if env.electricity_price is not None else "Elec. Price: - €/MWh"
+        )
+        self.lbl_env_wind.configure(
+            text=f"Wind (10m): {env.avg_wind_10:.1f} m/s (Hub: {wind_hub:.1f} m/s)" if env.avg_wind_10 else "Wind: - m/s"
+        )
+        self.lbl_env_lifetime.configure(
+            text=f"Lifetime: {self.turbine.lifetime} years"
         )
         self.lbl_env_gust.configure(
             text=f"Survival Gust: {env.survival_gust:.1f} m/s" if env.survival_gust else "Survival Gust: - m/s"
         )
-        self.lbl_env_rates.configure(
-            text=f"Rates: {env.interest:.1f}% / {env.inflation:.1f}%" if env.interest is not None else "Rates: - %"
+        self.lbl_env_downtime.configure(
+            text=f"Downtime: {self.turbine.downtime:.1f}%" if self.turbine.downtime is not None else "Downtime: - %"
         )
         self.lbl_env_roughness.configure(
-            text=f"Roughness z0: {env.roughness:.2f} mm" if env.roughness else "Roughness z0: - mm"
+            text=f"Roughness (z0): {env.roughness:.2f} mm" if env.roughness else "Roughness (z0): - mm"
         )
-        self.lbl_env_project.configure(
-            text=f"Lifetime: {self.turbine.lifetime}y / {self.turbine.downtime:.1f}%"
+        self.lbl_env_weibull.configure(
+            text=f"Weibull k: {env.k_factor:.2f}" if env.k_factor else "Weibull k: -"
         )
 
     def update_mission_view(self, mission, report=None):

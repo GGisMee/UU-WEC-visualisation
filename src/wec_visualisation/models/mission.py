@@ -88,7 +88,7 @@ class DefaultMissions(Enum):
             case DefaultMissions.SANDBOX:
                 return Mission(
                     name="Sandbox",
-                    description="Free play sandbox: explore turbine sizes and parameters with unlimited simulation runs.",
+                    description="Free play sandbox: explore turbine sizes and parameters with unlimited simulation runs at Lillgrund, a shallow water site in Öresund, Sweden.",
                     env=env,
                     constraints=[],
                     max_runs=None
@@ -97,7 +97,7 @@ class DefaultMissions(Enum):
             case DefaultMissions.ARCTIC_GALE:
                 return Mission(
                     name="Arctic Gale",
-                    description="Design a wind farm that can withstand the worlds strongest sustained winds",
+                    description="Design a storm-hardened offshore turbine at Dogger Bank in the North Sea. This site features strong, sustained winds but is prone to extreme arctic storm gusts and waves.",
                     env=env,
                     constraints=[
                         Constraint(
@@ -125,7 +125,7 @@ class DefaultMissions(Enum):
             case DefaultMissions.THE_GENTLE_BREEZE:
                 return Mission(
                     name="The Gentle Breeze",
-                    description="Design a wind farm for high energy production in low-wind conditions",
+                    description="Design a wind turbine for high energy production in low-wind conditions at Smöla forest site in Norway. This inland site has high surface roughness from trees and strict zoning laws.",
                     env=env,
                     constraints=[
                         Constraint(
@@ -153,7 +153,7 @@ class DefaultMissions(Enum):
             case DefaultMissions.THE_COMMUNITY_COOPERATIVE:
                 return Mission(
                     name="The Community Cooperative",
-                    description="Onshore flat land near a small community.",
+                    description="Build a community-friendly onshore turbine near Markbygden, Sweden. The site is a flat agricultural landscape near a small community, requiring noise limits and high safety.",
                     env=env,
                     constraints=[
                         Constraint(
