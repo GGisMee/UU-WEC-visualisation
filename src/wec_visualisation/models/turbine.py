@@ -48,7 +48,6 @@ class WindTurbine:
     rotor_diameter: float  # [m] Rotor diameter
     height: float  # [m] Hub height (tower height)
     solidity: float  # [%] Solidity (blade area to swept area)
-    blades: int  # Number of blades (2, 3 or 4)
     gearbox: Gearbox # "None (Direct Drive)", "Medium-Speed", "High-Speed"
     generator: Generator # "Synchronous", "Asynchronous", "DFIG"
     top_diameter: float = 3.25 # [m] top tower diameter

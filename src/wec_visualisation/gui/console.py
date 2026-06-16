@@ -140,7 +140,6 @@ class ConsolePanel(ctk.CTkFrame):
         self.bottom_diameter_var = tk.DoubleVar(value=turbine.bottom_diameter)
         self.wall_thickness_var = tk.DoubleVar(value=turbine.wall_thickness * 1000.0)
         self.solidity_var = tk.DoubleVar(value=turbine.solidity)
-        self.blades_var = tk.StringVar(value=f"{turbine.blades} Blades")
         self.gearbox_var = tk.StringVar(value=turbine.gearbox.value)
         self.generator_var = tk.StringVar(value=turbine.generator.value)
 
@@ -345,23 +344,6 @@ class ConsolePanel(ctk.CTkFrame):
             self.sliders[key] = slider
 
 
-        # Blades Count Segmented Button
-        lbl = ctk.CTkLabel(p_tab, text="Number of Blades", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value)
-        lbl.pack(anchor="w", padx=5, pady=(2, 0))
-        self._tracked_widgets.append(lbl)
-        self.seg_blades = ctk.CTkSegmentedButton(
-            p_tab, 
-            values=["2 Blades", "3 Blades", "4 Blades"], 
-            variable=self.blades_var,
-            command=self.on_segmented_click,
-            selected_color=Theme.ACCENT.value,
-            selected_hover_color=Theme.ACCENT_HOVER.value,
-            unselected_color=Theme.BG_INPUT.value,
-            unselected_hover_color=Theme.BG_MAIN.value,
-            text_color=Theme.TEXT_MAIN.value
-        )
-        self.seg_blades.pack(fill="x", padx=5, pady=(0, 2))
-
         # ==========================================
         # TAB 2: DRIVETRAIN
         # ==========================================
@@ -435,19 +417,6 @@ class ConsolePanel(ctk.CTkFrame):
         # Notify parent app
         self.on_change()
 
-    def on_segmented_click(self, choice):
-        """
-        Handle segmented button click for blade count selection.
-        
-        Parameters
-        ----------
-        choice : str
-            The selected segmented button value (e.g. "3 Blades").
-        """
-        # Extract number of blades (e.g. "3 Blades" -> 3)
-        num_blades = int(choice.split()[0])
-        self.turbine.blades = num_blades
-        self.on_change()
 
     def on_dropdown_select(self, *args):
         """
@@ -487,7 +456,6 @@ class ConsolePanel(ctk.CTkFrame):
         self.bottom_diameter_var.set(self.turbine.bottom_diameter)
         self.wall_thickness_var.set(self.turbine.wall_thickness * 1000.0)
         self.solidity_var.set(self.turbine.solidity)
-        self.blades_var.set(f"{self.turbine.blades} Blades")
         self.gearbox_var.set(self.turbine.gearbox.value)
         self.generator_var.set(self.turbine.generator.value)
 
@@ -611,7 +579,6 @@ class ConsolePanel(ctk.CTkFrame):
         """
         state = "normal" if enabled else "disabled"
         self.mission_menu.configure(state=state)
-        self.seg_blades.configure(state=state)
         self.combo_gearbox.configure(state=state)
         self.combo_generator.configure(state=state)
         self.ent_name.configure(state=state)

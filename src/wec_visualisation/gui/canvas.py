@@ -146,11 +146,10 @@ class CADCanvas(ctk.CTkFrame):
         )
 
         # 8. Draw Rotating Blades
-        num_blades = self.turbine.blades
         blade_base_w = int(4 * (real_solidity / 3.0))
 
-        for i in range(num_blades):
-            angle_deg = self.blade_angle + (i * (360.0 / num_blades))
+        for i in range(3):
+            angle_deg = self.blade_angle + (i * (360.0 /3 ))
             angle_rad = math.radians(angle_deg)
             
             # Blade tip coordinates

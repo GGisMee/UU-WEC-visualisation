@@ -22,7 +22,21 @@ def load_scale_factor():
                 return float(f.read().strip())
     except Exception:
         pass
-    return 1.35  # Fallback to comfortable scaling
+        
+    import platform
+    if platform.system() == "Linux":
+        try:
+            import tkinter as tk
+            temp_root = tk.Tk()
+            temp_root.withdraw()
+            dpi = temp_root.winfo_fpixels('1i')
+            temp_root.destroy()
+            scale = dpi / 96.0
+            return max(1.0, min(scale, 3.0))
+        except Exception:
+            pass
+
+    return 1.0  # Fallback to 1.0 and let OS native scaling handle it
 
 class UnifiedSimulatorApp(ctk.CTk):
     def __init__(self):
@@ -32,6 +46,12 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.scale_factor = load_scale_factor()
         ctk.set_widget_scaling(self.scale_factor)
         ctk.set_window_scaling(self.scale_factor)
+        
+        self.bind("<Control-plus>", lambda e: self.adjust_scale(0.25))
+        self.bind("<Control-equal>", lambda e: self.adjust_scale(0.25))
+        self.bind("<Control-minus>", lambda e: self.adjust_scale(-0.25))
+        self.bind("<Control-0>", lambda e: self.reset_scale())
+        self.bind("<Control-MouseWheel>", self.on_mousewheel_scale)
         
         self.title("Wind Power Simulator Pro")
         self.geometry("1200x750")
@@ -46,7 +66,6 @@ class UnifiedSimulatorApp(ctk.CTk):
             top_diameter=1.5,
             bottom_diameter=2.6,
             solidity=3.5, 
-            blades=3, 
             gearbox=Gearbox.MEDIUM_SPEED, 
             generator=Generator.DFIG
         )
@@ -143,6 +162,29 @@ class UnifiedSimulatorApp(ctk.CTk):
         right_header = ctk.CTkFrame(self.header_frame, fg_color="transparent")
         right_header.grid(row=0, column=1, sticky="e", padx=15, pady=10)
 
+        # UI Scaling Dropdown
+        scale_frame = ctk.CTkFrame(right_header, fg_color="transparent")
+        scale_frame.pack(side="left", padx=(0, 15))
+        ctk.CTkLabel(scale_frame, text="ZOOM", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value).pack(anchor="w")
+        self.scale_menu = ctk.CTkOptionMenu(
+            scale_frame,
+            values=["75%", "100%", "125%", "150%", "200%", "250%", "300%"],
+            command=self.on_scale_dropdown,
+            fg_color=Theme.BG_INPUT.value,
+            button_color=Theme.BUTTON_BG.value,
+            button_hover_color=Theme.BUTTON_HOVER.value,
+            text_color=Theme.TEXT_MAIN.value,
+            width=80,
+            height=24,
+            font=Theme.fonts.MUTED
+        )
+        self.scale_menu.pack(anchor="w")
+        
+        # Determine initial selection based on self.scale_factor
+        pct = int(self.scale_factor * 100)
+        closest = min([75, 100, 125, 150, 200, 250, 300], key=lambda x: abs(x - pct))
+        self.scale_menu.set(f"{closest}%")
+
         # Theme Selector Dropdown
         theme_frame = ctk.CTkFrame(right_header, fg_color="transparent")
         theme_frame.pack(side="left", padx=(0, 15))
@@ -210,6 +252,38 @@ class UnifiedSimulatorApp(ctk.CTk):
         """Called when appearance mode selection changes in dropdown."""
         ctk.set_appearance_mode(choice.lower())
         # Let CustomTkinter propagate color updates before updating canvas drawings
+        self.after(50, self.update_theme_drawings)
+
+    def on_scale_dropdown(self, choice: str):
+        pct = int(choice.replace("%", ""))
+        self.apply_scale(pct / 100.0)
+
+    def adjust_scale(self, delta):
+        new_scale = self.scale_factor + delta
+        self.apply_scale(new_scale)
+        
+    def reset_scale(self):
+        self.apply_scale(load_scale_factor())
+
+    def on_mousewheel_scale(self, event):
+        if event.delta > 0:
+            self.adjust_scale(0.1)
+        elif event.delta < 0:
+            self.adjust_scale(-0.1)
+
+    def apply_scale(self, new_scale):
+        new_scale = max(0.5, min(new_scale, 3.5))
+        if abs(new_scale - self.scale_factor) < 0.01:
+            return
+            
+        self.scale_factor = new_scale
+        pct = int(self.scale_factor * 100)
+        
+        closest = min([75, 100, 125, 150, 200, 250, 300], key=lambda x: abs(x - pct))
+        self.scale_menu.set(f"{closest}%")
+        
+        ctk.set_widget_scaling(self.scale_factor)
+        ctk.set_window_scaling(self.scale_factor)
         self.after(50, self.update_theme_drawings)
 
     def update_theme_drawings(self):

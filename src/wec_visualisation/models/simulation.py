@@ -526,7 +526,7 @@ if __name__ == "__main__":
                 financial_additional_part = 0.07,
             )
             SSNGenerator.apply_ssn_to_env("200301019949", env)
-            turbine = WindTurbine(rotor_diameter=81, height=97, solidity=0.03, blades = 3,  gearbox= Gearbox.NONE, generator=Generator.DFIG, lifetime=22)
+            turbine = WindTurbine(rotor_diameter=81, height=97, solidity=0.03,  gearbox= Gearbox.NONE, generator=Generator.DFIG, lifetime=22)
             print(env)
             print(turbine)
             print('\n', SimulationEngine.simulate(turbine, env))
@@ -542,7 +542,7 @@ if __name__ == "__main__":
                 green_certificate = 2.0,
                 financial_additional_part = 0.07,
             )
-            turbine = WindTurbine(rotor_diameter=131, height=120, solidity=0.04, blades = 3,  gearbox= Gearbox.MEDIUM_SPEED, generator=Generator.SYNCHRONOUS)
+            turbine = WindTurbine(rotor_diameter=131, height=120, solidity=0.04,gearbox= Gearbox.MEDIUM_SPEED, generator=Generator.SYNCHRONOUS)
         case 2:
             env = SiteEnvironment(
                 avg_wind_10=7.0,
