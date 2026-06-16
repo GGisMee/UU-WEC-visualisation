@@ -98,14 +98,15 @@ class TextInfoBox(ctk.CTkFrame):
         )
         self.lbl_title.pack(anchor="w", padx=10, pady=(8, 2))
         
-        # Textbox for responsive wrapping
+        # Textbox for responsive wrapping without scrollbars
         self.textbox = ctk.CTkTextbox(
             self,
             font=Theme.fonts.MUTED,
             text_color=Theme.TEXT_MUTED.value,
             fg_color="transparent",
             wrap="word",
-            height=height
+            height=height,
+            activate_scrollbars=False
         )
         self.textbox.pack(anchor="w", fill="both", expand=True, padx=10, pady=(0, 8))
         self.textbox.configure(state="disabled")

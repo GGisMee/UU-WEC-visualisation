@@ -214,7 +214,7 @@ class ConsolePanel(ctk.CTkFrame):
         # Mission Description frame
         self.info_mission = TextInfoBox(self.mission_scroll, "MISSION DESCRIPTION", height=70)
         self.info_mission.pack(fill="x", padx=5, pady=(0, 10))
-
+        
         # Compact Environment & Economics Box
         self.env_box = ctk.CTkFrame(
             self.mission_scroll,
@@ -225,37 +225,33 @@ class ConsolePanel(ctk.CTkFrame):
         )
         self.env_box.pack(fill="x", padx=5, pady=(0, 10))
         
-        # Grid layout for compact parameters (5 rows x 2 columns)
-        self.env_box.columnconfigure(0, weight=1)
-        self.env_box.columnconfigure(1, weight=1)
+        # Grid layout for compact parameters (4 rows x 4 columns)
+        self.env_box.columnconfigure(0, weight=0) # Title 1
+        self.env_box.columnconfigure(1, weight=1) # Value 1
+        self.env_box.columnconfigure(2, weight=0) # Title 2
+        self.env_box.columnconfigure(3, weight=1) # Value 2
         
-        # Row 0: Site Type & Elec Price
-        self.lbl_env_site = ctk.CTkLabel(self.env_box, text="Site Type: -", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", padx=0)
-        self.lbl_env_site.grid(row=0, column=0, padx=10, pady=(6, 2), sticky="w")
+        self.env_labels = {}
+        env_params = [
+            ("Site Type:", "site"), ("Elec. Price:", "price"),
+            ("Wind (10m):", "wind"), ("Lifetime:", "lifetime"),
+            ("Survival Gust:", "gust"), ("Downtime:", "downtime"),
+            ("Roughness (z0):", "roughness"), ("Weibull k:", "weibull")
+        ]
         
-        self.lbl_env_price = ctk.CTkLabel(self.env_box, text="Elec. Price: -", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", padx=0)
-        self.lbl_env_price.grid(row=0, column=1, padx=10, pady=(6, 2), sticky="w")
-        
-        # Row 1: Avg Wind (10m) & Lifetime
-        self.lbl_env_wind = ctk.CTkLabel(self.env_box, text="Wind (10m): -", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", padx=0)
-        self.lbl_env_wind.grid(row=1, column=0, padx=10, pady=2, sticky="w")
-        
-        self.lbl_env_lifetime = ctk.CTkLabel(self.env_box, text="Lifetime: -", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", padx=0)
-        self.lbl_env_lifetime.grid(row=1, column=1, padx=10, pady=2, sticky="w")
-        
-        # Row 2: Survival Gust & Downtime
-        self.lbl_env_gust = ctk.CTkLabel(self.env_box, text="Survival Gust: -", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", padx=0)
-        self.lbl_env_gust.grid(row=2, column=0, padx=10, pady=2, sticky="w")
-        
-        self.lbl_env_downtime = ctk.CTkLabel(self.env_box, text="Downtime: -", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", padx=0)
-        self.lbl_env_downtime.grid(row=2, column=1, padx=10, pady=2, sticky="w")
-        
-        # Row 3: Roughness & Weibull Shape
-        self.lbl_env_roughness = ctk.CTkLabel(self.env_box, text="Roughness (z0): -", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", padx=0)
-        self.lbl_env_roughness.grid(row=3, column=0, padx=10, pady=(2, 6), sticky="w")
-        
-        self.lbl_env_weibull = ctk.CTkLabel(self.env_box, text="Weibull k: -", font=Theme.fonts.MUTED, text_color=Theme.TEXT_MAIN.value, anchor="w", padx=0)
-        self.lbl_env_weibull.grid(row=3, column=1, padx=10, pady=(2, 6), sticky="w")
+        for i, (title, key) in enumerate(env_params):
+            row = i // 2
+            col = (i % 2) * 2
+            pady_top = 6 if row == 0 else 2
+            pady_bot = 6 if row == 3 else 2
+            
+            lbl_t = ctk.CTkLabel(self.env_box, text=title, font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
+            lbl_t.grid(row=row, column=col, padx=(10, 5), pady=(pady_top, pady_bot), sticky="w")
+            self._tracked_widgets.append(lbl_t)
+            
+            lbl_v = ctk.CTkLabel(self.env_box, text="-", font=Theme.fonts.BODY, text_color=Theme.TEXT_MAIN.value)
+            lbl_v.grid(row=row, column=col+1, padx=(0, 10), pady=(pady_top, pady_bot), sticky="w")
+            self.env_labels[key] = lbl_v
 
         # Mission Constraints label
         lbl = ctk.CTkLabel(
@@ -264,7 +260,7 @@ class ConsolePanel(ctk.CTkFrame):
             font=Theme.fonts.BODY_BOLD, 
             text_color=Theme.TEXT_MAIN.value
         )
-        lbl.pack(anchor="w", padx=5, pady=(5, 2))
+        lbl.pack(anchor="w", padx=5, pady=(5, 0))
         self._tracked_widgets.append(lbl)
         
         # Regular frame (since parent is already scrollable, avoiding nested scrollbars)
@@ -272,7 +268,7 @@ class ConsolePanel(ctk.CTkFrame):
             self.mission_scroll, 
             fg_color=Theme.BG_SURFACE.value
         )
-        self.constraints_scroll.pack(fill="x", expand=True, padx=5, pady=5)
+        self.constraints_scroll.pack(fill="x", expand=True, padx=5, pady=(0, 5))
 
         p_tab = self.tabs.add("Physical Specs")
         d_tab = self.tabs.add("Drivetrain")
@@ -312,13 +308,15 @@ class ConsolePanel(ctk.CTkFrame):
         self.ent_ssn.pack(fill="x", padx=5, pady=(0, 10))
 
         # Sliders
-        # Rotor Diameter
-        self.slider_rotor_diameter = LabeledSlider(p_tab, "Rotor Diameter: {value:.1f} m", self.rotor_diameter_var, 30, 150, 120, self.on_slider_move)
-        self.slider_rotor_diameter.pack(fill="x", padx=5, pady=(0, 10))
-
-        # Solidity
-        self.slider_solidity = LabeledSlider(p_tab, "Rotor Solidity: {value:.1f} %", self.solidity_var, 1, 10, 90, self.on_slider_move)
-        self.slider_solidity.pack(fill="x", padx=5, pady=(0, 10))
+        self.sliders = {}
+        main_sliders = [
+            ("rotor_diameter", "Rotor Diameter: {value:.1f} m", self.rotor_diameter_var, 30, 150, 120),
+            ("solidity", "Rotor Solidity: {value:.1f} %", self.solidity_var, 1, 10, 90)
+        ]
+        for key, title, var, min_v, max_v, steps in main_sliders:
+            slider = LabeledSlider(p_tab, title, var, min_v, max_v, steps, self.on_slider_move)
+            slider.pack(fill="x", padx=5, pady=(0, 10))
+            self.sliders[key] = slider
 
         # Tower dimensions container
         self.tower_box = ctk.CTkFrame(
@@ -329,28 +327,26 @@ class ConsolePanel(ctk.CTkFrame):
         )
         self.tower_box.pack(fill="x", padx=5, pady=(5, 10))
 
-        ctk.CTkLabel(
+        lbl = ctk.CTkLabel(
             self.tower_box, 
             text="TOWER GEOMETRY", 
             font=Theme.fonts.HEADER, 
             text_color=Theme.ACCENT.value
-        ).pack(anchor="w", padx=10, pady=(8, 2))
+        )
+        lbl.pack(anchor="w", padx=10, pady=(8, 2))
+        self._tracked_widgets.append(lbl)
 
-        # 1. Hub Height
-        self.slider_height = LabeledSlider(self.tower_box, "Hub Height: {value:.1f} m", self.height_var, 40, 160, 120, self.on_slider_move)
-        self.slider_height.pack(fill="x", padx=10, pady=(0, 8))
-
-        # 2. Top Diameter
-        self.slider_top_diam = LabeledSlider(self.tower_box, "Top Diameter: {value:.2f} m", self.top_diameter_var, 1, 8, 65, self.on_slider_move)
-        self.slider_top_diam.pack(fill="x", padx=10, pady=(0, 8))
-
-        # 3. Bottom Diameter
-        self.slider_bottom_diam = LabeledSlider(self.tower_box, "Base Diameter: {value:.2f} m", self.bottom_diameter_var, 1, 12, 100, self.on_slider_move)
-        self.slider_bottom_diam.pack(fill="x", padx=10, pady=(0, 8))
-
-        # 4. Wall Thickness
-        self.slider_wall_thickness = LabeledSlider(self.tower_box, "Wall Thickness: {value:.1f} mm", self.wall_thickness_var, 10, 250, 240, self.on_slider_move)
-        self.slider_wall_thickness.pack(fill="x", padx=10, pady=(0, 10))
+        tower_sliders = [
+            ("height", "Hub Height: {value:.1f} m", self.height_var, 40, 160, 120),
+            ("top_diam", "Top Diameter: {value:.2f} m", self.top_diameter_var, 1, 8, 65),
+            ("bottom_diam", "Base Diameter: {value:.2f} m", self.bottom_diameter_var, 1, 12, 100),
+            ("wall_thickness", "Wall Thickness: {value:.1f} mm", self.wall_thickness_var, 10, 250, 240)
+        ]
+        for key, title, var, min_v, max_v, steps in tower_sliders:
+            slider = LabeledSlider(self.tower_box, title, var, min_v, max_v, steps, self.on_slider_move)
+            pb = 10 if key == "wall_thickness" else 8
+            slider.pack(fill="x", padx=10, pady=(0, pb))
+            self.sliders[key] = slider
 
 
         # Blades Count Segmented Button
@@ -500,12 +496,8 @@ class ConsolePanel(ctk.CTkFrame):
         self.generator_var.set(self.turbine.generator.value)
 
         # Update physical spec labels via components
-        self.slider_rotor_diameter.update_label()
-        self.slider_height.update_label()
-        self.slider_top_diam.update_label()
-        self.slider_bottom_diam.update_label()
-        self.slider_wall_thickness.update_label()
-        self.slider_solidity.update_label()
+        for slider in self.sliders.values():
+            slider.update_label()
 
         # Update views
         self.update_env_view()
@@ -537,28 +529,28 @@ class ConsolePanel(ctk.CTkFrame):
 
         # Update environment labels in the compact grid
         site_type = "Offshore" if env.is_offshore else "Onshore"
-        self.lbl_env_site.configure(text=f"Site Type: {site_type}")
+        self.env_labels["site"].configure(text=f"{site_type}")
         
-        self.lbl_env_price.configure(
-            text=f"Elec. Price: {env.electricity_price} €/MWh" if env.electricity_price is not None else "Elec. Price: - €/MWh"
+        self.env_labels["price"].configure(
+            text=f"{env.electricity_price} €/MWh" if env.electricity_price is not None else "- €/MWh"
         )
-        self.lbl_env_wind.configure(
-            text=f"Wind (10m): {env.avg_wind_10:.1f} m/s (Hub: {wind_hub:.1f} m/s)" if env.avg_wind_10 else "Wind: - m/s"
+        self.env_labels["wind"].configure(
+            text=f"{env.avg_wind_10:.1f} m/s" if env.avg_wind_10 else "- m/s"
         )
-        self.lbl_env_lifetime.configure(
-            text=f"Lifetime: {self.turbine.lifetime} years"
+        self.env_labels["lifetime"].configure(
+            text=f"{self.turbine.lifetime} years"
         )
-        self.lbl_env_gust.configure(
-            text=f"Survival Gust: {env.survival_gust:.1f} m/s" if env.survival_gust else "Survival Gust: - m/s"
+        self.env_labels["gust"].configure(
+            text=f"{env.survival_gust:.1f} m/s" if env.survival_gust else "- m/s"
         )
-        self.lbl_env_downtime.configure(
-            text=f"Downtime: {self.turbine.downtime:.1f}%" if self.turbine.downtime is not None else "Downtime: - %"
+        self.env_labels["downtime"].configure(
+            text=f"{self.turbine.downtime:.1f}%" if self.turbine.downtime is not None else "- %"
         )
-        self.lbl_env_roughness.configure(
-            text=f"Roughness (z0): {env.roughness:.2f} mm" if env.roughness else "Roughness (z0): - mm"
+        self.env_labels["roughness"].configure(
+            text=f"{env.roughness:.2f} mm" if env.roughness else "- mm"
         )
-        self.lbl_env_weibull.configure(
-            text=f"Weibull k: {env.k_factor:.2f}" if env.k_factor else "Weibull k: -"
+        self.env_labels["weibull"].configure(
+            text=f"{env.k_factor:.2f}" if env.k_factor else "-"
         )
 
     def update_mission_view(self, mission, report=None):
@@ -605,7 +597,7 @@ class ConsolePanel(ctk.CTkFrame):
                     target_text=f"{c.check} {c.target} {c.unit}",
                     passed=None
                 )
-                row.pack(fill="x", pady=4)
+                row.pack(fill="x", pady=1)
                 self._tracked_widgets.append(row)
         else:
             # Show evaluations
@@ -617,7 +609,7 @@ class ConsolePanel(ctk.CTkFrame):
                     passed=eval_res.passed,
                     actual_text=eval_res.actual_value_text
                 )
-                row.pack(fill="x", pady=4)
+                row.pack(fill="x", pady=1)
                 self._tracked_widgets.append(row)
 
     def set_inputs_enabled(self, enabled: bool):
@@ -631,14 +623,11 @@ class ConsolePanel(ctk.CTkFrame):
         """
         state = "normal" if enabled else "disabled"
         self.mission_menu.configure(state=state)
-        self.slider_rotor_diameter.configure_slider(state=state)
-        self.slider_height.configure_slider(state=state)
-        self.slider_top_diam.configure_slider(state=state)
-        self.slider_bottom_diam.configure_slider(state=state)
-        self.slider_wall_thickness.configure_slider(state=state)
-        self.slider_solidity.configure_slider(state=state)
         self.seg_blades.configure(state=state)
         self.combo_gearbox.configure(state=state)
         self.combo_generator.configure(state=state)
         self.ent_name.configure(state=state)
         self.ent_ssn.configure(state=state)
+        
+        for slider in self.sliders.values():
+            slider.configure_slider(state=state)
