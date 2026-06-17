@@ -8,8 +8,57 @@ from wec_visualisation.models.turbine import WindTurbine, Gearbox, Generator
 from wec_visualisation.models.environment import SiteEnvironment, SSNGenerator
 import wec_visualisation.config as config
 
-class CalibrationParameters:
-    """Holds parameters which calibrates and scales output to be as correct as possible"""
+@dataclass 
+class SimulationConfiguration:
+    """Configuration parameters for the simulation (E.G. linear scaling parameter for devex)"""
+
+    ### RNA MASS
+    # Exponants for nacelle-mass based on drivetrain 
+    exp_power_dd: float = 1.4         # Direct Drive
+    exp_power_geared: float = 1.05    # Geared (High/Medium speed)
+    
+    # Exponants for mass of rotor
+    exp_diameter_large: float = 2.2   # Offshore / Large onshore
+    exp_diameter_small: float = 2.4   # Small onshore
+    
+    # Scaling factors for rotor 
+    rotor_scale_blade: float = 0.77
+    rotor_scale_hub: float = 0.51
+    rotor_scale_small: float = 1.0
+    
+    # Offshore-specific mass_factors
+    offshore_hub_mass_factor: float = 1.2
+    offshore_nacelle_mass_factor: float = 1.2
+    
+    # Nacelle kw => mass scalar
+    nacelle_mass_per_kw: float = 45.0
+    
+    # Threshold value, for larger WEC:s 
+    large_rotor_threshold: float = 125.0
+    
+    ### CAPEX
+    # offshore scalers
+    marine_offshore_scale: float = 1.15 # Nacelle, rotor, tower
+    fundament_offshore_scale:float = 2.5 # Foundation 
+    installation_offshore_factor:float = 3.0 # Installation costs
+
+    # Devex
+    base_devex:float=200.0
+    scale_power_devex:float = 50.0
+
+    # cost base values [k€]
+    rotor_base:float = 900.0
+    drivetrain_nacelle_base:float = 800.0
+    tower_base:float = 700.0
+    foundation_base:float = 300.0
+    installation_base = 3500
+
+    ### Opex [k€]
+    base_maintanance: float = 600.0
+    base_insurance: float = 100.0
+    base_land: float = 360.0
+    base_decommisioning:float=200.0
+    
 
 
 
@@ -234,8 +283,8 @@ class StructuralService:
         z_levels = np.linspace(0, turbine.height, steps)
         wall_thickness = turbine.wall_thickness
 
-        R_base = turbine.bottom_diameter / 2.0
-        R_top = turbine.top_diameter / 2.0
+        R_base = turbine.bottom_diameter / 2
+        R_top = turbine.top_diameter / 2
         R_z = R_base - ((R_base - R_top) / turbine.height) * z_levels
 
         moment_z = max_load * (turbine.height - z_levels) # [kNm]
@@ -247,7 +296,7 @@ class StructuralService:
         return float(breaking_utilization)
 
     @staticmethod
-    def calculate_rna_mass(turbine: WindTurbine, env:SiteEnvironment, rated_power: float) -> float:
+    def calculate_rna_mass(turbine: WindTurbine, env:SiteEnvironment, config:SimulationConfiguration, rated_power: float) -> float:
         """
         Estimates the Rotor Nacelle Assembly (RNA) mass using empirical scaling.
         
@@ -260,20 +309,19 @@ class StructuralService:
         """
 
         # exponant for nacelle power scaling
-        exp_power = 1.4 if turbine.gearbox == Gearbox.NONE else 1.05
+        exp_power = config.exp_power_dd if turbine.gearbox == Gearbox.NONE else config.exp_power_geared
 
+        nacelle_scale = 1 # when not offshore
         if env.is_offshore: # Offshore turbines
-            exp_diameter = 2.2
-            rotor_scale = 0.77+0.51*1.2 # 1.2 extra mass for offshore hub
-            nacelle_scale = 1.2 # extra mass for offshore nacelle
-        elif turbine.rotor_diameter > 125: # Larger onshore turbines
-            exp_diameter = 2.2
-            rotor_scale = 0.77+0.51
-            nacelle_scale = 1
+            exp_diameter = config.exp_diameter_large
+            rotor_scale = config.rotor_scale_blade+config.rotor_scale_hub*config.offshore_hub_mass_factor # 1.2 extra mass for offshore hub
+            nacelle_scale = config.offshore_nacelle_mass_factor # extra mass for offshore nacelle
+        elif turbine.rotor_diameter > config.large_rotor_threshold: # Larger onshore turbines
+            exp_diameter = config.exp_diameter_large
+            rotor_scale = config.rotor_scale_blade+config.rotor_scale_hub
         else: # Smaller onshore turbines
-            exp_diameter = 2.4
-            rotor_scale = 1
-            nacelle_scale = 1
+            exp_diameter = config.exp_diameter_small
+            rotor_scale = config.rotor_scale_small
 
         # 1. Rotor Mass (Blades + Hub)
         # NREL empirical scaling: ~0.13 * D^2.4
@@ -282,17 +330,17 @@ class StructuralService:
         
         # 2. Nacelle Mass
         # Base mass of 45 kg per kW of rated power, scaled by the drivetrain modifier
-        mass_per_kw = 45
+        mass_per_kw = config.nacelle_mass_per_kw
         nacelle_mass = mass_per_kw*nacelle_scale*turbine.nacelle_mass_modifier* (rated_power/1000)**exp_power
         return float(rotor_mass + nacelle_mass)
 
     @staticmethod
-    def evaluate_integrity(turbine: WindTurbine, climate: WindClimate, env: SiteEnvironment, rated_power: float) -> StructuralReport:
+    def evaluate_integrity(turbine: WindTurbine, env: SiteEnvironment,config:SimulationConfiguration, climate:WindClimate, rated_power: float) -> StructuralReport:
         aerodynamical_load, storm_load = StructuralService.calculate_loads(turbine, climate.rated_wind_speed, env.survival_gust)
         max_load = max(aerodynamical_load, storm_load)
         
         breaking_utilization = StructuralService.breaking(turbine, max_load)
-        rna_mass = StructuralService.calculate_rna_mass(turbine,env, rated_power)
+        rna_mass = StructuralService.calculate_rna_mass(turbine,env,config, rated_power)
         buckeling_utilization = StructuralService.buckeling(turbine, max_load, rna_mass)
         
         return StructuralReport(
@@ -307,7 +355,7 @@ class StructuralService:
 
 class FinancialService:
     @staticmethod
-    def calculate_capex(env: SiteEnvironment, turbine: WindTurbine, rated_power: float) -> tuple[float, dict[str, float]]:
+    def calculate_capex(env: SiteEnvironment, turbine: WindTurbine,config:SimulationConfiguration, rated_power: float) -> tuple[float, dict[str, float]]:
         """
         Calculate total capital expenditure (CAPEX) for the turbine park.
         
@@ -322,26 +370,26 @@ class FinancialService:
         """
 
 
+        marine_factor = 1.0
+        fundament_factor = 1.0
+        install_factor = 1.0
+
         # Sätt offshore-faktorer
         if env.is_offshore:
-            marine_factor = 1.15       # Marinised turbine
-            fundament_factor = 2.5      # significantly more costly fundament in water
-            install_factor = 3.0    # More expensive: ships and logistics 
-        else:
-            marine_factor = 1.0
-            fundament_factor = 1.0
-            install_factor = 1.0
+            # config
+            marine_factor = config.marine_offshore_scale
+            fundament_factor = config.fundament_offshore_scale
+            install_factor = config.installation_offshore_factor
 
-        base_devex, power_scaler_devex = 200, 50
-        devex = base_devex+power_scaler_devex*(rated_power/1000) # permits for setting up base and building
+        devex = config.base_devex+config.scale_power_devex*(rated_power/1000) # permits for setting up base and building
 
-        rotor_cost = 900.0 * (turbine.rotor_diameter / 90.0) ** 3 * marine_factor
-        drivetrain_nacelle = 800.0 * (rated_power / 3000.0) * turbine.drivetrain_cost_modifier * marine_factor
-        tower = 700.0 * ((turbine.height/ 90.0) * (turbine.rotor_diameter/ 90.0) ** 2) * turbine.nacelle_mass_modifier * marine_factor
+        rotor_cost = config.rotor_base* (turbine.rotor_diameter / 90.0) ** 3 * marine_factor
+        drivetrain_nacelle = config.drivetrain_nacelle_base * (rated_power / 3000.0) * turbine.drivetrain_cost_modifier * marine_factor
+        tower = config.tower_base* ((turbine.height/ 90.0) * (turbine.rotor_diameter/ 90.0) ** 2) * turbine.nacelle_mass_modifier * marine_factor
         
-        foundation_site = (300.0 * ((turbine.height/ 90.0) * (turbine.rotor_diameter / 90.0) ** 2)) * fundament_factor
+        foundation_site = (config.foundation_base * ((turbine.height/ 90.0) * (turbine.rotor_diameter / 90.0) ** 2)) * fundament_factor
         
-        installation = env.installation_costs * install_factor
+        installation = config.installation_base* install_factor
 
         total_capex = devex + rotor_cost + drivetrain_nacelle + tower + foundation_site + installation
         
@@ -357,14 +405,12 @@ class FinancialService:
         return total_capex, components
 
     @staticmethod
-    def calculate_opex(env: SiteEnvironment, turbine: WindTurbine, rated_power_kw: float) -> float:
-        base_maintenance_cost, base_insurance_cost, base_land_cost, base_decommissioning_cost = 600, 100, 360, 200
-        
-        total_power_mw = (rated_power_kw / 1000.0) * env.turbine_count
-        maintenance = base_maintenance_cost * (total_power_mw / 20.0) * turbine.opex_modifier
-        insurance = base_insurance_cost * (total_power_mw / 20.0) ** 0.5
-        land_cost = base_land_cost * env.turbine_count / 20.0
-        fund_decommissioning = base_decommissioning_cost * total_power_mw / 20.0
+    def calculate_opex(env: SiteEnvironment, turbine: WindTurbine,config:SimulationConfiguration, rated_power: float) -> float:
+        total_power_mw = (rated_power / 1000.0) * env.turbine_count
+        maintenance =  config.base_maintanance* (total_power_mw / 20.0) * turbine.opex_modifier
+        insurance = config.base_insurance* (total_power_mw / 20.0) ** 0.5
+        land_cost = config.base_land* env.turbine_count / 20.0
+        fund_decommissioning = config.base_decommisioning* total_power_mw / 20.0
         
         return float(maintenance + insurance + land_cost + fund_decommissioning)
 
@@ -407,9 +453,9 @@ class FinancialService:
             return 0.0
 
     @staticmethod
-    def evaluate_finance(env: SiteEnvironment, turbine: WindTurbine, rated_power_kw: float, generated_energy_mwh: float) -> FinancialReport:
-        total_capex, capex_components = FinancialService.calculate_capex(env, turbine, rated_power_kw)
-        annual_opex = FinancialService.calculate_opex(env, turbine, rated_power_kw)
+    def evaluate_finance(env: SiteEnvironment, turbine: WindTurbine,config:SimulationConfiguration, rated_power_kw: float, generated_energy_mwh: float) -> FinancialReport:
+        total_capex, capex_components = FinancialService.calculate_capex(env, turbine,config, rated_power_kw)
+        annual_opex = FinancialService.calculate_opex(env, turbine,config, rated_power_kw)
         annual_savings, annual_revenue = FinancialService.calculate_annual_earnings(env, generated_energy_mwh, annual_opex)
         profits, margin = FinancialService.calculate_profits(env, total_capex, annual_savings, turbine.lifetime)
         irr = FinancialService.calculate_irr(total_capex, annual_savings, turbine.lifetime)
@@ -474,7 +520,7 @@ class SimulationResult:
         return self.rated_power
 
 
-def simulate(turbine: WindTurbine, env: SiteEnvironment) -> SimulationResult:
+def simulate(turbine: WindTurbine, env: SiteEnvironment, config: SimulationConfiguration = SimulationConfiguration()) -> SimulationResult:
     """Processes turbine and env data and calculates SimulationResult.
     Calculates wind climate behaviour, energy production, structural integrity and finances.
     
@@ -493,10 +539,10 @@ def simulate(turbine: WindTurbine, env: SiteEnvironment) -> SimulationResult:
     generated_energy, rated_power, capacity_factor= EnergyService.calculate_production(turbine, climate)
     
     # 3. Structural evaluation (single turbine geometry)
-    structural_report = StructuralService.evaluate_integrity(turbine, climate, env, rated_power)
+    structural_report = StructuralService.evaluate_integrity(turbine, env, config,climate, rated_power)
     
     # 4. Financial evaluation (for the park)
-    financial_report = FinancialService.evaluate_finance(env, turbine, rated_power, generated_energy)
+    financial_report = FinancialService.evaluate_finance(env, turbine,config rated_power, generated_energy)
     
     # 5. capacity factor calculation
 
