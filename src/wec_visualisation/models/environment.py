@@ -21,8 +21,8 @@ class DefaultEnvironments(Enum):
                     k_factor = 1.84,               # Lillgrund Weibull-fit
                     electricity_price = 55,        # €/MWh
                     green_certificate = 1.0,       # €/MWh
-                    inflation = 2.0,               # %
-                    interest = 3.0,                # %
+                    inflation = 0.02,              # 2.0 %
+                    interest = 0.03,               # 3.0 %
                     is_offshore=False
                 )
             

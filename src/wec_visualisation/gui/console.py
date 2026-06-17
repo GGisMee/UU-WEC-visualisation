@@ -139,7 +139,7 @@ class ConsolePanel(ctk.CTkFrame):
         self.top_diameter_var = tk.DoubleVar(value=turbine.top_diameter)
         self.bottom_diameter_var = tk.DoubleVar(value=turbine.bottom_diameter)
         self.wall_thickness_var = tk.DoubleVar(value=turbine.wall_thickness * 1000.0)
-        self.solidity_var = tk.DoubleVar(value=turbine.solidity)
+        self.solidity_var = tk.DoubleVar(value=turbine.solidity * 100.0)
         self.gearbox_var = tk.StringVar(value=turbine.gearbox.value)
         self.generator_var = tk.StringVar(value=turbine.generator.value)
 
@@ -412,7 +412,7 @@ class ConsolePanel(ctk.CTkFrame):
         self.turbine.top_diameter = self.top_diameter_var.get()
         self.turbine.bottom_diameter = self.bottom_diameter_var.get()
         self.turbine.wall_thickness = self.wall_thickness_var.get() / 1000.0
-        self.turbine.solidity = self.solidity_var.get()
+        self.turbine.solidity = self.solidity_var.get() / 100.0
 
         # Notify parent app
         self.on_change()
@@ -455,7 +455,7 @@ class ConsolePanel(ctk.CTkFrame):
         self.top_diameter_var.set(self.turbine.top_diameter)
         self.bottom_diameter_var.set(self.turbine.bottom_diameter)
         self.wall_thickness_var.set(self.turbine.wall_thickness * 1000.0)
-        self.solidity_var.set(self.turbine.solidity)
+        self.solidity_var.set(self.turbine.solidity * 100.0)
         self.gearbox_var.set(self.turbine.gearbox.value)
         self.generator_var.set(self.turbine.generator.value)
 

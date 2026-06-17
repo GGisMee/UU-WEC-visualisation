@@ -65,7 +65,7 @@ class UnifiedSimulatorApp(ctk.CTk):
             height=105.0, 
             top_diameter=1.5,
             bottom_diameter=2.6,
-            solidity=3.5, 
+            solidity=0.035, 
             gearbox=Gearbox.MEDIUM_SPEED, 
             generator=Generator.DFIG
         )
