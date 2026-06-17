@@ -163,7 +163,8 @@ class SSNGenerator:
         return (hash((i, name)) % 10**10) / 10**10 
 
 if __name__ == '__main__':
-    env = SiteEnvironment(None,None,None,None,22,None,None,None)
-    SSNGenerator.apply_ssn_to_env("200301019949", env)
-    print(env)
+    # env = SiteEnvironment(None,None,None,None,22,None,None,None)
+    # SSNGenerator.apply_ssn_to_env("200301019949", env)
+    # print(env)
+    pass
 

@@ -12,6 +12,12 @@ import wec_visualisation.config as config
 class SimulationConfiguration:
     """Configuration parameters for the simulation (E.G. linear scaling parameter for devex)"""
 
+    ### WIND PARAMETERS
+    rated_wind_base: float = 12.0 # rated wind with no interferance of nacelle_wind
+    rated_wind_nacelle_scaler: float = 0.15 # scaler that reduces the rated wind speed with respect to the nacelle_wind
+    cut_in_power_fraction: float = 0.01  # Turbine starts producing when wind power is 1% of rated power
+    cut_out_energy_fraction: float = 0.8  # Turn off when 80% of total energy is reached in the distribution
+
     ### RNA MASS
     # Exponants for nacelle-mass based on drivetrain 
     exp_power_dd: float = 1.4         # Direct Drive
@@ -58,6 +64,7 @@ class SimulationConfiguration:
     base_insurance: float = 100.0
     base_land: float = 360.0
     base_decommisioning:float=200.0
+
     
 
 
@@ -94,6 +101,8 @@ class WindClimate:
     available_hours: np.ndarray
     possible_hours: np.ndarray
 
+    config: SimulationConfiguration
+
     @property
     def energy_density_per_m2(self) -> np.ndarray:
         """Energy per meter squared at blades"""
@@ -105,16 +114,18 @@ class WindClimate:
 
     @property
     def rated_wind_speed(self) -> float:
-        return 12.0 - 0.15 * self.wind_nacelle
+        return self.config.rated_wind_base - self.config.rated_wind_nacelle_scaler * self.wind_nacelle
 
     @property
     def cut_in_speed(self) -> float:
-        return int(self.rated_wind_speed * (0.01 ** (1.0 / 3.0)) * 10.0) / 10.0
+        # P ~ V^3. We cut in when available power is a specific fraction of rated power.
+        fraction_root = self.config.cut_in_power_fraction ** (1.0 / 3.0)
+        return self.rated_wind_speed * fraction_root
 
     @property
     def cut_out_speed(self) -> float:
         cumulated_energy = np.cumsum(self.energy_density_per_m2)
-        turn_off_limit = 0.8 * self.total_potential_energy
+        turn_off_limit = self.config.cut_out_energy_fraction * self.total_potential_energy
         capped_mask = cumulated_energy > turn_off_limit
         idx = np.argmax(capped_mask)
         return float(self.wind_speeds[idx])
@@ -122,7 +133,7 @@ class WindClimate:
 
 class ClimateService:
     @staticmethod
-    def calculate_wind_climate(env: SiteEnvironment, turbine: WindTurbine) -> WindClimate:
+    def calculate_wind_climate(env: SiteEnvironment, turbine: WindTurbine, config: SimulationConfiguration) -> WindClimate:
         """
         Calculate the wind climate characteristics at the turbine's nacelle height.
         
@@ -153,7 +164,8 @@ class ClimateService:
             weibull_C=C,
             wind_speeds=wind_speeds,
             available_hours=available_hours,
-            possible_hours=possible_hours
+            possible_hours=possible_hours,
+            config=config
         )
 
 
@@ -533,7 +545,7 @@ def simulate(turbine: WindTurbine, env: SiteEnvironment, config: SimulationConfi
         SimulationResult
             simulation_result"""
     # 1. Wind climate calculations
-    climate = ClimateService.calculate_wind_climate(env, turbine)
+    climate = ClimateService.calculate_wind_climate(env, turbine, config)
     
     # 2. Energy production (single turbine)
     generated_energy, rated_power, capacity_factor= EnergyService.calculate_production(turbine, climate)
@@ -542,11 +554,9 @@ def simulate(turbine: WindTurbine, env: SiteEnvironment, config: SimulationConfi
     structural_report = StructuralService.evaluate_integrity(turbine, env, config,climate, rated_power)
     
     # 4. Financial evaluation (for the park)
-    financial_report = FinancialService.evaluate_finance(env, turbine,config rated_power, generated_energy)
+    financial_report = FinancialService.evaluate_finance(env, turbine, config, rated_power, generated_energy)
     
     # 5. capacity factor calculation
-
-    print(f"Profits: {financial_report.npv_profit} k€, Margin: {financial_report.margin*100}%")
 
     return SimulationResult(
         wind_nacelle=climate.wind_nacelle,
@@ -577,8 +587,8 @@ def simulate(turbine: WindTurbine, env: SiteEnvironment, config: SimulationConfi
 
 class SimulationEngine:
     @staticmethod
-    def simulate(turbine: WindTurbine, env: SiteEnvironment) -> SimulationResult:
-        return simulate(turbine, env)
+    def simulate(turbine: WindTurbine, env: SiteEnvironment, config: SimulationConfiguration = SimulationConfiguration()) -> SimulationResult:
+        return simulate(turbine, env, config)
 
 
 if __name__ == "__main__":
@@ -614,15 +624,6 @@ if __name__ == "__main__":
                 financial_additional_part = 0.07,
             )
             turbine = WindTurbine(rotor_diameter=131, height=120, solidity=0.04,gearbox= Gearbox.MEDIUM_SPEED, generator=Generator.SYNCHRONOUS)
-        case 2:
-            env = SiteEnvironment(
-                avg_wind_10=7.0,
-                roughness=0.1,
-                survival_gust=59.5,
-                
-
-            )
-            turbine = 2
 
     
     print(env)
