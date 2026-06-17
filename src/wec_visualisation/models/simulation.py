@@ -304,7 +304,7 @@ class StructuralService:
         # Moment of inertia
         I_z = np.pi/4 * (R_z**4 - (R_z - wall_thickness)**4)
         max_stress = np.max((1000 * moment_z * R_z) / I_z)
-        breaking_utilization = max_stress / break_stress # value < 1 => breaks
+        breaking_utilization = max_stress / break_stress # value > 1 => breaks
         return float(breaking_utilization)
 
     @staticmethod
