@@ -25,6 +25,8 @@ class ReferenceData:
     generated_energy: float | None = None
     breaking_utilization: float | None = None
     buckeling_utilization: float | None = None
+    storm_load: float | None = None
+    aerodynamical_load: float | None = None
     capex_components: dict[str, float] | None = None
 
 class Calibrator:
@@ -68,6 +70,8 @@ class Calibrator:
             
             all_residuals = []
             for turbine, env, ref in self.test_cases:
+                if ref.id.startswith("Bad"):
+                    continue
                 # Run the simulation
                 res = SimulationEngine.simulate(turbine, env, config=current_config)
                 
@@ -105,6 +109,7 @@ def calibrate_finance(calibrator: Calibrator):
     
     params = {
         "rotor_base": 900.0,
+        "rotor_exp": 2.3,
         "drivetrain_nacelle_base": 800.0,
         "tower_base": 700.0,
         "foundation_base": 300.0,
@@ -113,9 +118,13 @@ def calibrate_finance(calibrator: Calibrator):
         "base_maintanance": 600.0,
         "base_insurance": 100.0,
         "base_land": 360.0,
-        "base_decommisioning": 200.0
+        "base_decommisioning": 200.0,
+        "opex_scaler": 1.0
     }
-    bounds = ([0.0]*10, [np.inf]*10)
+    bounds = (
+        [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 100.0, 50.0, 50.0, 100.0, 0.1],  # Lower bounds
+        [np.inf]*12                                                # Upper bounds
+    )
     
     # Custom, readable function for errors
     def calc_residuals(res: SimulationResult, ref: ReferenceData) -> List[float]:
@@ -198,10 +207,14 @@ def calibrate_structure(calibrator: Calibrator):
     
     def calc_residuals(res: SimulationResult, ref: ReferenceData) -> List[float]:
         err = []
-        if ref.breaking_utilization:
-            err.append((res.breaking_utilization - ref.breaking_utilization) / ref.breaking_utilization)
         if ref.buckeling_utilization:
             err.append((res.buckeling_utilization - ref.buckeling_utilization) / ref.buckeling_utilization)
+        if ref.breaking_utilization:
+            err.append((res.breaking_utilization - ref.breaking_utilization) / ref.breaking_utilization)
+        if ref.storm_load:
+            err.append((res.storm_load - ref.storm_load) / ref.storm_load)
+        if ref.aerodynamical_load:
+            err.append((res.aerodynamical_load - ref.aerodynamical_load) / ref.aerodynamical_load)
         return err
 
     calibrator.optimize("Structure", params, bounds, calc_residuals)
@@ -253,6 +266,8 @@ def load_test_cases_from_json(json_path: str) -> List[Tuple[WindTurbine, SiteEnv
             generated_energy=scenario.get("generated_energy"),
             breaking_utilization=scenario.get("breaking_utilization"),
             buckeling_utilization=scenario.get("buckeling_utilization"),
+            storm_load=scenario.get("storm_load"),
+            aerodynamical_load=scenario.get("aerodynamical_load"),
             capex_components=scenario.get("capex_components")
         )
         

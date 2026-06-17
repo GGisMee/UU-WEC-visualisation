@@ -8,6 +8,7 @@ from wec_visualisation.models.turbine import WindTurbine, Gearbox, Generator
 from wec_visualisation.models.environment import SiteEnvironment, SSNGenerator
 import wec_visualisation.config as config
 
+
 @dataclass 
 class SimulationConfiguration:
     """Configuration parameters for the simulation (E.G. linear scaling parameter for devex)"""
@@ -54,6 +55,7 @@ class SimulationConfiguration:
 
     # cost base values [k€]
     rotor_base:float = 900.0
+    rotor_exp: float = 2.3
     drivetrain_nacelle_base:float = 800.0
     tower_base:float = 700.0
     foundation_base:float = 300.0
@@ -64,10 +66,11 @@ class SimulationConfiguration:
     base_insurance: float = 100.0
     base_land: float = 360.0
     base_decommisioning:float=200.0
+    opex_scaler: float = 1.0
 
     ### Structural
-    storm_drag_coefficient: float = 1.5
-    buckling_safety_factor: float = 1.0
+    storm_drag_coefficient: float = 0.766 # Previously 1.5
+    buckling_safety_factor: float = 2.429 # Previously 1.0
 
     
 
@@ -400,13 +403,13 @@ class FinancialService:
 
         devex = config.base_devex+config.scale_power_devex*(rated_power/1000) # permits for setting up base and building
 
-        rotor_cost = config.rotor_base* (turbine.rotor_diameter / 90.0) ** 3 * marine_factor
+        rotor_cost = config.rotor_base* (turbine.rotor_diameter / 90.0) ** (config.rotor_exp) * marine_factor
         drivetrain_nacelle = config.drivetrain_nacelle_base * (rated_power / 3000.0) * turbine.drivetrain_cost_modifier * marine_factor
-        tower = config.tower_base* ((turbine.height/ 90.0) * (turbine.rotor_diameter/ 90.0) ** 2) * turbine.nacelle_mass_modifier * marine_factor
+        tower = config.tower_base* (turbine.height*turbine.wall_thickness*turbine.bottom_diameter) * turbine.nacelle_mass_modifier * marine_factor # tar med height, thickness, bottom diam med volym 
         
         foundation_site = (config.foundation_base * ((turbine.height/ 90.0) * (turbine.rotor_diameter / 90.0) ** 2)) * fundament_factor
         
-        installation = config.installation_base* install_factor
+        installation = config.installation_base* install_factor* (rated_power/3000) 
 
         total_capex = devex + rotor_cost + drivetrain_nacelle + tower + foundation_site + installation
         
@@ -428,8 +431,8 @@ class FinancialService:
         insurance = config.base_insurance* (total_power_mw / 20.0) ** 0.5
         land_cost = config.base_land* env.turbine_count / 20.0
         fund_decommissioning = config.base_decommisioning* total_power_mw / 20.0
-        
-        return float(maintenance + insurance + land_cost + fund_decommissioning)
+        total_opex = float(maintenance + insurance + land_cost + fund_decommissioning)
+        return total_opex*(total_power_mw/20)**0.8*config.opex_scaler
 
     @staticmethod
     def calculate_annual_earnings(env: SiteEnvironment, generated_energy: float, annual_opex: float) -> tuple[float, float]:
@@ -537,63 +540,62 @@ class SimulationResult:
         return self.rated_power
 
 
-def simulate(turbine: WindTurbine, env: SiteEnvironment, config: SimulationConfiguration = SimulationConfiguration()) -> SimulationResult:
-    """Processes turbine and env data and calculates SimulationResult.
-    Calculates wind climate behaviour, energy production, structural integrity and finances.
-    
-    Parameters:
-        turbine: data about the turbine itself
-        env: Data about the environment where the turbine is working
-    
-    -------
-    Returns:
-        SimulationResult
-            simulation_result"""
-    # 1. Wind climate calculations
-    climate = ClimateService.calculate_wind_climate(env, turbine, config)
-    
-    # 2. Energy production (single turbine)
-    generated_energy, rated_power, capacity_factor= EnergyService.calculate_production(turbine, climate)
-    
-    # 3. Structural evaluation (single turbine geometry)
-    structural_report = StructuralService.evaluate_integrity(turbine, env, config,climate, rated_power)
-    
-    # 4. Financial evaluation (for the park)
-    financial_report = FinancialService.evaluate_finance(env, turbine, config, rated_power, generated_energy)
-    
-    # 5. capacity factor calculation
-
-    return SimulationResult(
-        wind_nacelle=climate.wind_nacelle,
-        weibull_C=climate.weibull_C,
-        weibull_k=climate.weibull_k,
-        rated_wind_speed=climate.rated_wind_speed,
-        cut_in_speed=climate.cut_in_speed,
-        cut_out_speed=climate.cut_out_speed,
-        rated_power=rated_power * env.turbine_count,
-        generated_energy=generated_energy * env.turbine_count,
-        capacity_factor=capacity_factor,
-        aerodynamical_load=structural_report.aerodynamical_load,
-        storm_load=structural_report.storm_load,
-        slenderness_ratio=structural_report.slenderness_ratio,
-        breaking_utilization=structural_report.breaking_utilization,
-        buckeling_utilization=structural_report.buckeling_utilization,
-        rna_mass=structural_report.rna_mass,
-        capex_components=financial_report.capex_components,
-        total_capex=financial_report.total_capex,
-        annual_opex=financial_report.annual_opex,
-        annual_revenue=financial_report.annual_revenue,
-        npv_profit=financial_report.npv_profit,
-        IRR=financial_report.IRR,
-        margin=financial_report.margin,
-        payback_years=financial_report.payback_years
-    )
-
 
 class SimulationEngine:
     @staticmethod
     def simulate(turbine: WindTurbine, env: SiteEnvironment, config: SimulationConfiguration = SimulationConfiguration()) -> SimulationResult:
-        return simulate(turbine, env, config)
+        """Processes turbine and env data and calculates SimulationResult.
+        Calculates wind climate behaviour, energy production, structural integrity and finances.
+        
+        Parameters:
+            turbine: data about the turbine itself
+            env: Data about the environment where the turbine is working
+        
+        -------
+        Returns:
+            SimulationResult
+                simulation_result"""
+        # 1. Wind climate calculations
+        climate = ClimateService.calculate_wind_climate(env, turbine, config)
+        
+        # 2. Energy production (single turbine)
+        generated_energy, rated_power, capacity_factor= EnergyService.calculate_production(turbine, climate)
+        
+        # 3. Structural evaluation (single turbine geometry)
+        structural_report = StructuralService.evaluate_integrity(turbine, env, config,climate, rated_power)
+        
+        # 4. Financial evaluation (for the park)
+        financial_report = FinancialService.evaluate_finance(env, turbine, config, rated_power, generated_energy)
+        
+        # 5. capacity factor calculation
+
+        return SimulationResult(
+            wind_nacelle=climate.wind_nacelle,
+            weibull_C=climate.weibull_C,
+            weibull_k=climate.weibull_k,
+            rated_wind_speed=climate.rated_wind_speed,
+            cut_in_speed=climate.cut_in_speed,
+            cut_out_speed=climate.cut_out_speed,
+            rated_power=rated_power * env.turbine_count,
+            generated_energy=generated_energy * env.turbine_count,
+            capacity_factor=capacity_factor,
+            aerodynamical_load=structural_report.aerodynamical_load,
+            storm_load=structural_report.storm_load,
+            slenderness_ratio=structural_report.slenderness_ratio,
+            breaking_utilization=structural_report.breaking_utilization,
+            buckeling_utilization=structural_report.buckeling_utilization,
+            rna_mass=structural_report.rna_mass,
+            capex_components=financial_report.capex_components,
+            total_capex=financial_report.total_capex,
+            annual_opex=financial_report.annual_opex,
+            annual_revenue=financial_report.annual_revenue,
+            npv_profit=financial_report.npv_profit,
+            IRR=financial_report.IRR,
+            margin=financial_report.margin,
+            payback_years=financial_report.payback_years
+        )
+
+
 
 
 if __name__ == "__main__":

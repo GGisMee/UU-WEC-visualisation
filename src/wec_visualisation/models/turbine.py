@@ -126,7 +126,7 @@ class WindTurbine:
 
     @property
     def slenderness_ratio(self) -> float:
-        return self.height / (2 * (self.bottom_diameter / 2))
+        return self.height / self.bottom_diameter 
 
     @property
     def tower_mass(self) -> float:

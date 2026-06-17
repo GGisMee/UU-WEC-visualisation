@@ -77,7 +77,6 @@ def extract_comparison_data(res: SimulationResult, raw_dict: dict) -> tuple[list
             continue
             
         if isinstance(expected, dict) and isinstance(simulated, dict):
-            # Add a header row for the dictionary (using NaN to signal header to the printer)
             metrics.append(metric)
             expected_vals.append(np.nan)
             simulated_vals.append(np.nan)
@@ -111,6 +110,34 @@ def compare_results():
         return
         
     config = SimulationConfiguration()
+    config = dataclasses.replace(config,
+        rotor_base=479.633,
+        rotor_exp=2.573,
+        drivetrain_nacelle_base=1419.201,
+        tower_base=81.198,
+        foundation_base=390.009,
+        installation_base=827.587,
+        installation_offshore_factor=2.410,
+        base_maintanance=25982.913,
+        base_insurance=50.000,
+        base_land=12836.031,
+        base_decommisioning=10718.847,
+        opex_scaler=0.100,
+        exp_power_dd=1.000,
+        exp_power_geared=2.500,
+        exp_diameter_large=2.251,
+        exp_diameter_small=2.473,
+        rotor_scale_blade=5.000,
+        rotor_scale_hub=0.101,
+        rotor_scale_small=1.111,
+        nacelle_mass_per_kw=149.989,
+        cut_in_power_fraction=0.010,
+        cut_out_energy_fraction=0.702,
+        rated_wind_base=10.566,
+        rated_wind_nacelle_scaler=0.000,
+        storm_drag_coefficient=0.848,
+        buckling_safety_factor=2.207
+    )
     
     print("=" * 90)
     print("SIMULATION VS REFERENCE DATA COMPARISON (Default Configuration)")
