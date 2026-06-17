@@ -102,8 +102,8 @@ def extract_comparison_data(res: SimulationResult, raw_dict: dict) -> tuple[list
 def compare_results():
     print("Loading reference data...")
     try:
-        test_cases = load_test_cases_from_json("tests/reference_data2.json")
-        with open("tests/reference_data2.json") as f:
+        test_cases = load_test_cases_from_json("tests/reference_data.json")
+        with open("tests/reference_data.json") as f:
             raw_data = json.load(f)
         raw_map = {d["id"]: d for d in raw_data}
     except Exception as e:

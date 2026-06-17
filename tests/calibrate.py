@@ -263,8 +263,8 @@ def load_test_cases_from_json(json_path: str) -> List[Tuple[WindTurbine, SiteEnv
 
 def main():
     # 1. Load the data directly from JSON
-    test_cases = load_test_cases_from_json("tests/reference_data2.json")
-    print(f"Loaded {len(test_cases)} test cases from reference_data2.json")
+    test_cases = load_test_cases_from_json("tests/reference_data.json")
+    print(f"Loaded {len(test_cases)} test cases from reference_data.json")
     
     # 2. Initialize the generic calibrator
     calibrator = Calibrator(test_cases)
