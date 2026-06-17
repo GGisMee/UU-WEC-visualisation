@@ -1,3 +1,10 @@
+import sys
+from pathlib import Path
+
+# Ensure src is in PYTHONPATH so we can run this file directly
+sys.path.append(str(Path(__file__).parent.parent / "src"))
+sys.path.append(str(Path(__file__).parent))
+
 import json
 import numpy as np
 from typing import Callable, List, Tuple, Dict
@@ -16,6 +23,7 @@ class ReferenceData:
     total_capex: float | None = None
     annual_opex: float | None = None
     generated_energy: float | None = None
+    breaking_utilization: float | None = None
     buckeling_utilization: float | None = None
     capex_components: dict[str, float] | None = None
 
@@ -95,18 +103,19 @@ class Calibrator:
 # ==========================================
 def calibrate_finance(calibrator: Calibrator):
     
-    # Dictionary mapping configuration variable names to their initial guess
     params = {
         "rotor_base": 900.0,
         "drivetrain_nacelle_base": 800.0,
         "tower_base": 700.0,
         "foundation_base": 300.0,
+        "installation_base": 3500.0,
+        "installation_offshore_factor": 3.0,
         "base_maintanance": 600.0,
         "base_insurance": 100.0,
         "base_land": 360.0,
         "base_decommisioning": 200.0
     }
-    bounds = ([0.0]*8, [np.inf]*8)
+    bounds = ([0.0]*10, [np.inf]*10)
     
     # Custom, readable function for errors
     def calc_residuals(res: SimulationResult, ref: ReferenceData) -> List[float]:
@@ -149,8 +158,6 @@ def calibrate_rna_mass(calibrator: Calibrator):
         err = []
         if ref.rna_mass:
             err.append((res.rna_mass - ref.rna_mass) / ref.rna_mass)
-        if ref.buckeling_utilization:
-            err.append((res.buckeling_utilization - ref.buckeling_utilization) / ref.buckeling_utilization)
         return err
 
     calibrator.optimize("RNA Mass", params, bounds, calc_residuals)
@@ -176,6 +183,28 @@ def calibrate_wind(calibrator: Calibrator):
         return err
 
     calibrator.optimize("Wind", params, bounds, calc_residuals)
+
+
+# ==========================================
+# 4. STRUCTURE CALIBRATION
+# ==========================================
+def calibrate_structure(calibrator: Calibrator):
+    
+    params = {
+        "storm_drag_coefficient": 1.5,
+        "buckling_safety_factor": 1.0
+    }
+    bounds = ([0.1, 0.1], [5.0, 5.0])
+    
+    def calc_residuals(res: SimulationResult, ref: ReferenceData) -> List[float]:
+        err = []
+        if ref.breaking_utilization:
+            err.append((res.breaking_utilization - ref.breaking_utilization) / ref.breaking_utilization)
+        if ref.buckeling_utilization:
+            err.append((res.buckeling_utilization - ref.buckeling_utilization) / ref.buckeling_utilization)
+        return err
+
+    calibrator.optimize("Structure", params, bounds, calc_residuals)
 
 
 # ==========================================
@@ -207,8 +236,12 @@ def load_test_cases_from_json(json_path: str) -> List[Tuple[WindTurbine, SiteEnv
             rotor_diameter=scenario["rotor_diameter"],
             height=scenario["height"],
             solidity=scenario["solidity"],
-            gearbox=Gearbox[scenario["gearbox"]],
-            generator=Generator[scenario["generator"]]
+            gearbox=Gearbox(scenario["gearbox"]),
+            generator=Generator(scenario["generator"]),
+            top_diameter=scenario["top_diameter"],
+            bottom_diameter=scenario["bottom_diameter"],
+            wall_thickness=scenario["wall_thickness"],
+            lifetime=scenario["lifetime"],
         )
         
         # 3. Build Reference Data
@@ -218,6 +251,7 @@ def load_test_cases_from_json(json_path: str) -> List[Tuple[WindTurbine, SiteEnv
             total_capex=scenario.get("total_capex"),
             annual_opex=scenario.get("annual_opex"),
             generated_energy=scenario.get("generated_energy"),
+            breaking_utilization=scenario.get("breaking_utilization"),
             buckeling_utilization=scenario.get("buckeling_utilization"),
             capex_components=scenario.get("capex_components")
         )
@@ -229,8 +263,8 @@ def load_test_cases_from_json(json_path: str) -> List[Tuple[WindTurbine, SiteEnv
 
 def main():
     # 1. Load the data directly from JSON
-    test_cases = load_test_cases_from_json("tests/reference_data.json")
-    print(f"Loaded {len(test_cases)} test cases from reference_data.json")
+    test_cases = load_test_cases_from_json("tests/reference_data2.json")
+    print(f"Loaded {len(test_cases)} test cases from reference_data2.json")
     
     # 2. Initialize the generic calibrator
     calibrator = Calibrator(test_cases)
@@ -239,6 +273,7 @@ def main():
     calibrate_finance(calibrator)
     calibrate_rna_mass(calibrator)
     calibrate_wind(calibrator)
+    calibrate_structure(calibrator)
 
 if __name__ == "__main__":
     main()

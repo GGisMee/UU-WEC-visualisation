@@ -80,7 +80,6 @@ class SiteEnvironment:
     # Defaulted fields at the bottom
     wo_param: float = 7.0  # for determinating turbine cost
     financial_additional_part: float = 0.07  # [%] additional costs for loans, fees and so on for funding. Percentage of capex
-    installation_costs: int = 3500  # k€
     turbine_count: int = 1  # number of turbines in park (Set to 1 by default)
 
     def calculate_wind_at_height(self, height: float) -> float:

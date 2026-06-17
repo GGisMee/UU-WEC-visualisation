@@ -57,13 +57,17 @@ class SimulationConfiguration:
     drivetrain_nacelle_base:float = 800.0
     tower_base:float = 700.0
     foundation_base:float = 300.0
-    installation_base = 3500
+    installation_base: float = 3500.0
 
     ### Opex [k€]
     base_maintanance: float = 600.0
     base_insurance: float = 100.0
     base_land: float = 360.0
     base_decommisioning:float=200.0
+
+    ### Structural
+    storm_drag_coefficient: float = 1.5
+    buckling_safety_factor: float = 1.0
 
     
 
@@ -216,7 +220,7 @@ class EnergyService:
 
 class StructuralService:
     @staticmethod
-    def calculate_loads(turbine: WindTurbine, rated_wind_speed: float, survival_gust: float) -> tuple[float, float]:
+    def calculate_loads(turbine: WindTurbine, rated_wind_speed: float, survival_gust: float, config: SimulationConfiguration) -> tuple[float, float]:
         """
         Calculate the structural loads acting on the turbine tower.
         
@@ -224,19 +228,20 @@ class StructuralService:
             turbine: Wind turbine configuration.
             rated_wind_speed: Rated wind speed [m/s] for calculating aerodynamic load.
             survival_gust: Storm survival gust [m/s] for calculating storm load.
+            config: Simulation configuration.
             
         Returns:
             Tuple of (aerodynamical_load [kN], storm_load [kN]).
         """
         # C_T = 8/9, Air density = 1.2 kg/m^3
         aerodynamical_load = 0.5 * 1.2 * (8.0 / 9.0) * turbine.swept_area * rated_wind_speed**2 / 1000.0
-        storm_load = 0.5 * 1.2 * 1.5 * turbine.solidity * turbine.swept_area * survival_gust**2 / 1000.0
+        storm_load = 0.5 * 1.2 * config.storm_drag_coefficient * turbine.solidity * turbine.swept_area * survival_gust**2 / 1000.0
         return aerodynamical_load, storm_load
 
 
 
     @staticmethod
-    def buckeling(turbine: WindTurbine, max_load: float, rna_mass: float) -> float:
+    def buckeling(turbine: WindTurbine, max_load: float, rna_mass: float, config: SimulationConfiguration) -> float:
         E = 210000e6          # [Pa] Young's modulus for steel
         steel_density = 7850  # [kg/m³] Structural steel density
         g = 9.82              # [m/s²] Gravitational acceleratio
@@ -284,7 +289,7 @@ class StructuralService:
         # Find critical location
         max_interaction = np.max(interaction)
         
-        return float(max_interaction)
+        return float(max_interaction * config.buckling_safety_factor)
 
         
 
@@ -348,12 +353,12 @@ class StructuralService:
 
     @staticmethod
     def evaluate_integrity(turbine: WindTurbine, env: SiteEnvironment,config:SimulationConfiguration, climate:WindClimate, rated_power: float) -> StructuralReport:
-        aerodynamical_load, storm_load = StructuralService.calculate_loads(turbine, climate.rated_wind_speed, env.survival_gust)
+        aerodynamical_load, storm_load = StructuralService.calculate_loads(turbine, climate.rated_wind_speed, env.survival_gust, config)
         max_load = max(aerodynamical_load, storm_load)
         
         breaking_utilization = StructuralService.breaking(turbine, max_load)
         rna_mass = StructuralService.calculate_rna_mass(turbine,env,config, rated_power)
-        buckeling_utilization = StructuralService.buckeling(turbine, max_load, rna_mass)
+        buckeling_utilization = StructuralService.buckeling(turbine, max_load, rna_mass, config)
         
         return StructuralReport(
             aerodynamical_load=aerodynamical_load,
