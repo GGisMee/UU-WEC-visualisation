@@ -2,7 +2,7 @@
     {
         "id": "3MW_Onshore",
         "avg_wind_10": 7.5,
-        "roughness": 0.05,
+        "roughness": 50,
         "survival_gust": 55,
         "k_factor": 2.0,
         "is_offshore": false,
@@ -102,7 +102,7 @@
     {
         "id": "8MW_Offshore",
         "avg_wind_10": 9.0,
-        "roughness": 0.0002,
+        "roughness": 0.2,
         "survival_gust": 65,
         "k_factor": 2.1,
         "is_offshore": true,
@@ -152,7 +152,7 @@
     {
         "id": "DTU_10MW_Offshore",
         "avg_wind_10": 9.5,
-        "roughness": 0.0002,
+        "roughness": 0.2,
         "survival_gust": 70,
         "k_factor": 2.1,
         "is_offshore": true,
@@ -202,7 +202,7 @@
     {
         "id": "IEA_15MW_Offshore",
         "avg_wind_10": 10.0,
-        "roughness": 0.0002,
+        "roughness": 0.2,
         "survival_gust": 70,
         "k_factor": 2.1,
         "is_offshore": true,

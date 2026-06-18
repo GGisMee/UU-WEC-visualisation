@@ -4,6 +4,8 @@ from dataclasses import dataclass
 import datetime
 import numpy as np
 
+# class Spread
+
 class DefaultEnvironments(Enum):
     SANDBOX = "sandbox"
     ARCTIC_GALE = "arctic_gale"

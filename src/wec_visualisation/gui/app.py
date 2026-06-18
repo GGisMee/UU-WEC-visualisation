@@ -5,11 +5,13 @@ import tkinter as tk
 from wec_visualisation.models.turbine import WindTurbine, Generator, Gearbox
 from wec_visualisation.models.environment import SiteEnvironment, DefaultEnvironments, SSNGenerator
 from wec_visualisation.models.simulation import SimulationEngine
+from wec_visualisation.models.simulation import PresetConfigurations
 from wec_visualisation.models.mission import DefaultMissions
 from wec_visualisation.gui.console import ConsolePanel
 from wec_visualisation.gui.canvas import CADCanvas
 from wec_visualisation.gui.analytics import AnalyticsPanel
 from wec_visualisation.gui.theme import Theme
+
 
 def load_scale_factor():
     try:
@@ -376,7 +378,7 @@ class UnifiedSimulatorApp(ctk.CTk):
             self.lbl_runs.configure(text=f"{self.runs_remaining} / 6", text_color=color)
 
         # 2. Run simulation calculations
-        result = SimulationEngine.simulate(self.turbine, self.environment)
+        result = SimulationEngine.simulate(self.turbine, self.environment, PresetConfigurations.v0.value)
         self.last_sim_result = result
         self.simulation_out_of_date = False
 
