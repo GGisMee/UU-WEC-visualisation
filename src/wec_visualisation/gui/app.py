@@ -360,11 +360,11 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.console.set_inputs_enabled(False)
         self.analytics.show_loading(True, "Initializing wind tunnel aerodynamic grid...")
 
-        # Step-by-step loading progress animation, do not remove "usually" comments below
-        self.after(0, lambda: self.analytics.set_loading_status("Integrating wind speed probability using Weibull factors...")) # usually 500
-        self.after(0, lambda: self.analytics.set_loading_status("Calculating beam bending moments on structural tower base...")) # usually 1200 
-        self.after(0, lambda: self.analytics.set_loading_status("Compiling financial CAPEX ledger and NPV margin predictions...")) # usually 2000
-        self.after(0, self.complete_simulation) # usually 3000
+        # Step-by-step loading progress animation
+        self.after(500, lambda: self.analytics.set_loading_status("Integrating wind speed probability using Weibull factors..."))
+        self.after(1200, lambda: self.analytics.set_loading_status("Calculating beam bending moments on structural tower base...")) 
+        self.after(2000, lambda: self.analytics.set_loading_status("Compiling financial CAPEX ledger and NPV margin predictions..."))
+        self.after(3000, self.complete_simulation)
 
     def complete_simulation(self):
         # Re-enable inputs
@@ -444,7 +444,10 @@ class UnifiedSimulatorApp(ctk.CTk):
         
         # Modal configuration
         dialog.transient(self)
-        dialog.grab_set()
+        
+        # Delay grab_set and focus_set to prevent blank/white window bugs on some OS
+        dialog.after(100, dialog.focus_set)
+        dialog.after(150, dialog.grab_set)
 
         title_color = Theme.DANGER.value if is_err else Theme.SUCCESS.value
         ctk.CTkLabel(dialog, text=title.upper(), font=Theme.fonts.SUBTITLE, text_color=title_color).pack(pady=(15, 10))

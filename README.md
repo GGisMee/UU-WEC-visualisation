@@ -169,3 +169,29 @@ The development workflow is organized into the following milestones:
 ### Milestone 4: Verification, Testing & Packaging (Next Step)
 * Write unit tests to verify that the Python calculations for structural and economic parameters match reference spreadsheet calculations.
 * Build and package the application into a standalone executable (`.exe` / `.app`) using PyInstaller.
+
+## Installation and use
+To use the app and work with it one needs a pip virtual environment. 
+
+Sätt upp 
+```bash
+# Create venv
+pip -m venv .venv
+
+# Aktivate (Makes sure packages are loaded)
+source .venv/bin/activate
+
+# Install packages required for program
+pip install -r requirements.txt
+```
+
+These packages are used with python:
+* **numpy** (For mathematical calculations)
+* **scipy** (For more mathematical calculations)
+* **customtkinter** (For GUI)
+* **matplotlib** (For plotting datapoints)
+
+Run main file:
+```
+python src/wec_visualisation/main.py
+```

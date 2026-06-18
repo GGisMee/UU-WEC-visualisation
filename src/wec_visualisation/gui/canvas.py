@@ -94,7 +94,7 @@ class CADCanvas(ctk.CTkFrame):
 
         real_height = self.turbine.height
         real_rotor_diam = self.turbine.rotor_diameter
-        real_solidity = self.turbine.solidity
+        real_solidity = self.turbine.solidity*100
 
         hub_y = ground_y - int(real_height * draw_scale)
         rotor_r = int((real_rotor_diam / 2) * draw_scale)
@@ -204,7 +204,7 @@ class CADCanvas(ctk.CTkFrame):
         """Blade rotation animation loop."""
         if self.animation_running:
             # Rotor speed depends on rotor_diameter and solidity (smaller/thinner = faster)
-            sol = self.turbine.solidity
+            sol = self.turbine.solidity*100
             rotor_diam = self.turbine.rotor_diameter
             speed = max(1, int(40 - rotor_diam / 4 - sol))
             
