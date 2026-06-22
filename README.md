@@ -271,5 +271,11 @@ To build, simply run this command from the project root:
 ```bash
 pyinstaller --name "WindSimulator" --windowed src/wec_visualisation/main.py
 ```
+
+Alternatively run the included `build.py` program from project root
+```bash
+python build.py
+```
+
 The executable will be located in the `dist/WindSimulator/` directory.
 
