@@ -790,22 +790,9 @@ class SimulationResult:
     margin: float  # [%]
     payback_years: float # [y]
 
-    def get_weibull_prob(self, v:np.ndarray) ->np.ndarray:
-        k = self.weibull_k
-        C = self.weibull_C
-        return (k / C) * ((v / C) ** (k - 1)) * np.exp(-((v / C) ** k))
-
-    def get_power_at_wind_speed(self, v: float) -> float:
-        if v < self.cut_in_speed or v >= self.cut_out_speed:
-            return 0.0
-        if v < self.rated_wind_speed:
-            # cubic interpolation
-            if self.rated_wind_speed <= self.cut_in_speed:
-                return self.rated_power
-            return self.rated_power * ((v - self.cut_in_speed) / (self.rated_wind_speed - self.cut_in_speed)) ** 3
-        return self.rated_power
-
-
+    wind_speeds: np.ndarray
+    weibull_probabilities: np.ndarray
+    power_curve: np.ndarray
 
 class SimulationEngine:
     @staticmethod
@@ -840,8 +827,30 @@ class SimulationEngine:
         financial_report = FinancialService.evaluate_finance(env, turbine, sim_config, rated_power, generated_energy)
         
         # 5. capacity factor calculation
+        
+        # 6. Generate curves for plotting
+        power_curve = np.zeros_like(climate.wind_speeds, dtype=float)
+        cut_in = climate.cut_in_speed
+        cut_out = climate.cut_out_speed
+        rated_speed = climate.rated_wind_speed
+        
+        for i, v in enumerate(climate.wind_speeds):
+            if v < cut_in:
+                power_curve[i] = 0.0
+            elif v <= rated_speed:
+                power_curve[i] = config.WIND_DENSITY_COEFFICIENT * v**3 * turbine.swept_area / 1000.0 * turbine.capture_efficiency * turbine.drivetrain_efficiency
+            elif v <= cut_out:
+                power_curve[i] = rated_power
+            else:
+                power_curve[i] = 0.0
+                
+        power_curve = power_curve * env.turbine_count
+        weibull_probabilities = climate.possible_hours / 8760.0
 
         return SimulationResult(
+            wind_speeds=climate.wind_speeds,
+            weibull_probabilities=weibull_probabilities,
+            power_curve=power_curve,
             wind_nacelle=climate.wind_nacelle,
             weibull_C=climate.weibull_C,
             weibull_k=climate.weibull_k,
