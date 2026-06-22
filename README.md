@@ -233,18 +233,14 @@ pip install pyinstaller
 ### Windows Build (.exe)
 Run this command from the project root:
 ```bash
-pyinstaller --name "WindSimulator" \
-            --windowed \
-            src/wec_visualisation/main.py
+pyinstaller --name "WindSimulator" --windowed src/wec_visualisation/main.py
 ```
 The executable will be located in the `dist/WindSimulator/` directory.
 
 ### macOS Build (.app)
 Run this command from the project root:
 ```bash
-pyinstaller --name "WindSimulator" \
-            --windowed \
-            src/wec_visualisation/main.py
+pyinstaller --name "WindSimulator" --windowed src/wec_visualisation/main.py
 ```
 The `.app` bundle will be located in the `dist/` directory.
 
