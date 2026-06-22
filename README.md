@@ -187,13 +187,27 @@ To use the app and work with it, you need a Python virtual environment.
 Setup:
 ```bash
 # Create venv
-python3 -m venv .venv
+python3 -m venv .venv 
+```
+Or sometimes `py -m venv .venv` on windows
 
+```bash
+# Windows: Command to ensure user privilege to run scripts. 
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+```
+
+```bash
 # Activate (Makes sure packages are isolated)
-source .venv/bin/activate
+source .venv/bin/activate # On mac or linux
+.venv\Scripts\Activate.ps1 # On windows
+```
 
+```bash
 # Install packages required for program
 pip install -r requirements.txt
+
+# Checks that everything is included and links up resources
+pip install -e .
 ```
 
 These packages are used with python:
@@ -219,18 +233,14 @@ pip install pyinstaller
 ### Windows Build (.exe)
 Run this command from the project root:
 ```bash
-pyinstaller --name "WindSimulator" \
-            --windowed \
-            src/wec_visualisation/main.py
+pyinstaller --name "WindSimulator" --windowed src/wec_visualisation/main.py
 ```
 The executable will be located in the `dist/WindSimulator/` directory.
 
 ### macOS Build (.app)
 Run this command from the project root:
 ```bash
-pyinstaller --name "WindSimulator" \
-            --windowed \
-            src/wec_visualisation/main.py
+pyinstaller --name "WindSimulator" --windowed src/wec_visualisation/main.py
 ```
 The `.app` bundle will be located in the `dist/` directory.
 
