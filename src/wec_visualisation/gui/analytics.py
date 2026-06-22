@@ -136,6 +136,15 @@ class AnalyticsPanel(ctk.CTkFrame):
             ("margin", "Lifetime Profit Margin", "- %", True),
         ]
 
+        color_mapping = {
+            "capex_dev": Theme.BORDER,
+            "capex_turb": Theme.INFO,
+            "capex_driv": Theme.SUCCESS,
+            "capex_tow": Theme.ACCENT,
+            "capex_found": Theme.CONCRETE,
+            "capex_install": Theme.ALERT
+        }
+
         for item in ledger_defs:
             is_bold = len(item) == 4
             key, label, init_val = item[0], item[1], item[2]
@@ -143,6 +152,10 @@ class AnalyticsPanel(ctk.CTkFrame):
             row = ctk.CTkFrame(self.ledger_scroll, fg_color=Theme.BG_SURFACE.value)
             row.pack(fill="x", pady=4, padx=5)
             
+            if key in color_mapping:
+                color_box = ctk.CTkFrame(row, width=12, height=12, fg_color=color_mapping[key].value, corner_radius=2)
+                color_box.pack(side="left", padx=(0, 8))
+
             lbl_weight = Theme.fonts.BODY_BOLD if is_bold else Theme.fonts.BODY
             lbl_color = Theme.TEXT_MAIN.value if is_bold else Theme.TEXT_MUTED.value
             
@@ -340,9 +353,9 @@ class AnalyticsPanel(ctk.CTkFrame):
             ax.grid(True, color=border_color, linestyle='--', alpha=0.5)
 
         # --- Plot 1: Weibull ---
-        max_v = 25.0
-        v_arr = np.linspace(0.1, max_v, 200)
-        prob_arr = res.get_weibull_prob(v_arr)
+        v_arr = res.wind_speeds
+        prob_arr = res.weibull_probabilities
+        max_v = 30.0 # Limit plot view for better readability since array goes up to 60
 
         ax1.plot(v_arr, prob_arr, color=info_color, linewidth=2)
         ax1.set_title("Weibull Wind Speed Curve", color=info_color, fontweight='bold')
@@ -356,7 +369,7 @@ class AnalyticsPanel(ctk.CTkFrame):
         ax1.set_ylim(bottom=0)
 
         # --- Plot 2: Power Curve ---
-        p_arr = [res.get_power_at_wind_speed(v) for v in v_arr]
+        p_arr = res.power_curve
         ax2.plot(v_arr, p_arr, color=accent_color, linewidth=2)
         ax2.set_title("Turbine Power Curve (kW)", color=accent_color, fontweight='bold')
         ax2.set_xlabel("Wind Speed (m/s)", color=muted_color)
