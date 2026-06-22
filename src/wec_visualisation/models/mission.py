@@ -104,7 +104,7 @@ class DefaultMissions(Enum):
                             constraint_name="Buckling Utilization",
                             check="<=", target=1.0, unit="",
                             display_text=("Buckling risk", "Structure OK"),
-                            value_getter=lambda turbine, result: result.buckeling_utilization
+                            value_getter=lambda turbine, result: result.buckling_utilization
                         ),
                         Constraint(
                             constraint_name="Breaking Utilization",
@@ -166,7 +166,7 @@ class DefaultMissions(Enum):
                             constraint_name="Buckling Utilization",
                             check="<=", target=1.0, unit="",
                             display_text=("Buckling risk", "Structure OK"),
-                            value_getter=lambda turbine, result: result.buckeling_utilization
+                            value_getter=lambda turbine, result: result.buckling_utilization
                         )
                     ],
                     max_runs=6

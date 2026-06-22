@@ -10,7 +10,7 @@ def mock_turbine():
 @pytest.fixture
 def mock_result():
     res = Mock()
-    res.buckeling_utilization = 0.8
+    res.buckling_utilization = 0.8
     res.margin = 0.15 # 15%
     return res
 
@@ -19,7 +19,7 @@ def test_constraint_evaluate_less_than_equals(mock_turbine, mock_result):
         constraint_name="Buckling",
         check="<=", target=1.0, unit="",
         display_text=("Fail", "Pass"),
-        value_getter=lambda t, r: r.buckeling_utilization
+        value_getter=lambda t, r: r.buckling_utilization
     )
     
     evaluation = c.evaluate(mock_turbine, mock_result)
@@ -42,7 +42,7 @@ def test_constraint_evaluate_greater_than_equals(mock_turbine, mock_result):
 def test_mission_evaluate(mock_turbine, mock_result):
     c1 = Constraint(
         constraint_name="Buckling", check="<=", target=1.0, unit="",
-        display_text=("Fail", "Pass"), value_getter=lambda t, r: r.buckeling_utilization
+        display_text=("Fail", "Pass"), value_getter=lambda t, r: r.buckling_utilization
     )
     c2 = Constraint(
         constraint_name="Margin", check=">=", target=20.0, unit="%", # Will fail (15 < 20)

@@ -20,11 +20,11 @@ class SimulationConfiguration:
     cut_out_energy_fraction: float = 0.8  # Turn off when 80% of total energy is reached in the distribution
 
     ### RNA MASS
-    # Exponants for nacelle-mass based on drivetrain 
+    # Exponents for nacelle-mass based on drivetrain 
     exp_power_dd: float = 1.4         # Direct Drive
     exp_power_geared: float = 1.05    # Geared (High/Medium speed)
     
-    # Exponants for mass of rotor
+    # Exponents for mass of rotor
     exp_diameter_large: float = 2.2   # Offshore / Large onshore
     exp_diameter_small: float = 2.4   # Small onshore
     
@@ -46,7 +46,7 @@ class SimulationConfiguration:
     ### CAPEX
     # offshore scalers
     marine_offshore_scale: float = 1.15 # Nacelle, rotor, tower
-    fundament_offshore_scale:float = 2.5 # Foundation 
+    foundation_offshore_scale:float = 2.5 # Foundation 
     installation_offshore_factor:float = 3.0 # Installation costs
 
     # Devex
@@ -62,10 +62,10 @@ class SimulationConfiguration:
     installation_base: float = 3500.0
 
     ### Opex [k€]
-    base_maintanance: float = 600.0
+    base_maintenance: float = 600.0
     base_insurance: float = 100.0
     base_land: float = 360.0
-    base_decommisioning:float=200.0
+    base_decommissioning:float=200.0
     opex_scaler: float = 1.0
 
     ### Structural
@@ -92,7 +92,7 @@ class PresetConfigurations(Enum):
         nacelle_mass_per_kw=45.0,
         large_rotor_threshold=125.0,
         marine_offshore_scale=1.15,
-        fundament_offshore_scale=2.5,
+        foundation_offshore_scale=2.5,
         installation_offshore_factor=3.0,
         base_devex=200.0,
         scale_power_devex=50.0,
@@ -102,10 +102,10 @@ class PresetConfigurations(Enum):
         tower_base=700.0,
         foundation_base=300.0,
         installation_base=3500.0,
-        base_maintanance=600.0,
+        base_maintenance=600.0,
         base_insurance=100.0,
         base_land=360.0,
-        base_decommisioning=200.0,
+        base_decommissioning=200.0,
         opex_scaler=1.0,
         storm_drag_coefficient=0.766,
         buckling_safety_factor=2.429
@@ -118,10 +118,10 @@ class PresetConfigurations(Enum):
         foundation_base=390.009,
         installation_base=827.587,
         installation_offshore_factor=2.410,
-        base_maintanance=25982.913,
+        base_maintenance=25982.913,
         base_insurance=50.000,
         base_land=12836.031,
-        base_decommisioning=10718.847,
+        base_decommissioning=10718.847,
         opex_scaler=0.100,
         exp_power_dd=1.000,
         exp_power_geared=2.500,
@@ -147,7 +147,7 @@ class StructuralReport:
     storm_load: float          # kN
     slenderness_ratio: float   # [-]
     breaking_utilization: float         # [-] Breaking factor
-    buckeling_utilization: float         # [-] Breaking factor
+    buckling_utilization: float         # [-] Buckling factor
     rna_mass: float            # [kg] Rotor Nacelle Assembly mass
 
 @dataclass(frozen=True)
@@ -177,7 +177,7 @@ class WindClimate:
     @property
     def energy_density_per_m2(self) -> np.ndarray:
         """Energy per meter squared at blades"""
-        return 0.62 * self.wind_speeds**3 * self.possible_hours / 1000.0
+        return config.WIND_DENSITY_COEFFICIENT * self.wind_speeds**3 * self.possible_hours / 1000.0
 
     @property
     def total_potential_energy(self) -> float:
@@ -208,11 +208,18 @@ class ClimateService:
         """
         Calculate the wind climate characteristics at the turbine's nacelle height.
         
-        Args:
-            env: Site environment containing surface roughness and average wind data.
-            turbine: Wind turbine configuration.
+        Parameters
+        ----------
+        env : SiteEnvironment
+            Site environment containing surface roughness and average wind data.
+        turbine : WindTurbine
+            Wind turbine configuration.
+        config : SimulationConfiguration
+            Simulation configuration.
             
-        Returns:
+        Returns
+        -------
+        WindClimate
             WindClimate containing Weibull parameters and arrays of wind speeds [m/s] 
             and their associated operational hours per year [h].
         """
@@ -247,18 +254,29 @@ class EnergyService:
         """
         Compute the annual energy production for a given turbine and wind climate.
         
-        Args:
-            turbine (WindTurbine): Wind turbine configuration including swept area and efficiencies.
-            climate (WindClimate): WindClimate containing distribution of available hours and speeds.
+        Parameters
+        ----------
+        turbine : WindTurbine
+            Wind turbine configuration including swept area and efficiencies.
+        climate : WindClimate
+            WindClimate containing distribution of available hours and speeds.
             
-        Returns:
-            tuple: (generated_energy [MWh], rated_power [kW], capacity_factor [-]).
+        Returns
+        -------
+        tuple
+            A tuple containing:
+            - generated_energy : float
+                Total annual generated energy [MWh].
+            - rated_power : float
+                Rated power [kW].
+            - capacity_factor : float
+                Capacity factor ratio [-].
         """
         rated_speed = climate.rated_wind_speed
         cut_in = climate.cut_in_speed
         cut_out = climate.cut_out_speed
         
-        rated_power = 0.62 * rated_speed**3 * turbine.swept_area / 1000.0 * turbine.capture_efficiency * turbine.drivetrain_efficiency
+        rated_power = config.WIND_DENSITY_COEFFICIENT * rated_speed**3 * turbine.swept_area / 1000.0 * turbine.capture_efficiency * turbine.drivetrain_efficiency
         
         conditions = [
             climate.wind_speeds <= cut_in,
@@ -279,7 +297,6 @@ class EnergyService:
         generated_energies = np.select(conditions, alternatives)
         generated_energy = float(np.sum(generated_energies) / 1000.0) # MWh
 
-
         capacity_factor = generated_energy / (rated_power * 8760.0 / 1000.0) if rated_power > 0 else 0.0
 
         return generated_energy, rated_power, capacity_factor
@@ -287,32 +304,61 @@ class EnergyService:
 
 class StructuralService:
     @staticmethod
-    def calculate_loads(turbine: WindTurbine, rated_wind_speed: float, survival_gust: float, config: SimulationConfiguration) -> tuple[float, float]:
+    def calculate_loads(turbine: WindTurbine, rated_wind_speed: float, survival_gust: float, sim_config: SimulationConfiguration) -> tuple[float, float]:
         """
         Calculate the structural loads acting on the turbine tower.
         
-        Args:
-            turbine: Wind turbine configuration.
-            rated_wind_speed: Rated wind speed [m/s] for calculating aerodynamic load.
-            survival_gust: Storm survival gust [m/s] for calculating storm load.
-            config: Simulation configuration.
+        Parameters
+        ----------
+        turbine : WindTurbine
+            Wind turbine configuration.
+        rated_wind_speed : float
+            Rated wind speed [m/s] for calculating aerodynamic load.
+        survival_gust : float
+            Storm survival gust [m/s] for calculating storm load.
+        sim_config : SimulationConfiguration
+            Simulation configuration.
             
-        Returns:
-            Tuple of (aerodynamical_load [kN], storm_load [kN]).
+        Returns
+        -------
+        tuple
+            A tuple containing:
+            - aerodynamical_load : float
+                Aerodynamic load on the tower [kN].
+            - storm_load : float
+                Storm load on the tower [kN].
         """
-        # C_T = 8/9, Air density = 1.2 kg/m^3
-        aerodynamical_load = 0.5 * 1.2 * (8.0 / 9.0) * turbine.swept_area * rated_wind_speed**2 / 1000.0
-        storm_load = 0.5 * 1.2 * config.storm_drag_coefficient * turbine.solidity * turbine.swept_area * survival_gust**2 / 1000.0
+        aerodynamical_load = 0.5 * config.AIR_DENSITY * config.C_T * turbine.swept_area * rated_wind_speed**2 / 1000.0
+        storm_load = 0.5 * config.AIR_DENSITY * sim_config.storm_drag_coefficient * turbine.solidity * turbine.swept_area * survival_gust**2 / 1000.0
         return aerodynamical_load, storm_load
 
 
 
     @staticmethod
-    def buckeling(turbine: WindTurbine, max_load: float, rna_mass: float, config: SimulationConfiguration) -> float:
-        E = 210000e6          # [Pa] Young's modulus for steel
-        steel_density = 7850  # [kg/m³] Structural steel density
-        g = 9.82              # [m/s²] Gravitational acceleratio
-        steps = 100 # Devide WECs height into parts to calculate at different heights
+    def buckling(turbine: WindTurbine, max_load: float, rna_mass: float, sim_config: SimulationConfiguration) -> float:
+        """
+        Calculate the buckling utilization factor based on maximum load and mass.
+        
+        Parameters
+        ----------
+        turbine : WindTurbine
+            Wind turbine configuration.
+        max_load : float
+            Maximum structural load acting on the tower [kN].
+        rna_mass : float
+            Rotor Nacelle Assembly mass [kg].
+        sim_config : SimulationConfiguration
+            Simulation configuration.
+            
+        Returns
+        -------
+        float
+            Buckling utilization factor. Values > 1.0 indicate structural failure.
+        """
+        E = config.YOUNGS_MODULUS_STEEL
+        steel_density = config.STEEL_DENSITY
+        g = config.GRAVITY
+        steps = 100 # Divide WECs height into parts to calculate at different heights
         z_levels = np.linspace(0, turbine.height, steps) # height points from bottom to top
         wall_thickness = turbine.wall_thickness
 
@@ -340,7 +386,7 @@ class StructuralService:
         sigma_b = 1000*moment_z / w_z           # [Pa] Bending compressive stress from wind
         
         # 6. NASA SP-8007 IMPERFECTION REDUCTION [cite: 198, 250]
-        phi = (1.0 / 16.0) * np.sqrt(R_z / wall_thickness)                  # [-] Slankhetsparameter (dimensionless) 
+        phi = (1.0 / 16.0) * np.sqrt(R_z / wall_thickness)                  # [-] Slenderness parameter (dimensionless) 
         gamma_c = 1.0 - 0.901 * (1.0 - np.exp(-phi))         # [-] Correlation factor for axial compression [cite: 198]
         gamma_b = 1.0 - 0.731 * (1.0 - np.exp(-phi))         # [-] Correlation factor for bending [cite: 250]
         
@@ -356,13 +402,28 @@ class StructuralService:
         # Find critical location
         max_interaction = np.max(interaction)
         
-        return float(max_interaction * config.buckling_safety_factor)
+        return float(max_interaction * sim_config.buckling_safety_factor)
 
         
 
     @staticmethod
     def breaking(turbine: WindTurbine, max_load: float) -> float:
-        break_stress = 235e6 # [Pa] For steel
+        """
+        Calculate the breaking utilization factor based on maximum load.
+        
+        Parameters
+        ----------
+        turbine : WindTurbine
+            Wind turbine configuration.
+        max_load : float
+            Maximum structural load acting on the tower [kN].
+            
+        Returns
+        -------
+        float
+            Breaking utilization factor. Values > 1.0 indicate structural failure.
+        """
+        break_stress = config.STEEL_YIELD_STRESS
         steps = 100
         z_levels = np.linspace(0, turbine.height, steps)
         wall_thickness = turbine.wall_thickness
@@ -380,32 +441,41 @@ class StructuralService:
         return float(breaking_utilization)
 
     @staticmethod
-    def calculate_rna_mass(turbine: WindTurbine, env:SiteEnvironment, config:SimulationConfiguration, rated_power: float) -> float:
+    def calculate_rna_mass(turbine: WindTurbine, env:SiteEnvironment, sim_config:SimulationConfiguration, rated_power: float) -> float:
         """
         Estimates the Rotor Nacelle Assembly (RNA) mass using empirical scaling.
         
-        Args:
-            turbine: Wind turbine configuration.
-            rated_power: Rated power [kW].
+        Parameters
+        ----------
+        turbine : WindTurbine
+            Wind turbine configuration.
+        env : SiteEnvironment
+            Site environment configuration.
+        sim_config : SimulationConfiguration
+            Simulation configuration.
+        rated_power : float
+            Rated power [kW].
             
-        Returns:
+        Returns
+        -------
+        float
             RNA mass [kg].
         """
 
         # exponant for nacelle power scaling
-        exp_power = config.exp_power_dd if turbine.gearbox == Gearbox.NONE else config.exp_power_geared
+        exp_power = sim_config.exp_power_dd if turbine.gearbox == Gearbox.NONE else sim_config.exp_power_geared
 
         nacelle_scale = 1 # when not offshore
         if env.is_offshore: # Offshore turbines
-            exp_diameter = config.exp_diameter_large
-            rotor_scale = config.rotor_scale_blade+config.rotor_scale_hub*config.offshore_hub_mass_factor # 1.2 extra mass for offshore hub
-            nacelle_scale = config.offshore_nacelle_mass_factor # extra mass for offshore nacelle
-        elif turbine.rotor_diameter > config.large_rotor_threshold: # Larger onshore turbines
-            exp_diameter = config.exp_diameter_large
-            rotor_scale = config.rotor_scale_blade+config.rotor_scale_hub
+            exp_diameter = sim_config.exp_diameter_large
+            rotor_scale = sim_config.rotor_scale_blade+sim_config.rotor_scale_hub*sim_config.offshore_hub_mass_factor # 1.2 extra mass for offshore hub
+            nacelle_scale = sim_config.offshore_nacelle_mass_factor # extra mass for offshore nacelle
+        elif turbine.rotor_diameter > sim_config.large_rotor_threshold: # Larger onshore turbines
+            exp_diameter = sim_config.exp_diameter_large
+            rotor_scale = sim_config.rotor_scale_blade+sim_config.rotor_scale_hub
         else: # Smaller onshore turbines
-            exp_diameter = config.exp_diameter_small
-            rotor_scale = config.rotor_scale_small
+            exp_diameter = sim_config.exp_diameter_small
+            rotor_scale = sim_config.rotor_scale_small
 
         # 1. Rotor Mass (Blades + Hub)
         # NREL empirical scaling: ~0.13 * D^2.4
@@ -414,66 +484,97 @@ class StructuralService:
         
         # 2. Nacelle Mass
         # Base mass of 45 kg per kW of rated power, scaled by the drivetrain modifier
-        mass_per_kw = config.nacelle_mass_per_kw
+        mass_per_kw = sim_config.nacelle_mass_per_kw
         nacelle_mass = mass_per_kw*nacelle_scale*turbine.nacelle_mass_modifier* (rated_power/1000)**exp_power
         return float(rotor_mass + nacelle_mass)
 
     @staticmethod
-    def evaluate_integrity(turbine: WindTurbine, env: SiteEnvironment,config:SimulationConfiguration, climate:WindClimate, rated_power: float) -> StructuralReport:
-        aerodynamical_load, storm_load = StructuralService.calculate_loads(turbine, climate.rated_wind_speed, env.survival_gust, config)
+    def evaluate_integrity(turbine: WindTurbine, env: SiteEnvironment,sim_config:SimulationConfiguration, climate:WindClimate, rated_power: float) -> StructuralReport:
+        """
+        Evaluate the structural integrity of the turbine tower and compute loads.
+        
+        Parameters
+        ----------
+        turbine : WindTurbine
+            Wind turbine configuration.
+        env : SiteEnvironment
+            Site environment configuration.
+        sim_config : SimulationConfiguration
+            Simulation configuration.
+        climate : WindClimate
+            Wind climate configuration.
+        rated_power : float
+            Rated power [kW].
+            
+        Returns
+        -------
+        StructuralReport
+            Report object containing load calculations and utilization factors.
+        """
+        aerodynamical_load, storm_load = StructuralService.calculate_loads(turbine, climate.rated_wind_speed, env.survival_gust, sim_config)
         max_load = max(aerodynamical_load, storm_load)
         
         breaking_utilization = StructuralService.breaking(turbine, max_load)
-        rna_mass = StructuralService.calculate_rna_mass(turbine,env,config, rated_power)
-        buckeling_utilization = StructuralService.buckeling(turbine, max_load, rna_mass, config)
+        rna_mass = StructuralService.calculate_rna_mass(turbine,env,sim_config, rated_power)
+        buckling_utilization = StructuralService.buckling(turbine, max_load, rna_mass, sim_config)
         
         return StructuralReport(
             aerodynamical_load=aerodynamical_load,
             storm_load=storm_load,
             slenderness_ratio=turbine.slenderness_ratio,
             breaking_utilization=breaking_utilization,
-            buckeling_utilization=buckeling_utilization,
+            buckling_utilization=buckling_utilization,
             rna_mass=rna_mass
         )
 
 
 class FinancialService:
     @staticmethod
-    def calculate_capex(env: SiteEnvironment, turbine: WindTurbine,config:SimulationConfiguration, rated_power: float) -> tuple[float, dict[str, float]]:
+    def calculate_capex(env: SiteEnvironment, turbine: WindTurbine,sim_config:SimulationConfiguration, rated_power: float) -> tuple[float, dict[str, float]]:
         """
         Calculate total capital expenditure (CAPEX) for the turbine park.
         
-        Args:
-            env: Site environment with installation and financial variables.
-            turbine: Turbine geometry and modifiers.
-            rated_power_kw: Total rated power of a single turbine [kW].
+        Parameters
+        ----------
+        env : SiteEnvironment
+            Site environment with installation and financial variables.
+        turbine : WindTurbine
+            Turbine geometry and modifiers.
+        sim_config : SimulationConfiguration
+            Simulation configuration.
+        rated_power : float
+            Total rated power of a single turbine [kW].
             
-        Returns:
-            total_capex [k€] and a tuple of its components:
-            (turbine_costs, drivetrain_nacelle, tower, foundation_site) [k€].
+        Returns
+        -------
+        tuple
+            A tuple containing:
+            - total_capex : float
+                Total capital expenditure [k€].
+            - components : dict[str, float]
+                Dictionary of individual CAPEX components [k€].
         """
 
-
         marine_factor = 1.0
-        fundament_factor = 1.0
+        foundation_factor = 1.0
         install_factor = 1.0
 
-        # Sätt offshore-faktorer
+        # Set offshore factors
         if env.is_offshore:
             # config
-            marine_factor = config.marine_offshore_scale
-            fundament_factor = config.fundament_offshore_scale
-            install_factor = config.installation_offshore_factor
+            marine_factor = sim_config.marine_offshore_scale
+            foundation_factor = sim_config.foundation_offshore_scale
+            install_factor = sim_config.installation_offshore_factor
 
-        devex = config.base_devex+config.scale_power_devex*(rated_power/1000) # permits for setting up base and building
+        devex = sim_config.base_devex+sim_config.scale_power_devex*(rated_power/1000) # permits for setting up base and building
 
-        rotor_cost = config.rotor_base* (turbine.rotor_diameter / 90.0) ** (config.rotor_exp) * marine_factor
-        drivetrain_nacelle = config.drivetrain_nacelle_base * (rated_power / 3000.0) * turbine.drivetrain_cost_modifier * marine_factor
-        tower = config.tower_base* (turbine.height*turbine.wall_thickness*turbine.bottom_diameter) * turbine.nacelle_mass_modifier * marine_factor # tar med height, thickness, bottom diam med volym 
+        rotor_cost = sim_config.rotor_base* (turbine.rotor_diameter / 90.0) ** (sim_config.rotor_exp) * marine_factor
+        drivetrain_nacelle = sim_config.drivetrain_nacelle_base * (rated_power / 3000.0) * turbine.drivetrain_cost_modifier * marine_factor
+        tower = sim_config.tower_base* (turbine.height*turbine.wall_thickness*turbine.bottom_diameter) * turbine.nacelle_mass_modifier * marine_factor # includes height, thickness, bottom diameter with volume 
         
-        foundation_site = (config.foundation_base * ((turbine.height/ 90.0) * (turbine.rotor_diameter / 90.0) ** 2)) * fundament_factor
+        foundation_site = (sim_config.foundation_base * ((turbine.height/ 90.0) * (turbine.rotor_diameter / 90.0) ** 2)) * foundation_factor
         
-        installation = config.installation_base* install_factor* (rated_power/3000) 
+        installation = sim_config.installation_base* install_factor* (rated_power/3000) 
 
         total_capex = devex + rotor_cost + drivetrain_nacelle + tower + foundation_site + installation
         
@@ -489,23 +590,86 @@ class FinancialService:
         return total_capex, components
 
     @staticmethod
-    def calculate_opex(env: SiteEnvironment, turbine: WindTurbine,config:SimulationConfiguration, rated_power: float) -> float:
+    def calculate_opex(env: SiteEnvironment, turbine: WindTurbine,sim_config:SimulationConfiguration, rated_power: float) -> float:
+        """
+        Calculate total operational expenditure (OPEX) for the turbine park.
+        
+        Parameters
+        ----------
+        env : SiteEnvironment
+            Site environment configuration.
+        turbine : WindTurbine
+            Turbine configuration.
+        sim_config : SimulationConfiguration
+            Simulation configuration.
+        rated_power : float
+            Total rated power of a single turbine [kW].
+            
+        Returns
+        -------
+        float
+            Total OPEX [k€].
+        """
         total_power_mw = (rated_power / 1000.0) * env.turbine_count
-        maintenance =  config.base_maintanance* (total_power_mw / 20.0) * turbine.opex_modifier
-        insurance = config.base_insurance* (total_power_mw / 20.0) ** 0.5
-        land_cost = config.base_land* env.turbine_count / 20.0
-        fund_decommissioning = config.base_decommisioning* total_power_mw / 20.0
+        maintenance =  sim_config.base_maintenance* (total_power_mw / 20.0) * turbine.opex_modifier
+        insurance = sim_config.base_insurance* (total_power_mw / 20.0) ** 0.5
+        land_cost = sim_config.base_land* env.turbine_count / 20.0
+        fund_decommissioning = sim_config.base_decommissioning* total_power_mw / 20.0
         total_opex = float(maintenance + insurance + land_cost + fund_decommissioning)
-        return total_opex*(total_power_mw/20)**0.8*config.opex_scaler
+        return total_opex*(total_power_mw/20)**0.8*sim_config.opex_scaler
 
     @staticmethod
     def calculate_annual_earnings(env: SiteEnvironment, generated_energy: float, annual_opex: float) -> tuple[float, float]:
+        """
+        Calculate annual earnings for the turbine park.
+        
+        Parameters
+        ----------
+        env : SiteEnvironment
+            Site environment configuration.
+        generated_energy : float
+            Generated energy from the park [MWh].
+        annual_opex : float
+            Total annual operational expenditure [k€].
+            
+        Returns
+        -------
+        tuple
+            A tuple containing:
+            - annual_savings : float
+                Net annual savings [k€].
+            - annual_revenue : float
+                Total annual revenue [k€].
+        """
         annual_revenue = generated_energy * env.turbine_count * (env.electricity_price + env.green_certificate) / 1000.0
         annual_savings = annual_revenue - annual_opex
         return annual_savings, annual_revenue
 
     @staticmethod
     def calculate_profits(env: SiteEnvironment, total_capex: float, annual_savings: float, lifetime_years: int) -> tuple[float, float]:
+        """
+        Calculate the total lifetime profit and margin for the park.
+        
+        Parameters
+        ----------
+        env : SiteEnvironment
+            Site environment configuration.
+        total_capex : float
+            Total capital expenditure [k€].
+        annual_savings : float
+            Net annual savings [k€].
+        lifetime_years : int
+            Turbine lifetime in years.
+            
+        Returns
+        -------
+        tuple
+            A tuple containing:
+            - profits : float
+                Net present value (NPV) profit [k€].
+            - margin : float
+                Profit margin relative to CAPEX [-].
+        """
         financial_costs = env.financial_additional_part * total_capex
         k_factor = (1.0 + env.inflation) / (1.0 + env.interest)
         
@@ -522,6 +686,23 @@ class FinancialService:
 
     @staticmethod
     def calculate_irr(total_capex: float, annual_savings: float, years: int) -> float:
+        """
+        Calculate the internal rate of return (IRR).
+        
+        Parameters
+        ----------
+        total_capex : float
+            Total capital expenditure [k€].
+        annual_savings : float
+            Net annual savings [k€].
+        years : int
+            Turbine lifetime in years.
+            
+        Returns
+        -------
+        float
+            Internal rate of return (IRR) [-].
+        """
         if annual_savings <= 0 or total_capex <= 0:
             return 0.0
         try:
@@ -537,9 +718,30 @@ class FinancialService:
             return 0.0
 
     @staticmethod
-    def evaluate_finance(env: SiteEnvironment, turbine: WindTurbine,config:SimulationConfiguration, rated_power_kw: float, generated_energy_mwh: float) -> FinancialReport:
-        total_capex, capex_components = FinancialService.calculate_capex(env, turbine,config, rated_power_kw)
-        annual_opex = FinancialService.calculate_opex(env, turbine,config, rated_power_kw)
+    def evaluate_finance(env: SiteEnvironment, turbine: WindTurbine,sim_config:SimulationConfiguration, rated_power_kw: float, generated_energy_mwh: float) -> FinancialReport:
+        """
+        Evaluate the overall financial performance of the turbine park.
+        
+        Parameters
+        ----------
+        env : SiteEnvironment
+            Site environment configuration.
+        turbine : WindTurbine
+            Wind turbine configuration.
+        sim_config : SimulationConfiguration
+            Simulation configuration.
+        rated_power_kw : float
+            Total rated power [kW].
+        generated_energy_mwh : float
+            Total generated energy [MWh].
+            
+        Returns
+        -------
+        FinancialReport
+            Report object containing financial metrics and calculations.
+        """
+        total_capex, capex_components = FinancialService.calculate_capex(env, turbine,sim_config, rated_power_kw)
+        annual_opex = FinancialService.calculate_opex(env, turbine,sim_config, rated_power_kw)
         annual_savings, annual_revenue = FinancialService.calculate_annual_earnings(env, generated_energy_mwh, annual_opex)
         profits, margin = FinancialService.calculate_profits(env, total_capex, annual_savings, turbine.lifetime)
         irr = FinancialService.calculate_irr(total_capex, annual_savings, turbine.lifetime)
@@ -570,15 +772,15 @@ class SimulationResult:
     generated_energy: float  # MWh/år
     capacity_factor: float  # [%]
 
-    # Krafter & Hållfasthet
+    # Forces & Structural Integrity
     aerodynamical_load: float  # kN
     storm_load: float  # kN
     slenderness_ratio: float # [-]
     breaking_utilization: float # [-]
-    buckeling_utilization: float # [-]
+    buckling_utilization: float # [-]
     rna_mass: float # [kg]
 
-    # Ekonomi
+    # Economics
     capex_components: dict[str,float] # Dict representing costs for devex, rotor, drivetrain, tower, foundation, installation [k€]
     total_capex: float  # k€
     annual_opex: float  # k€/år
@@ -607,29 +809,35 @@ class SimulationResult:
 
 class SimulationEngine:
     @staticmethod
-    def simulate(turbine: WindTurbine, env: SiteEnvironment, config: SimulationConfiguration = SimulationConfiguration()) -> SimulationResult:
+    def simulate(turbine: WindTurbine, env: SiteEnvironment, sim_config: SimulationConfiguration = SimulationConfiguration()) -> SimulationResult:
         """Processes turbine and env data and calculates SimulationResult.
         Calculates wind climate behaviour, energy production, structural integrity and finances.
         
-        Parameters:
-            turbine: data about the turbine itself
-            env: Data about the environment where the turbine is working
+        Parameters
+        ----------
+        turbine : WindTurbine
+            Data about the turbine itself.
+        env : SiteEnvironment
+            Data about the environment where the turbine is working.
+        sim_config : SimulationConfiguration, optional
+            Configuration settings for the simulation formulas and constants.
         
+        Returns
         -------
-        Returns:
-            SimulationResult
-                simulation_result"""
+        SimulationResult
+            An object containing all the calculated metrics for the simulation.
+        """
         # 1. Wind climate calculations
-        climate = ClimateService.calculate_wind_climate(env, turbine, config)
+        climate = ClimateService.calculate_wind_climate(env, turbine, sim_config)
         
         # 2. Energy production (single turbine)
         generated_energy, rated_power, capacity_factor= EnergyService.calculate_production(turbine, climate)
         
         # 3. Structural evaluation (single turbine geometry)
-        structural_report = StructuralService.evaluate_integrity(turbine, env, config,climate, rated_power)
+        structural_report = StructuralService.evaluate_integrity(turbine, env, sim_config,climate, rated_power)
         
         # 4. Financial evaluation (for the park)
-        financial_report = FinancialService.evaluate_finance(env, turbine, config, rated_power, generated_energy)
+        financial_report = FinancialService.evaluate_finance(env, turbine, sim_config, rated_power, generated_energy)
         
         # 5. capacity factor calculation
 
@@ -647,7 +855,7 @@ class SimulationEngine:
             storm_load=structural_report.storm_load,
             slenderness_ratio=structural_report.slenderness_ratio,
             breaking_utilization=structural_report.breaking_utilization,
-            buckeling_utilization=structural_report.buckeling_utilization,
+            buckling_utilization=structural_report.buckling_utilization,
             rna_mass=structural_report.rna_mass,
             capex_components=financial_report.capex_components,
             total_capex=financial_report.total_capex,

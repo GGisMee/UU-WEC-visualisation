@@ -24,7 +24,7 @@ class ReferenceData:
     annual_opex: float | None = None
     generated_energy: float | None = None
     breaking_utilization: float | None = None
-    buckeling_utilization: float | None = None
+    buckling_utilization: float | None = None
     storm_load: float | None = None
     aerodynamical_load: float | None = None
     capex_components: dict[str, float] | None = None
@@ -115,10 +115,10 @@ def calibrate_finance(calibrator: Calibrator):
         "foundation_base": 300.0,
         "installation_base": 3500.0,
         "installation_offshore_factor": 3.0,
-        "base_maintanance": 600.0,
+        "base_maintenance": 600.0,
         "base_insurance": 100.0,
         "base_land": 360.0,
-        "base_decommisioning": 200.0,
+        "base_decommissioning": 200.0,
         "opex_scaler": 1.0
     }
     bounds = (
@@ -207,8 +207,8 @@ def calibrate_structure(calibrator: Calibrator):
     
     def calc_residuals(res: SimulationResult, ref: ReferenceData) -> List[float]:
         err = []
-        if ref.buckeling_utilization:
-            err.append((res.buckeling_utilization - ref.buckeling_utilization) / ref.buckeling_utilization)
+        if ref.buckling_utilization:
+            err.append((res.buckling_utilization - ref.buckling_utilization) / ref.buckling_utilization)
         if ref.breaking_utilization:
             err.append((res.breaking_utilization - ref.breaking_utilization) / ref.breaking_utilization)
         if ref.storm_load:
@@ -265,7 +265,7 @@ def load_test_cases_from_json(json_path: str) -> List[Tuple[WindTurbine, SiteEnv
             annual_opex=scenario.get("annual_opex"),
             generated_energy=scenario.get("generated_energy"),
             breaking_utilization=scenario.get("breaking_utilization"),
-            buckeling_utilization=scenario.get("buckeling_utilization"),
+            buckling_utilization=scenario.get("buckling_utilization"),
             storm_load=scenario.get("storm_load"),
             aerodynamical_load=scenario.get("aerodynamical_load"),
             capex_components=scenario.get("capex_components")

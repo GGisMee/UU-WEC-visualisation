@@ -80,7 +80,7 @@ class AnalyticsPanel(ctk.CTkFrame):
             ("storm_load", "Storm Load (Survival)", "- kN"),
             ("breaking", "Breaking Utilization", "-"),
             ("slenderness", "Tower Slenderness Ratio (H/2R)", "-"),
-            ("buckeling", "Buckling Utilization", "-"),
+            ("buckling", "Buckling Utilization", "-"),
         ]
         
         for key, label, init_val in audit_defs:
@@ -243,8 +243,8 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.audit_rows["breaking"].configure(text=f"{result.breaking_utilization:.2f}", text_color=br_color)
         self.audit_rows["slenderness"].configure(text=f"{result.slenderness_ratio:.2f}")
 
-        bu_color = Theme.DANGER.value if result.buckeling_utilization > 1.0 else Theme.TEXT_MAIN.value
-        self.audit_rows["buckeling"].configure(text=f"{result.buckeling_utilization:.2f}", text_color=bu_color)
+        bu_color = Theme.DANGER.value if result.buckling_utilization > 1.0 else Theme.TEXT_MAIN.value
+        self.audit_rows["buckling"].configure(text=f"{result.buckling_utilization:.2f}", text_color=bu_color)
 
         # 2. Update Ledger Tab
         caps = result.capex_components

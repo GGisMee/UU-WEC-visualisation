@@ -73,7 +73,7 @@ class SiteEnvironment:
     is_offshore: bool
 
 
-    # Ekonomi & Marknad
+    # Economics & Marknad
     electricity_price: float # [€/MWh] 
     green_certificate: float = 1.0  # Miljöcertifikat [€/MWh] 
     inflation: float = 0.02  # [%] 
@@ -85,19 +85,57 @@ class SiteEnvironment:
     turbine_count: int = 1  # number of turbines in park (Set to 1 by default)
 
     def calculate_wind_at_height(self, height: float) -> float:
-        """Information Expert: calculates wind speed at a specific hub height using logarithmic wind shear."""
+        """
+        Calculates wind speed at a specific hub height using logarithmic wind shear.
+        
+        Parameters
+        ----------
+        height : float
+            Hub height of the turbine [m].
+            
+        Returns
+        -------
+        float
+            Wind speed at the specified height [m/s].
+        """
         z0 = self.roughness / 1000.0
         return float(self.avg_wind_10 * np.log(height / z0) / np.log(10.0 / z0))
 
 class SSNGenerator:
     @staticmethod
     def validate(ssn: str) -> bool:
-        """Returnerar True om personnumret är i formatet YYYYMMDDXXXX."""
+        """
+        Returns True if the social security number is in the format YYYYMMDDXXXX.
+        
+        Parameters
+        ----------
+        ssn : str
+            The 12-digit Social Security Number.
+            
+        Returns
+        -------
+        bool
+            True if valid, False otherwise.
+        """
         return len(ssn) == 12 and ssn.isdigit()
 
     @staticmethod
     def apply_ssn_to_env(ssn: str, env: SiteEnvironment):
-        """Modifierar och returnerar ett SiteEnvironment-objekt baserat på SSN."""
+        """
+        Modifies and returns a SiteEnvironment object based on the given SSN.
+        
+        Parameters
+        ----------
+        ssn : str
+            The 12-digit Social Security Number.
+        env : SiteEnvironment
+            The environment object to be modified.
+            
+        Raises
+        ------
+        ValueError
+            If the SSN is invalid.
+        """
         if not SSNGenerator.validate(ssn):
             raise ValueError("Invalid SSN format. Use YYYYMMDDXXXX.")
 
@@ -139,7 +177,7 @@ class SSNGenerator:
         ValueError
             If the SSN is not 12 digits or contains non-numeric characters.
         """
-        if len(SSN) != 12:  # Vi vill ha YYYYMMDDSSSS format, dvs 12 tecken
+        if len(SSN) != 12:  # We want YYYYMMDDSSSS format, meaning 12 characters
             raise ValueError("Expected SSN format with 12 characters")
         if not SSN.isdigit():
             raise ValueError("SSN number is not formatted as a number")
@@ -154,13 +192,41 @@ class SSNGenerator:
 
     @staticmethod
     def generate_random_pm(i:int,name:str) -> float:
-        """Generates a 'random' float in range [-1,1], which value persists when i and name are the same"""
+        """
+        Generates a 'random' float in range [-1,1], which value persists when i and name are the same.
+        
+        Parameters
+        ----------
+        i : int
+            Index or seed integer.
+        name : str
+            Seed string.
+            
+        Returns
+        -------
+        float
+            Random value in range [-1, 1].
+        """
         return 2*SSNGenerator.generate_random(i,name)-1
 
 
     @staticmethod
     def generate_random(i:int,name:str) -> float:
-        """Generates a 'random' float in range [0,1], which value persists when i and name are the same"""
+        """
+        Generates a 'random' float in range [0,1], which value persists when i and name are the same.
+        
+        Parameters
+        ----------
+        i : int
+            Index or seed integer.
+        name : str
+            Seed string.
+            
+        Returns
+        -------
+        float
+            Random value in range [0, 1].
+        """
         return (hash((i, name)) % 10**10) / 10**10 
 
 if __name__ == '__main__':

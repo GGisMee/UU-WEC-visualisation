@@ -16,7 +16,18 @@ graph TD
     Turbine -->|Inputs| Engine[SimulationEngine]
     Env -->|Inputs| Engine
     
-    Engine -->|Runs simulation| Result[SimulationResult]
+    Engine -->|Delegates| CS[ClimateService]
+    Engine -->|Delegates| ES[EnergyService]
+    Engine -->|Delegates| SS[StructuralService]
+    Engine -->|Delegates| FS[FinancialService]
+    
+    CS -->|Returns WindClimate| ES
+    CS -->|Returns WindClimate| SS
+    ES -->|Returns Production Metrics| FS
+    SS -->|Returns StructuralReport| Engine
+    FS -->|Returns FinancialReport| Engine
+    
+    Engine -->|Aggregates into| Result[SimulationResult]
     
     Result -->|Evaluate performance| Mission[Mission]
     Turbine -->|Evaluate geometric limits| Mission
@@ -24,6 +35,17 @@ graph TD
     Result -->|Send results to UI| GUI[AnalyticsPanel & CADCanvas]
     Mission -->|Reports criteria clearance| GUI[ConsolePanel & App scorecards]
 ```
+
+### Detailed Data Flow
+1. **User Input:** The user configures the physical dimensions of the `WindTurbine` and selects a drivetrain via the UI. Selecting a mission sets the parameters of the `SiteEnvironment` (wind resources, costs).
+2. **Simulation Dispatch:** The `SimulationEngine` receives the `WindTurbine` and `SiteEnvironment` models and delegates calculations to specialized services.
+   - **`ClimateService`** scales wind to hub height and computes the Weibull distribution.
+   - **`EnergyService`** builds the power curve and integrates it to find Annual Energy Production.
+   - **`StructuralService`** computes wind loads, storm loads, and verifies against bending and buckling limits.
+   - **`FinancialService`** calculates CAPEX/OPEX, revenue, and Net Present Value.
+3. **Result Aggregation:** The engine compiles the outputs into an immutable `SimulationResult`.
+4. **Validation:** The `Mission` checks the `SimulationResult` against defined criteria (e.g., buckling utilization $\le$ 1.0).
+5. **UI Rendering:** The results are mapped directly to Matplotlib charts, financial scorecards, and the CAD blueprint.
 
 ### 1. Domain Models (`src/wec_visualisation/models/`)
 * **`WindTurbine`**: Represents the wind turbine geometry (rotor diameter, hub height, tower top/base diameters, wall thickness, solidity, blade count) and the selected drivetrain components (gearbox and generator).
@@ -65,8 +87,7 @@ uu_proj/
         │   ├── canvas.py           # Center panel (interactive blueprint, animated rotation, and safety indicator)
         │   ├── analytics.py        # Right panel (Matplotlib charts for Weibull/power curves, financial/structural reports)
         │   ├── components.py       # Reusable custom widgets (LabeledSlider, MetricRow)
-        │   ├── theme.py            # Styling themes (e.g., FusionTheme, Futuristic) and font parameters
-        │   └── f.css               # Styling stylesheet for custom components
+        │   └── theme.py            # Styling themes (e.g., FusionTheme, Futuristic) and font parameters
         │
         └── snippets/               # Utility scripts and prototyping scrap files (e.g., capture_efficiency.py)
 ```
@@ -133,7 +154,7 @@ The application features four default missions with varied wind resources and cr
 ### Specific Success Constraints per Mission
 
 * **Mission 1 (Sandbox)**:
-  * No constraints. Free exploration. (Entering a valid SSN updates the environment parameters deterministically).
+  * No constraints. Free exploration. 
 * **Mission 2 (The Arctic Gale)**:
   * **Buckling Utilization $\le$ 1.0** (Tower buckling integrity)
   * **Breaking Utilization $\le$ 1.0** (Tower structural bending strength)
@@ -148,37 +169,27 @@ The application features four default missions with varied wind resources and cr
 
 ---
 
-## Project Planning & Roadmap
+## Improvements
+Things not yet implemented, which could benefit the program.
 
-The development workflow is organized into the following milestones:
+### Improve parameters in simulation 
+* Find more suitable parameters to calculate variables in `models/simulation.py`
+	* See current parameter configuration in SimulationConfiguration class and version v0 and v1 in of the parameter configuration in PresetConfigurations. Are in `models/simulation.py`
 
-### Milestone 1: Calculation Engine & Constants (Completed)
-* Centralize all physical and economic constants in `src/wec_visualisation/config.py`.
-* Implement algorithms for wind shear, Weibull distributions, power curve generation, tower bending stress, buckling analysis, and detailed CAPEX/OPEX/NPV calculations in `src/wec_visualisation/models/simulation.py`.
 
-### Milestone 2: Modular CustomTkinter GUI Integration (Completed)
-* Split the monolithic prototype UI into dedicated modules under `src/wec_visualisation/gui/`: `ConsolePanel`, `CADCanvas`, and `AnalyticsPanel`.
-* Create a central theme and reusable component framework (`theme.py` and `components.py`) to support dark/light appearance switching and typography definitions.
-* Interconnect workspace panels using an event-driven callback structure inside `app.py`.
+### User Experience (UI) & Features
+* **Exporting:** Allow users to export the final `SimulationResult` and Analytics charts to a PDF report or a CSV file.
+* **Save/Load:** Implement local storage (JSON/SQLite) so users can save a specific turbine configuration and load it later.
 
-### Milestone 3: Game Mechanics, Missions & SSN Logic (In Progress / Current Step)
-* Move mission constraints checking to a domain model (`models/mission.py`) utilizing generic `Constraint` objects.
-* Embed `SSNGenerator` directly in `models/environment.py` to calculate birthdate-based custom wind resources.
-* Implement scorecard indicators for cleared constraints, remaining simulation runs, and accumulated NPV profit in the topbar header.
+## Installation and Use
+To use the app and work with it, you need a Python virtual environment. 
 
-### Milestone 4: Verification, Testing & Packaging (Next Step)
-* Write unit tests to verify that the Python calculations for structural and economic parameters match reference spreadsheet calculations.
-* Build and package the application into a standalone executable (`.exe` / `.app`) using PyInstaller.
-
-## Installation and use
-To use the app and work with it one needs a pip virtual environment. 
-
-Sätt upp 
+Setup:
 ```bash
 # Create venv
-pip -m venv .venv
+python3 -m venv .venv
 
-# Aktivate (Makes sure packages are loaded)
+# Activate (Makes sure packages are isolated)
 source .venv/bin/activate
 
 # Install packages required for program
@@ -192,6 +203,35 @@ These packages are used with python:
 * **matplotlib** (For plotting datapoints)
 
 Run main file:
-```
+```bash
 python src/wec_visualisation/main.py
 ```
+
+## Building Executables (PyInstaller)
+
+To package the application into a standalone executable that can run on computers without Python installed, use [PyInstaller](https://pyinstaller.org/).
+
+First, install PyInstaller in your virtual environment (Not necessary if you already have installed requirements.txt):
+```bash
+pip install pyinstaller
+```
+
+### Windows Build (.exe)
+Run this command from the project root:
+```bash
+pyinstaller --name "WindSimulator" \
+            --windowed \
+            src/wec_visualisation/main.py
+```
+The executable will be located in the `dist/WindSimulator/` directory.
+
+### macOS Build (.app)
+Run this command from the project root:
+```bash
+pyinstaller --name "WindSimulator" \
+            --windowed \
+            src/wec_visualisation/main.py
+```
+The `.app` bundle will be located in the `dist/` directory.
+
+

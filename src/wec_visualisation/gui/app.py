@@ -247,7 +247,7 @@ class UnifiedSimulatorApp(ctk.CTk):
             self.on_inputs_changed()
             self.console.info_mission.set_text(
                 f"Sandbox: Environment updated via birthdate (SSN month/day: {ssn[4:6]}/{ssn[6:8]}).\n"
-                f"Medelvind: {self.environment.avg_wind_10:.1f} m/s, Råhet: {self.environment.roughness:.1f} mm."
+                f"Avg. Wind: {self.environment.avg_wind_10:.1f} m/s, Roughness: {self.environment.roughness:.1f} mm."
             )
 
     def on_theme_change(self, choice: str):
@@ -386,7 +386,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.analytics.display_results(result, self.turbine.swept_area)
         
         # Unsafe check: buckling or breaking utilization exceeds 1.0
-        is_unsafe = (result.buckeling_utilization > 1.0) or (result.breaking_utilization > 1.0)
+        is_unsafe = (result.buckling_utilization > 1.0) or (result.breaking_utilization > 1.0)
         self.cad_canvas.update_safety_state(is_unsafe)
 
         # 4. Scorecard Updates

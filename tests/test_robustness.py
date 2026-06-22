@@ -58,7 +58,7 @@ def test_robustness_random_configurations():
             res = SimulationEngine.simulate(turbine, env, config)
             
             # Kolla margin > 50%
-            if (res.margin > 0.35) & (res.breaking_utilization < 1) & (res.buckeling_utilization < 1):
+            if (res.margin > 0.35) & (res.breaking_utilization < 1) & (res.buckling_utilization < 1):
                 high_margin_cases.append({
                     "margin": res.margin,
                     "wind": env.avg_wind_10,
