@@ -239,16 +239,34 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.simulation_out_of_date = True
         self.analytics.show_warning_banner(True)
 
+    def get_baseline_environment(self, mission_name: str) -> SiteEnvironment:
+        if mission_name == "The Arctic Gale":
+            return DefaultEnvironments.ARCTIC_GALE.create()
+        elif mission_name == "The Gentle Breeze":
+            return DefaultEnvironments.THE_GENTLE_BREEZE.create()
+        elif mission_name == "The Community Cooperative":
+            return DefaultEnvironments.THE_COMMUNITY_COOPERATIVE.create()
+        return DefaultEnvironments.SANDBOX.create()
+
     def on_ssn_changed(self, ssn: str):
         """Called when a valid 12-digit SSN is entered in ConsolePanel."""
-        if self.active_mission.name == "Sandbox":
-            SSNGenerator.apply_ssn_to_env(ssn, self.environment)
-            self.console.update_from_models()
-            self.on_inputs_changed()
-            self.console.info_mission.set_text(
-                f"Sandbox: Environment updated via birthdate (SSN month/day: {ssn[4:6]}/{ssn[6:8]}).\n"
-                f"Avg. Wind: {self.environment.avg_wind_10:.1f} m/s, Roughness: {self.environment.roughness:.1f} mm."
-            )
+        baseline_env = self.get_baseline_environment(self.active_mission.name)
+        self.environment.avg_wind_10 = baseline_env.avg_wind_10
+        self.environment.roughness = baseline_env.roughness
+        self.environment.survival_gust = baseline_env.survival_gust
+        self.environment.k_factor = baseline_env.k_factor
+        self.environment.electricity_price = baseline_env.electricity_price
+        self.environment.green_certificate = baseline_env.green_certificate
+        self.environment.inflation = baseline_env.inflation
+        self.environment.interest = baseline_env.interest
+        
+        SSNGenerator.apply_ssn_to_env(ssn, self.environment)
+        self.console.update_from_models()
+        self.on_inputs_changed()
+        self.console.info_mission.set_text(
+            f"{self.active_mission.name}: Environment updated via birthdate (SSN month/day: {ssn[4:6]}/{ssn[6:8]}).\n"
+            f"Avg. Wind: {self.environment.avg_wind_10:.1f} m/s, Roughness: {self.environment.roughness:.1f} mm."
+        )
 
     def on_theme_change(self, choice: str):
         """Called when appearance mode selection changes in dropdown."""
@@ -342,11 +360,20 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.lbl_profit.configure(text="- k€", text_color=Theme.TEXT_MUTED.value)
         
         self.on_inputs_changed()
+        
+        ssn = self.console.ssn_var.get()
+        if SSNGenerator.validate(ssn):
+            self.on_ssn_changed(ssn)
 
     # ==========================================
     # SIMULATION EXECUTION LOOP
     # ==========================================
     def run_simulation(self):
+        ssn = self.console.ssn_var.get()
+        if not SSNGenerator.validate(ssn):
+            self.show_dialog("Invalid SSN", "You must enter a valid 12-digit SSN before running a simulation.", is_err=True)
+            return
+
         # Check budget runs remaining
         if self.runs_remaining is not None and self.runs_remaining <= 0:
             self.show_dialog(

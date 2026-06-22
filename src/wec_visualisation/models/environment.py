@@ -3,6 +3,7 @@ from enum import Enum
 from dataclasses import dataclass
 import datetime
 import numpy as np
+import hashlib
 
 # class Spread
 
@@ -85,73 +86,68 @@ class SiteEnvironment:
     turbine_count: int = 1  # number of turbines in park (Set to 1 by default)
 
     def calculate_wind_at_height(self, height: float) -> float:
-        """
-        Calculates wind speed at a specific hub height using logarithmic wind shear.
-        
-        Parameters
-        ----------
-        height : float
-            Hub height of the turbine [m].
-            
-        Returns
-        -------
-        float
-            Wind speed at the specified height [m/s].
-        """
+        """Information Expert: calculates wind speed at a specific hub height using logarithmic wind shear."""
         z0 = self.roughness / 1000.0
         return float(self.avg_wind_10 * np.log(height / z0) / np.log(10.0 / z0))
+
+@dataclass
+class SSNSpread:
+    """A dataclass for storing how much each environment variable can spread out from normal value when SSN is applied. Stored as fractions (0.05 ~ 5%)"""
+    avg_wind_10_spread: float = 0.10
+    roughness_spread: float = 0.2
+    survival_gust_spread: float = 0.05
+    k_factor_spread: float = 0.05
+    electricity_price_spread: float = 0.1
+    green_certificate_spread: float = 0.05
+    inflation_spread: float = 0.20
+    interest_spread: float = 0.15
 
 class SSNGenerator:
     @staticmethod
     def validate(ssn: str) -> bool:
-        """
-        Returns True if the social security number is in the format YYYYMMDDXXXX.
-        
-        Parameters
-        ----------
-        ssn : str
-            The 12-digit Social Security Number.
-            
-        Returns
-        -------
-        bool
-            True if valid, False otherwise.
-        """
+        """Returnerar True om personnumret är i formatet YYYYMMDDXXXX."""
         return len(ssn) == 12 and ssn.isdigit()
 
     @staticmethod
-    def apply_ssn_to_env(ssn: str, env: SiteEnvironment):
-        """
-        Modifies and returns a SiteEnvironment object based on the given SSN.
-        
-        Parameters
-        ----------
-        ssn : str
-            The 12-digit Social Security Number.
-        env : SiteEnvironment
-            The environment object to be modified.
-            
-        Raises
-        ------
-        ValueError
-            If the SSN is invalid.
-        """
+    def apply_ssn_to_env(ssn: str, env: SiteEnvironment) -> SiteEnvironment:
+        """Modifierar och returnerar ett SiteEnvironment-objekt baserat på SSN."""
         if not SSNGenerator.validate(ssn):
             raise ValueError("Invalid SSN format. Use YYYYMMDDXXXX.")
+        ssn_int = int(ssn) # Safe because of validation above
+        spreads = SSNSpread()
+        env.avg_wind_10 = SSNGenerator.apply_spread(env.avg_wind_10, spreads.avg_wind_10_spread, ssn_int, "avg_wind_10")
+        env.roughness = SSNGenerator.apply_spread(env.roughness, spreads.roughness_spread, ssn_int, "roughness")
+        env.survival_gust = SSNGenerator.apply_spread(env.survival_gust, spreads.survival_gust_spread, ssn_int, "survival_gust")
+        env.k_factor = SSNGenerator.apply_spread(env.k_factor, spreads.k_factor_spread, ssn_int, "k_factor")
+        env.electricity_price = SSNGenerator.apply_spread(env.electricity_price, spreads.electricity_price_spread, ssn_int, "electricity_price")
+        env.green_certificate = SSNGenerator.apply_spread(env.green_certificate, spreads.green_certificate_spread, ssn_int, "green_certificate")
+        env.inflation = SSNGenerator.apply_spread(env.inflation, spreads.inflation_spread, ssn_int, "inflation")
+        env.interest = SSNGenerator.apply_spread(env.interest, spreads.interest_spread, ssn_int, "interest")
+        return env
 
-        Age,Y,M,D,PIN = SSNGenerator.partition(ssn)
 
-        env.wo_param = 6 + M / 6
 
-        env.k_factor =(11+M)/10
-       
-        env.avg_wind_10 = abs(int((6+D/10)*10)/10-int(31.9+int(PIN/100)/2)*1.2/50)
-        env.roughness = M*D 
+    @staticmethod
+    def apply_spread(start_value:float, spread:float, SSN:int,name:str) -> float:
+        """Applies spread to start_value using SSN as seed value and name to differentiate between different variables spread"""
+        interval = 2*SSNGenerator.generate_random(SSN,name)-1 # creates interval [-1,1]
+        interval = 1+interval*spread # becomes [1-spread, 1+spread]
+        return float(start_value * interval)
+
+
+    @staticmethod
+    def generate_random(i: int, name: str) -> float:
+        """Generates a deterministic float in range [0,1] based on seed (i) and name."""
+        seed_str = f"{i}_{name}"
+        hash_obj = hashlib.sha256(seed_str.encode('utf-8'))
+        hash_int = int.from_bytes(hash_obj.digest()[:8], 'little')
+        return hash_int / (2**64 - 1) 
 
 
     @staticmethod
     def partition(SSN: str) -> tuple[int, int, int, int, int]:
         """
+        CURRENTLY NOT IN USE. 
         Split the SSN into year, month, day, and personal identification number.
 
         Parameters
@@ -177,7 +173,7 @@ class SSNGenerator:
         ValueError
             If the SSN is not 12 digits or contains non-numeric characters.
         """
-        if len(SSN) != 12:  # We want YYYYMMDDSSSS format, meaning 12 characters
+        if len(SSN) != 12:  # Vi vill ha YYYYMMDDSSSS format, dvs 12 tecken
             raise ValueError("Expected SSN format with 12 characters")
         if not SSN.isdigit():
             raise ValueError("SSN number is not formatted as a number")
@@ -189,45 +185,6 @@ class SSNGenerator:
         year = datetime.date.today().year
         Age = year - Y  # Approximatelly
         return Age, Y, M, D, S
-
-    @staticmethod
-    def generate_random_pm(i:int,name:str) -> float:
-        """
-        Generates a 'random' float in range [-1,1], which value persists when i and name are the same.
-        
-        Parameters
-        ----------
-        i : int
-            Index or seed integer.
-        name : str
-            Seed string.
-            
-        Returns
-        -------
-        float
-            Random value in range [-1, 1].
-        """
-        return 2*SSNGenerator.generate_random(i,name)-1
-
-
-    @staticmethod
-    def generate_random(i:int,name:str) -> float:
-        """
-        Generates a 'random' float in range [0,1], which value persists when i and name are the same.
-        
-        Parameters
-        ----------
-        i : int
-            Index or seed integer.
-        name : str
-            Seed string.
-            
-        Returns
-        -------
-        float
-            Random value in range [0, 1].
-        """
-        return (hash((i, name)) % 10**10) / 10**10 
 
 if __name__ == '__main__':
     # env = SiteEnvironment(None,None,None,None,22,None,None,None)
