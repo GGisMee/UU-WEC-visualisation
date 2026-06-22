@@ -182,66 +182,94 @@ Things not yet implemented, which could benefit the program.
 * **Save/Load:** Implement local storage (JSON/SQLite) so users can save a specific turbine configuration and load it later.
 
 ## Installation and Use
-To use the app and work with it, you need a Python virtual environment. 
 
-Setup:
-```bash
-# Create venv
-python3 -m venv .venv 
+### Installing python
+To use the app and work with it, you need to firstly have installed python. 
+* On mac write `brew install python`. 
+* On windows go to python.org and download python `.exe` file. 
+	* Remember to click in the **Add python.exe to PATH** button.
+
+**Test results with:**
 ```
-Or sometimes `py -m venv .venv` on windows
-
-```bash
-# Windows: Command to ensure user privilege to run scripts. 
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+python --version
+pip --version
 ```
+* pip is pythons package manager
 
-```bash
-# Activate (Makes sure packages are isolated)
-source .venv/bin/activate # On mac or linux
-.venv\Scripts\Activate.ps1 # On windows
-```
+**Then install a Python virtual environment. See instructions below.** 
+### Windows
 
-```bash
-# Install packages required for program
-pip install -r requirements.txt
+1. **Create virtual environment (For holding packages):**
+   ```powershell
+   py -m venv .venv 
+   ```
 
-# Checks that everything is included and links up resources
-pip install -e .
-```
+2. **Ensure user privilege to run scripts:**
+   ```powershell
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+   ```
 
-These packages are used with python:
+3. **Activate virtual environment:**
+   ```powershell
+   .venv\Scripts\Activate.ps1
+   ```
+
+4. **Install requirements and package:**
+   ```powershell
+   pip install -r requirements.txt
+   pip install -e .
+   ```
+
+5. **Run the application:**
+   ```powershell
+   python src\wec_visualisation\main.py
+   ```
+
+### Mac / Linux
+
+1. **Create virtual environment:**
+   ```bash
+   python3 -m venv .venv 
+   ```
+
+2. **Activate virtual environment:**
+   ```bash
+   source .venv/bin/activate
+   ```
+
+3. **Install requirements and package:**
+   ```bash
+   pip install -r requirements.txt
+   pip install -e .
+   ```
+
+4. **Run the application:**
+   ```bash
+   python src/wec_visualisation/main.py
+   ```
+
+### Dependencies
+
+These packages are used with Python:
 * **numpy** (For mathematical calculations)
 * **scipy** (For more mathematical calculations)
 * **customtkinter** (For GUI)
 * **matplotlib** (For plotting datapoints)
 
-Run main file:
-```bash
-python src/wec_visualisation/main.py
-```
-
 ## Building Executables (PyInstaller)
 
 To package the application into a standalone executable that can run on computers without Python installed, use [PyInstaller](https://pyinstaller.org/).
+
+To get the binaries required for each operating system, the command unfortunately has to be run on said operating system. That means to get an `.exe` file one has to run it on a Windows machine, Mac for `.app` and Linux for its binary file. 
 
 First, install PyInstaller in your virtual environment (Not necessary if you already have installed requirements.txt):
 ```bash
 pip install pyinstaller
 ```
 
-### Windows Build (.exe)
-Run this command from the project root:
+To build, simply run this command from the project root:
 ```bash
 pyinstaller --name "WindSimulator" --windowed src/wec_visualisation/main.py
 ```
 The executable will be located in the `dist/WindSimulator/` directory.
-
-### macOS Build (.app)
-Run this command from the project root:
-```bash
-pyinstaller --name "WindSimulator" --windowed src/wec_visualisation/main.py
-```
-The `.app` bundle will be located in the `dist/` directory.
-
 
