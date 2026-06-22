@@ -260,7 +260,7 @@ These packages are used with Python:
 
 To package the application into a standalone executable that can run on computers without Python installed, use [PyInstaller](https://pyinstaller.org/).
 
-To get the binaries required for each operating system, the command unfortunately has to be run on said operating system. That means to get an `.exe` file one has to run it on a Windows machine, Mac for `.app` and Linux for its binary file. 
+**Important:** To get the binaries required for each operating system, the command unfortunately has to be run on said operating system. That means to get an `.exe` file one has to run it on a Windows machine, Mac for `.app` and Linux for its binary file. 
 
 First, install PyInstaller in your virtual environment (Not necessary if you already have installed requirements.txt):
 ```bash
