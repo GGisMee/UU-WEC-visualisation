@@ -496,7 +496,7 @@ class ConsolePanel(ctk.CTkFrame):
         self.env_labels["site"].configure(text=f"{site_type}")
         
         self.env_labels["price"].configure(
-            text=f"{env.electricity_price} €/MWh" if env.electricity_price is not None else "- €/MWh"
+            text=f"{env.electricity_price:.1f} €/MWh" if env.electricity_price is not None else "- €/MWh"
         )
         self.env_labels["wind"].configure(
             text=f"{env.avg_wind_10:.1f} m/s" if env.avg_wind_10 else "- m/s"
