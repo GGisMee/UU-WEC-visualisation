@@ -81,6 +81,24 @@ class CADCanvas(ctk.CTkFrame):
         ground_y = h - int(50 * self.scale_factor)
         center_x = w // 2
 
+        # Scale fonts with the UI scale factor
+        self.scale_factor = getattr(self.winfo_toplevel(), "scale_factor", 1.0)
+        
+        def get_dynamic_font(theme_font):
+            """Small helper function which makes font in CADCanvas responsive to resizing with scale_factor"""
+            family = theme_font[0]
+            size = theme_font[1]
+            weight = theme_font[2] if len(theme_font) > 2 else "normal"
+            dyn_size = max(7, int(size * self.scale_factor))
+            return (family, dyn_size, weight)
+            
+        dyn_body_font = get_dynamic_font(Theme.fonts.BODY)
+        dyn_header_font = get_dynamic_font(Theme.fonts.HEADER)
+        
+        # Scale the text offsets dynamically
+        text_offset = int(45 * self.scale_factor)
+        dim_line_dist = int(25 * self.scale_factor)
+
         real_height = self.turbine.height
         real_rotor_diam = self.turbine.rotor_diameter
         real_solidity = self.turbine.solidity*100
@@ -116,13 +134,13 @@ class CADCanvas(ctk.CTkFrame):
         )
 
         # 6. Draw Height Dimension Line (Left Side)
-        dim_left_x = center_x - tower_base_r - int(25 * self.scale_factor)
+        dim_left_x = center_x - tower_base_r - dim_line_dist
         self.canvas.create_line(dim_left_x, ground_y, dim_left_x, hub_y, fill=info_color, arrow=tk.BOTH, width=1.5)
         self.canvas.create_line(dim_left_x - 5, ground_y, dim_left_x + 5, ground_y, fill=info_color)
         self.canvas.create_line(dim_left_x - 5, hub_y, dim_left_x + 5, hub_y, fill=info_color)
         self.canvas.create_text(
-            dim_left_x - int(35 * self.scale_factor), (ground_y + hub_y) // 2, 
-            text=f"H = {real_height:.1f}m", fill=text_color, font=(Theme.fonts.family, int(10 * self.scale_factor), "bold")
+            dim_left_x - text_offset, (ground_y + hub_y) // 2, 
+            text=f"H = {real_height:.1f}m", fill=text_color, font=dyn_body_font
         )
 
         # 7. Draw Nacelle (Drivetrain housing)
@@ -165,25 +183,28 @@ class CADCanvas(ctk.CTkFrame):
         )
 
         # 10. Draw Rotor Diameter Dimension Line (Right Side)
-        dim_right_x = center_x + rotor_r + int(25 * self.scale_factor)
+        dim_right_x = center_x + rotor_r + dim_line_dist
         self.canvas.create_line(dim_right_x, hub_y - rotor_r, dim_right_x, hub_y + rotor_r, fill=info_color, arrow=tk.BOTH, width=1.5)
         self.canvas.create_line(dim_right_x - 5, hub_y - rotor_r, dim_right_x + 5, hub_y - rotor_r, fill=info_color)
         self.canvas.create_line(dim_right_x - 5, hub_y + rotor_r, dim_right_x + 5, hub_y + rotor_r, fill=info_color)
         self.canvas.create_text(
-            dim_right_x + int(35 * self.scale_factor), hub_y, 
-            text=f"D = {real_rotor_diam:.1f}m", fill=text_color, font=(Theme.fonts.family, int(10 * self.scale_factor), "bold")
+            dim_right_x + text_offset, hub_y, 
+            text=f"D = {real_rotor_diam:.1f}m", fill=text_color, font=dyn_body_font
         )
 
         # 11. Safety Alert Banner (Bending Moment overload)
         if is_unsafe:
+            alert_w = int(110 * self.scale_factor)
+            alert_h1 = int(10 * self.scale_factor)
+            alert_h2 = int(35 * self.scale_factor)
             self.canvas.create_rectangle(
-                center_x - 110, ground_y + 10,
-                center_x + 110, ground_y + 35,
+                center_x - alert_w, ground_y + alert_h1,
+                center_x + alert_w, ground_y + alert_h2,
                 fill=Theme.DANGER.value[idx], outline=blade_color, width=1
             )
             self.canvas.create_text(
-                center_x, ground_y + 22,
-                text="⚠️ HIGH BENDING MOMENT ALERT", fill="white", font=Theme.fonts.HEADER
+                center_x, ground_y + (alert_h1 + alert_h2) // 2,
+                text="⚠️ HIGH BENDING MOMENT ALERT", fill="white", font=dyn_header_font
             )
 
         # Update frame styling
