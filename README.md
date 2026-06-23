@@ -262,19 +262,21 @@ To package the application into a standalone executable that can run on computer
 
 **Important:** To get the binaries required for each operating system, the command unfortunately has to be run on said operating system. That means to get an `.exe` file one has to run it on a Windows machine, Mac for `.app` and Linux for its binary file. 
 
-First, install PyInstaller in your virtual environment (Not necessary if you already have installed requirements.txt):
+First, install PyInstaller and PyArmor in your virtual environment (Not necessary if you already have installed requirements.txt):
 ```bash
-pip install pyinstaller
+pip install pyinstaller pyarmor
 ```
 
-To build, simply run this command from the project root:
-```bash
-pyinstaller --name "WindSimulator" --windowed src/wec_visualisation/main.py
-```
+To build, simply run the included `build.py` program from the project root. This script will automatically obfuscate your code using PyArmor, and then package it using PyInstaller into a standalone executable.
 
-Alternatively run the included `build.py` program from project root
 ```bash
 python build.py
+```
+
+
+Otherwise run this command from the project root, which builds the project, but doesn't obfuscate the code behind it:
+```bash
+pyinstaller --name "WindSimulator" --windowed src/wec_visualisation/main.py
 ```
 
 The executable will be located in the `dist/WindSimulator/` directory.
