@@ -111,7 +111,7 @@ The UI is divided into a three-panel workspace in CustomTkinter using an **Event
    * Houses the "Run Simulation" button which runs a simulated progress status sequence to represent complex computations.
    * **Performance Charts**: Plots the wind Weibull distribution and the turbine's power curve (showing Cut-in and Cut-out margins).
    * **Engineering Audit**: Details mechanical forces, loads, and utilization ratios.
-   * **Financial Ledger**: Lists itemized CAPEX costs, OPEX, annual revenues, IRR, and margins, alongside a horizontal color-coded CAPEX allocation bar.
+   * **Financial Report**: Lists itemized CAPEX costs, OPEX, annual revenues, IRR, and margins, alongside a horizontal color-coded CAPEX allocation bar.
 
 ---
 

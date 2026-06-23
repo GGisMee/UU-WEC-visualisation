@@ -93,7 +93,8 @@ class ConsolePanel(ctk.CTkFrame):
         environment: SiteEnvironment, 
         on_change_callback: Callable,
         on_ssn_callback: Callable,
-        on_mission_change_callback: Callable
+        on_mission_change_callback: Callable,
+        on_simulate_callback: Callable
     ):
         """
         Initialize the ConsolePanel.
@@ -126,14 +127,15 @@ class ConsolePanel(ctk.CTkFrame):
         self.on_change = on_change_callback
         self.on_ssn = on_ssn_callback
         self.on_mission_change_callback = on_mission_change_callback
+        self.on_simulate = on_simulate_callback
         
         # Prevent auto-shrinking so panel stays exactly width=380
         self.pack_propagate(False)
         self.grid_propagate(False)
 
         # Tkinter variables for managing GUI input state
-        self.name_var = tk.StringVar(value="Gustav Gamstedt")
-        self.ssn_var = tk.StringVar(value="199801281234")
+        self.name_var = tk.StringVar(value="")
+        self.ssn_var = tk.StringVar(value="")
         self.rotor_diameter_var = tk.DoubleVar(value=turbine.rotor_diameter)
         self.height_var = tk.DoubleVar(value=turbine.height)
         self.top_diameter_var = tk.DoubleVar(value=turbine.top_diameter)
@@ -143,10 +145,12 @@ class ConsolePanel(ctk.CTkFrame):
         self.gearbox_var = tk.StringVar(value=turbine.gearbox.value)
         self.generator_var = tk.StringVar(value=turbine.generator.value)
 
-        # Tracers for input changes
-        self.ssn_var.trace_add("write", self.on_ssn_trace)
-
         self.create_widgets()
+
+        # Bindings for input changes (replacing trace_add for CTkEntry placeholder fix)
+        self.ent_name.bind("<KeyRelease>", lambda e: self.name_var.set(self.ent_name.get()))
+        self.ent_ssn.bind("<KeyRelease>", self.on_ssn_trace)
+
         self.update_env_view()
         self.update_drivetrain_desc()
 
@@ -277,28 +281,30 @@ class ConsolePanel(ctk.CTkFrame):
         # TAB 1: PHYSICAL SPECS
         # ==========================================
         # Designer Name
-        lbl = ctk.CTkLabel(p_tab, text="Designer Name", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value)
+        lbl = ctk.CTkLabel(p_tab, text="User Name", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value)
         lbl.pack(anchor="w", padx=5, pady=(2, 0))
         self._tracked_widgets.append(lbl)
         self.ent_name = ctk.CTkEntry(
             p_tab, 
-            textvariable=self.name_var, 
+            placeholder_text = "Forename Surname",
             height=26, 
             fg_color=Theme.BG_INPUT.value, 
             border_color=Theme.BORDER.value,
-            text_color=Theme.TEXT_MAIN.value
+            text_color=Theme.TEXT_MAIN.value,
+            placeholder_text_color=Theme.TEXT_MUTED.value
         )
         self.ent_name.pack(fill="x", padx=5, pady=(0, 2))
 
         # SSN Field
-        ctk.CTkLabel(p_tab, text="SSN (YYYYMMDDXXXX)", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value).pack(anchor="w", padx=5, pady=(2, 0))
+        ctk.CTkLabel(p_tab, text="SSN", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value).pack(anchor="w", padx=5, pady=(2, 0))
         self.ent_ssn = ctk.CTkEntry(
             p_tab, 
-            textvariable=self.ssn_var, 
+            placeholder_text = "YYYYMMDDXXXX",
             height=26, 
             fg_color=Theme.BG_INPUT.value, 
             border_color=Theme.BORDER.value,
-            text_color=Theme.TEXT_MAIN.value
+            text_color=Theme.TEXT_MAIN.value,
+            placeholder_text_color=Theme.TEXT_MUTED.value
         )
         self.ent_ssn.pack(fill="x", padx=5, pady=(0, 5))
 
@@ -342,6 +348,19 @@ class ConsolePanel(ctk.CTkFrame):
             pb = 5 if key == "wall_thickness" else 1
             slider.pack(fill="x", padx=10, pady=(0, pb))
             self.sliders[key] = slider
+
+        # Action Button
+        self.btn_simulate = ctk.CTkButton(
+            p_tab, 
+            text="RUN SIMULATION", 
+            font=Theme.fonts.BODY_BOLD, 
+            fg_color=Theme.BUTTON_BG.value, 
+            hover_color=Theme.BUTTON_HOVER.value,
+            text_color=Theme.TEXT_MAIN.value,
+            height=34,
+            command=self.on_simulate
+        )
+        self.btn_simulate.pack(fill="x", padx=5, pady=(20, 10))
 
 
         # ==========================================
@@ -441,7 +460,8 @@ class ConsolePanel(ctk.CTkFrame):
         *args : tuple
             Variable arguments from Tkinter trace event.
         """
-        ssn = self.ssn_var.get()
+        ssn = self.ent_ssn.get()
+        self.ssn_var.set(ssn)
         if SSNGenerator.validate(ssn):
             self.on_ssn(ssn)
 
@@ -583,6 +603,7 @@ class ConsolePanel(ctk.CTkFrame):
         self.combo_generator.configure(state=state)
         self.ent_name.configure(state=state)
         self.ent_ssn.configure(state=state)
+        self.btn_simulate.configure(state=state)
         
         for slider in self.sliders.values():
             slider.configure_slider(state=state)

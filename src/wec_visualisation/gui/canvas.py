@@ -25,7 +25,7 @@ class CADCanvas(ctk.CTkFrame):
         # Title Label
         self.lbl_title = ctk.CTkLabel(
             self, 
-            text="LIVE CAD BLUEPRINT SCHEMATIC", 
+            text="LIVE BLUEPRINT", 
             font=Theme.fonts.SUBTITLE, 
             text_color=Theme.TEXT_MAIN.value
         )

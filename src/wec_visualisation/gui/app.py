@@ -103,7 +103,8 @@ class UnifiedSimulatorApp(ctk.CTk):
             self.environment,
             on_change_callback=self.on_inputs_changed,
             on_ssn_callback=self.on_ssn_changed,
-            on_mission_change_callback=self.on_mission_change
+            on_mission_change_callback=self.on_mission_change,
+            on_simulate_callback=self.run_simulation
         )
         self.paned_window.add(self.console, minsize=380, stretch="never")
 
@@ -162,19 +163,6 @@ class UnifiedSimulatorApp(ctk.CTk):
         )
         self.lbl_active_mission.pack(anchor="w", pady=(2, 0))
 
-        # Action Button (Discreet Theme)
-        self.btn_simulate = ctk.CTkButton(
-            left_header, 
-            text="RUN SIMULATION", 
-            font=Theme.fonts.BODY_BOLD, 
-            fg_color=Theme.BUTTON_BG.value, 
-            hover_color=Theme.BUTTON_HOVER.value,
-            text_color=Theme.TEXT_MAIN.value,
-            height=34,
-            width=160,
-            command=self.run_simulation
-        )
-        self.btn_simulate.pack(side="left", padx=(40, 0), anchor="center")
 
         # Right Column: Theme selection + scorecards
         right_header = ctk.CTkFrame(self.header_frame, fg_color="transparent")
@@ -408,7 +396,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         # Step-by-step loading progress animation
         self.after(500, lambda: self.analytics.set_loading_status("Integrating wind speed probability using Weibull factors..."))
         self.after(1200, lambda: self.analytics.set_loading_status("Calculating beam bending moments on structural tower base...")) 
-        self.after(2000, lambda: self.analytics.set_loading_status("Compiling financial CAPEX ledger and NPV margin predictions..."))
+        self.after(2000, lambda: self.analytics.set_loading_status("Compiling financial CAPEX report and NPV margin predictions..."))
         self.after(3000, self.complete_simulation)
 
     def complete_simulation(self):

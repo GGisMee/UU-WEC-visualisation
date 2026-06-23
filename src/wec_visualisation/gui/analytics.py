@@ -56,7 +56,7 @@ class AnalyticsPanel(ctk.CTkFrame):
         
         ch_tab = self.tabs.add("Performance Charts")
         au_tab = self.tabs.add("Engineering Audit")
-        fn_tab = self.tabs.add("Financial Ledger")
+        fn_tab = self.tabs.add("Financial Report")
 
         # ==========================================
         # TAB 1: PERFORMANCE CHARTS
@@ -109,24 +109,24 @@ class AnalyticsPanel(ctk.CTkFrame):
         info_guidelines.set_text(desc_guidelines)
 
         # ==========================================
-        # TAB 3: FINANCIAL LEDGER
+        # TAB 3: FINANCIAL REPORT
         # ==========================================
-        self.ledger_scroll = ctk.CTkScrollableFrame(fn_tab, fg_color=Theme.BG_SURFACE.value)
-        self.ledger_scroll.pack(fill="both", expand=True)
+        self.finance_scroll = ctk.CTkScrollableFrame(fn_tab, fg_color=Theme.BG_SURFACE.value)
+        self.finance_scroll.pack(fill="both", expand=True)
 
         # Cost breakdown bar chart area
-        lbl = ctk.CTkLabel(self.ledger_scroll, text="CAPEX COST ALLOCATION BREAKDOWN", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value)
+        lbl = ctk.CTkLabel(self.finance_scroll, text="CAPEX COST ALLOCATION BREAKDOWN", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value)
         lbl.pack(anchor="w", padx=5, pady=(5, 2))
         self._tracked_widgets.append(lbl)
-        self.capex_frame = ctk.CTkFrame(self.ledger_scroll, fg_color=Theme.BG_SURFACE.value, height=200)
+        self.capex_frame = ctk.CTkFrame(self.finance_scroll, fg_color=Theme.BG_SURFACE.value, height=200)
         self.capex_frame.pack(fill="x", padx=5, pady=(0, 10))
         self.capex_frame.pack_propagate(False)
         self.capex_fig = Figure(figsize=(5, 2.0), dpi=100)
         self.capex_canvas = FigureCanvasTkAgg(self.capex_fig, master=self.capex_frame)
         self.capex_canvas.get_tk_widget().pack(fill="both", expand=True)
 
-        self.ledger_rows = {}
-        ledger_defs = [
+        self.finance_report_rows = {}
+        finance_defs = [
             ("capex_dev", "Development Expenditure (DEVEX)", "- k€"),
             ("capex_turb", "Turbine Rotor Assembly Cost", "- k€"),
             ("capex_driv", "Drivetrain & Nacelle Cost", "- k€"),
@@ -149,11 +149,11 @@ class AnalyticsPanel(ctk.CTkFrame):
             "capex_install": Theme.ALERT
         }
 
-        for item in ledger_defs:
+        for item in finance_defs:
             is_bold = len(item) == 4
             key, label, init_val = item[0], item[1], item[2]
             
-            row = ctk.CTkFrame(self.ledger_scroll, fg_color=Theme.BG_SURFACE.value)
+            row = ctk.CTkFrame(self.finance_scroll, fg_color=Theme.BG_SURFACE.value)
             row.pack(fill="x", pady=4, padx=5)
             
             if key in color_mapping:
@@ -168,7 +168,7 @@ class AnalyticsPanel(ctk.CTkFrame):
             self._tracked_widgets.append(lbl)
             val_lbl = ctk.CTkLabel(row, text=init_val, font=Theme.fonts.BODY_BOLD, text_color=Theme.INFO.value if is_bold else Theme.TEXT_MAIN.value)
             val_lbl.pack(side="right")
-            self.ledger_rows[key] = val_lbl
+            self.finance_report_rows[key] = val_lbl
 
         # ==========================================
         # WARNING BANNER & LOADING OVERLAY
@@ -263,37 +263,37 @@ class AnalyticsPanel(ctk.CTkFrame):
         bu_color = Theme.DANGER.value if result.buckling_utilization > 1.0 else Theme.TEXT_MAIN.value
         self.audit_rows["buckling"].configure(text=f"{result.buckling_utilization:.2f}", text_color=bu_color)
 
-        # 2. Update Ledger Tab
+        # 2. Update Finance Tab
         caps = result.capex_components
         if isinstance(caps, dict):
-            self.ledger_rows["capex_dev"].configure(text=f"{caps.get('devex', 0.0):,.1f} k€")
-            self.ledger_rows["capex_turb"].configure(text=f"{caps.get('rotor', 0.0):,.1f} k€")
-            self.ledger_rows["capex_driv"].configure(text=f"{caps.get('drivetrain', 0.0):,.1f} k€")
-            self.ledger_rows["capex_tow"].configure(text=f"{caps.get('tower', 0.0):,.1f} k€")
-            self.ledger_rows["capex_found"].configure(text=f"{caps.get('foundation', 0.0):,.1f} k€")
-            self.ledger_rows["capex_install"].configure(text=f"{caps.get('installation', 0.0):,.1f} k€")
+            self.finance_report_rows["capex_dev"].configure(text=f"{caps.get('devex', 0.0):,.1f} k€")
+            self.finance_report_rows["capex_turb"].configure(text=f"{caps.get('rotor', 0.0):,.1f} k€")
+            self.finance_report_rows["capex_driv"].configure(text=f"{caps.get('drivetrain', 0.0):,.1f} k€")
+            self.finance_report_rows["capex_tow"].configure(text=f"{caps.get('tower', 0.0):,.1f} k€")
+            self.finance_report_rows["capex_found"].configure(text=f"{caps.get('foundation', 0.0):,.1f} k€")
+            self.finance_report_rows["capex_install"].configure(text=f"{caps.get('installation', 0.0):,.1f} k€")
         else:
-            if "capex_dev" in self.ledger_rows:
-                self.ledger_rows["capex_dev"].configure(text="0.0 k€")
-            if "capex_install" in self.ledger_rows:
-                self.ledger_rows["capex_install"].configure(text="0.0 k€")
-            self.ledger_rows["capex_turb"].configure(text=f"{caps[0]:,.1f} k€")
-            self.ledger_rows["capex_driv"].configure(text=f"{caps[1]:,.1f} k€")
-            self.ledger_rows["capex_tow"].configure(text=f"{caps[2]:,.1f} k€")
-            self.ledger_rows["capex_found"].configure(text=f"{caps[3]:,.1f} k€")
-        self.ledger_rows["capex_tot"].configure(text=f"{result.total_capex:,.1f} k€")
-        self.ledger_rows["opex"].configure(text=f"{result.annual_opex:,.1f} k€/yr")
-        self.ledger_rows["revenue"].configure(text=f"{result.annual_revenue:,.1f} k€/yr")
+            if "capex_dev" in self.finance_report_rows:
+                self.finance_report_rows["capex_dev"].configure(text="0.0 k€")
+            if "capex_install" in self.finance_report_rows:
+                self.finance_report_rows["capex_install"].configure(text="0.0 k€")
+            self.finance_report_rows["capex_turb"].configure(text=f"{caps[0]:,.1f} k€")
+            self.finance_report_rows["capex_driv"].configure(text=f"{caps[1]:,.1f} k€")
+            self.finance_report_rows["capex_tow"].configure(text=f"{caps[2]:,.1f} k€")
+            self.finance_report_rows["capex_found"].configure(text=f"{caps[3]:,.1f} k€")
+        self.finance_report_rows["capex_tot"].configure(text=f"{result.total_capex:,.1f} k€")
+        self.finance_report_rows["opex"].configure(text=f"{result.annual_opex:,.1f} k€/yr")
+        self.finance_report_rows["revenue"].configure(text=f"{result.annual_revenue:,.1f} k€/yr")
         
         # Display IRR
         irr_val = result.IRR
         irr_text = f"{irr_val * 100:.1f} %" if hasattr(irr_val, '__float__') or isinstance(irr_val, float) else "- %"
-        self.ledger_rows["irr"].configure(text=irr_text)
+        self.finance_report_rows["irr"].configure(text=irr_text)
 
         # Profit Margin
         margin_val = result.margin * 100.0
         margin_color = Theme.SUCCESS.value if margin_val >= 0 else Theme.DANGER.value
-        self.ledger_rows["margin"].configure(text=f"{margin_val:.1f} %", text_color=margin_color)
+        self.finance_report_rows["margin"].configure(text=f"{margin_val:.1f} %", text_color=margin_color)
 
         # 3. Redraw Charts & Capex Horizontal Bar
         self.draw_performance_curves()
