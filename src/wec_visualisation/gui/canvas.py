@@ -7,7 +7,7 @@ from wec_visualisation.models.turbine import WindTurbine
 from wec_visualisation.gui.theme import Theme
 
 class CADCanvas(ctk.CTkFrame):
-    def __init__(self, parent, turbine: WindTurbine, on_simulate_click: Callable):
+    def __init__(self, parent, turbine: WindTurbine):
         super().__init__(
             parent, 
             fg_color=Theme.BG_SURFACE.value, 
@@ -36,18 +36,7 @@ class CADCanvas(ctk.CTkFrame):
         self.canvas = tk.Canvas(self, bg=Theme.BLUEPRINT_BG.value[mode_idx], highlightthickness=0)
         self.canvas.pack(fill="both", expand=True, padx=15, pady=(5, 5))
 
-        # Action: Commit & Run Button (Fusion Orange)
-        self.btn_simulate = ctk.CTkButton(
-            self, 
-            text="RUN SIMULATION", 
-            font=Theme.fonts.SUBTITLE, 
-            fg_color=Theme.ACCENT.value, 
-            hover_color=Theme.ACCENT_HOVER.value,
-            text_color="white",
-            height=36,
-            command=on_simulate_click
-        )
-        self.btn_simulate.pack(fill="x", padx=15, pady=(5, 15))
+        # Removed the internal button as it was moved to the header
 
         # Bind resize event to redraw canvas dynamically
         self.canvas.bind("<Configure>", lambda e: self.update_geometry())
