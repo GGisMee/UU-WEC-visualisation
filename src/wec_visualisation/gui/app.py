@@ -140,8 +140,11 @@ class UnifiedSimulatorApp(ctk.CTk):
         left_header = ctk.CTkFrame(self.header_frame, fg_color="transparent")
         left_header.grid(row=0, column=0, sticky="w", padx=15, pady=10)
         
+        mission_text_frame = ctk.CTkFrame(left_header, fg_color="transparent")
+        mission_text_frame.pack(side="left")
+        
         ctk.CTkLabel(
-            left_header, 
+            mission_text_frame, 
             text="ACTIVE MISSION", 
             font=Theme.fonts.HEADER, 
             text_color=Theme.TEXT_MUTED.value,
@@ -150,7 +153,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         ).pack(anchor="w")
         
         self.lbl_active_mission = ctk.CTkLabel(
-            left_header, 
+            mission_text_frame, 
             text="Sandbox",
             font=Theme.fonts.TITLE,
             text_color=Theme.ACCENT.value,
@@ -158,6 +161,20 @@ class UnifiedSimulatorApp(ctk.CTk):
             height=20
         )
         self.lbl_active_mission.pack(anchor="w", pady=(2, 0))
+
+        # Action Button (Discreet Theme)
+        self.btn_simulate = ctk.CTkButton(
+            left_header, 
+            text="RUN SIMULATION", 
+            font=Theme.fonts.BODY_BOLD, 
+            fg_color=Theme.BUTTON_BG.value, 
+            hover_color=Theme.BUTTON_HOVER.value,
+            text_color=Theme.TEXT_MAIN.value,
+            height=34,
+            width=160,
+            command=self.run_simulation
+        )
+        self.btn_simulate.pack(side="left", padx=(40, 0), anchor="center")
 
         # Right Column: Theme selection + scorecards
         right_header = ctk.CTkFrame(self.header_frame, fg_color="transparent")
@@ -229,19 +246,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.lbl_profit = ctk.CTkLabel(self.profit_card, text="- k€", font=Theme.fonts.TITLE, text_color=Theme.TEXT_MUTED.value, height=22, pady=0, padx=0)
         self.lbl_profit.pack(pady=(0, 10))
 
-        # 4. Action Button
-        self.btn_simulate = ctk.CTkButton(
-            right_header, 
-            text="RUN SIMULATION", 
-            font=Theme.fonts.SUBTITLE, 
-            fg_color=Theme.ACCENT.value, 
-            hover_color=Theme.ACCENT_HOVER.value,
-            text_color="white",
-            height=40,
-            width=160,
-            command=self.run_simulation
-        )
-        self.btn_simulate.pack(side="left", padx=(15, 5))
+
 
     # ==========================================
     # CONTROLLER EVENT HANDLING
