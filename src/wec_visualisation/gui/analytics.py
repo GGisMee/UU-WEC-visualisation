@@ -2,8 +2,12 @@
 import customtkinter as ctk
 import tkinter as tk
 import math
+import warnings
 import numpy as np
 import matplotlib
+
+# Suppress harmless startup warnings from matplotlib when Tkinter window is 0x0
+warnings.filterwarnings("ignore", message="constrained_layout not applied because axes sizes collapsed to zero")
 matplotlib.use("TkAgg")
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -60,7 +64,7 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.charts_frame = ctk.CTkFrame(ch_tab, fg_color=Theme.BG_SURFACE.value)
         self.charts_frame.pack(fill="both", expand=True, padx=5, pady=5)
         
-        self.charts_fig = Figure(figsize=(4, 6), dpi=100)
+        self.charts_fig = Figure(figsize=(4, 6), dpi=100, constrained_layout={'w_pad': 0.15, 'h_pad': 0.15})
         self.charts_canvas = FigureCanvasTkAgg(self.charts_fig, master=self.charts_frame)
         self.charts_canvas.get_tk_widget().pack(fill="both", expand=True)
 
@@ -114,10 +118,10 @@ class AnalyticsPanel(ctk.CTkFrame):
         lbl = ctk.CTkLabel(self.ledger_scroll, text="CAPEX COST ALLOCATION BREAKDOWN", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value)
         lbl.pack(anchor="w", padx=5, pady=(5, 2))
         self._tracked_widgets.append(lbl)
-        self.capex_frame = ctk.CTkFrame(self.ledger_scroll, fg_color=Theme.BG_SURFACE.value, height=30)
+        self.capex_frame = ctk.CTkFrame(self.ledger_scroll, fg_color=Theme.BG_SURFACE.value, height=200)
         self.capex_frame.pack(fill="x", padx=5, pady=(0, 10))
         self.capex_frame.pack_propagate(False)
-        self.capex_fig = Figure(figsize=(5, 0.3), dpi=100)
+        self.capex_fig = Figure(figsize=(5, 2.0), dpi=100)
         self.capex_canvas = FigureCanvasTkAgg(self.capex_fig, master=self.capex_frame)
         self.capex_canvas.get_tk_widget().pack(fill="both", expand=True)
 
@@ -359,7 +363,6 @@ class AnalyticsPanel(ctk.CTkFrame):
 
         ax1.plot(v_arr, prob_arr, color=info_color, linewidth=2)
         ax1.set_title("Weibull Wind Speed Curve", color=info_color, fontweight='bold')
-        ax1.set_xlabel("Wind Speed (m/s)", color=muted_color)
         ax1.set_ylabel("Probability Density", color=muted_color)
         
         ax1.axvline(res.cut_in_speed, color=success_color, linestyle='--', alpha=0.8, label="Cut-in")
@@ -377,7 +380,8 @@ class AnalyticsPanel(ctk.CTkFrame):
         ax2.set_xlim(0, max_v)
         ax2.set_ylim(bottom=0)
         
-        self.charts_fig.tight_layout()
+        # self.charts_fig.subplots_adjust(top=0.96, bottom=0.02, left=0.15, right=0.95, hspace=0.35)
+        # self.charts_fig.tight_layout(pad=3.0, h_pad=3.0)
         self.charts_canvas.draw()
 
     def redraw_capex_bar(self):
@@ -410,13 +414,26 @@ class AnalyticsPanel(ctk.CTkFrame):
             values = caps
             colors = [Theme.INFO.value[idx], Theme.SUCCESS.value[idx], Theme.ACCENT.value[idx], Theme.CONCRETE.value[idx]]
 
-        left = 0.0
-        for val, color in zip(values, colors):
-            width = val / tot
-            ax.barh(0, width, left=left, color=color, height=0.8)
-            left += width
+        # Filter out zero values
+        filtered_data = [(val, col) for val, col in zip(values, colors) if val > 0]
+        if not filtered_data:
+            return
+            
+        f_vals, f_cols = zip(*filtered_data)
 
-        ax.set_xlim(0, 1)
-        ax.set_ylim(-0.5, 0.5)
-        self.capex_fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+        # Donut chart
+        wedges, _ = ax.pie(
+            f_vals, 
+            colors=f_cols,
+            startangle=90,
+            counterclock=False,
+            wedgeprops=dict(width=0.4, edgecolor=bg_input_color, linewidth=2)
+        )
+
+        # Center text showing the total CAPEX
+        ax.text(0, 0, f"TOTAL\n{tot:,.0f} k€", ha='center', va='center', 
+                fontsize=11, fontweight='bold', color=Theme.TEXT_MAIN.value[idx])
+
+        # Adjust subplots to ensure the pie chart fits
+        self.capex_fig.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)
         self.capex_canvas.draw()
