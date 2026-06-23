@@ -109,8 +109,7 @@ class UnifiedSimulatorApp(ctk.CTk):
 
         self.cad_canvas = CADCanvas(
             self.paned_window, 
-            self.turbine,
-            on_simulate_click=self.run_simulation
+            self.turbine
         )
         self.paned_window.add(self.cad_canvas, minsize=400, stretch="always")
 
@@ -229,6 +228,20 @@ class UnifiedSimulatorApp(ctk.CTk):
         ctk.CTkLabel(self.profit_card, text="LIFETIME PROFIT", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=14, pady=0, padx=0).pack(pady=(10, 2))
         self.lbl_profit = ctk.CTkLabel(self.profit_card, text="- k€", font=Theme.fonts.TITLE, text_color=Theme.TEXT_MUTED.value, height=22, pady=0, padx=0)
         self.lbl_profit.pack(pady=(0, 10))
+
+        # 4. Action Button
+        self.btn_simulate = ctk.CTkButton(
+            right_header, 
+            text="RUN SIMULATION", 
+            font=Theme.fonts.SUBTITLE, 
+            fg_color=Theme.ACCENT.value, 
+            hover_color=Theme.ACCENT_HOVER.value,
+            text_color="white",
+            height=40,
+            width=160,
+            command=self.run_simulation
+        )
+        self.btn_simulate.pack(side="left", padx=(15, 5))
 
     # ==========================================
     # CONTROLLER EVENT HANDLING
