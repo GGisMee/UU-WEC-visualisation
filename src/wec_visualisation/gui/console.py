@@ -8,7 +8,7 @@ from wec_visualisation.models.turbine import WindTurbine
 from wec_visualisation.models.environment import SiteEnvironment, SSNGenerator
 from wec_visualisation.gui.theme import Theme
 from wec_visualisation.models.turbine import Generator, Gearbox
-from wec_visualisation.gui.components import LabeledSlider, MetricRow, TextInfoBox
+from wec_visualisation.gui.components import LabeledSlider, MetricRow, TextInfoBox, ToolTip
 
 class ConstraintRow(ctk.CTkFrame):
     """
@@ -194,6 +194,7 @@ class ConsolePanel(ctk.CTkFrame):
             text_color=Theme.TEXT_MAIN.value
         )
         lbl.pack(anchor="w", padx=5, pady=(5, 2))
+        ToolTip(lbl, "Choose a predefined scenario to load its environmental parameters and design constraints.", small=True)
         self._tracked_widgets.append(lbl)
         
         self.mission_menu = ctk.CTkOptionMenu(
@@ -237,13 +238,17 @@ class ConsolePanel(ctk.CTkFrame):
         
         self.env_labels = {}
         env_params = [
-            ("Site Type:", "site"), ("Elec. Price:", "price"),
-            ("Wind (10m):", "wind"), ("Lifetime:", "lifetime"),
-            ("Survival Gust:", "gust"), ("Downtime:", "downtime"),
-            ("Roughness (z0):", "roughness"), ("Weibull k:", "weibull")
+            ("Site Type:", "site", "Onshore or Offshore deployment site."), 
+            ("Elec. Price:", "price", "Electricity sell price in €/MWh."),
+            ("Wind (10m):", "wind", "Average wind speed at 10m height."), 
+            ("Lifetime:", "lifetime", "Expected operational lifetime of the turbine."),
+            ("Survival Gust:", "gust", "Maximum extreme wind gust for survival."), 
+            ("Downtime:", "downtime", "Percentage of time the turbine is not producing power due to maintenance."),
+            ("Roughness (z0):", "roughness", "Surface roughness length affecting the wind profile."), 
+            ("Weibull k:", "weibull", "Shape parameter of the Weibull wind speed distribution.")
         ]
         
-        for i, (title, key) in enumerate(env_params):
+        for i, (title, key, tooltip) in enumerate(env_params):
             row = i // 2
             col = (i % 2) * 2
             pady_top = 6 if row == 0 else 2
@@ -251,6 +256,7 @@ class ConsolePanel(ctk.CTkFrame):
             
             lbl_t = ctk.CTkLabel(self.env_box, text=title, font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
             lbl_t.grid(row=row, column=col, padx=(10, 5), pady=(pady_top, pady_bot), sticky="w")
+            ToolTip(lbl_t, tooltip, small=True)
             self._tracked_widgets.append(lbl_t)
             
             lbl_v = ctk.CTkLabel(self.env_box, text="-", font=Theme.fonts.BODY, text_color=Theme.TEXT_MAIN.value)
@@ -311,11 +317,11 @@ class ConsolePanel(ctk.CTkFrame):
         # Sliders
         self.sliders = {}
         main_sliders = [
-            ("rotor_diameter", "Rotor Diameter: {value:.1f} m", self.rotor_diameter_var, 30, 150, 120),
-            ("solidity", "Rotor Solidity: {value:.1f} %", self.solidity_var, 1, 10, 90)
+            ("rotor_diameter", "Rotor Diameter: {value:.1f} m", self.rotor_diameter_var, 30, 150, 120, "Diameter of the rotor swept area."),
+            ("solidity", "Rotor Solidity: {value:.1f} %", self.solidity_var, 1, 10, 90, "Ratio of total blade area to the rotor swept area.")
         ]
-        for key, title, var, min_v, max_v, steps in main_sliders:
-            slider = LabeledSlider(p_tab, title, var, min_v, max_v, steps, self.on_slider_move)
+        for key, title, var, min_v, max_v, steps, tooltip in main_sliders:
+            slider = LabeledSlider(p_tab, title, var, min_v, max_v, steps, self.on_slider_move, tooltip_text=tooltip)
             slider.pack(fill="x", padx=5, pady=1)
             self.sliders[key] = slider
 
@@ -338,13 +344,13 @@ class ConsolePanel(ctk.CTkFrame):
         self._tracked_widgets.append(lbl)
 
         tower_sliders = [
-            ("height", "Hub Height: {value:.1f} m", self.height_var, 40, 160, 120),
-            ("top_diam", "Top Diameter: {value:.2f} m", self.top_diameter_var, 1, 8, 65),
-            ("bottom_diam", "Base Diameter: {value:.2f} m", self.bottom_diameter_var, 1, 12, 100),
-            ("wall_thickness", "Wall Thickness: {value:.1f} mm", self.wall_thickness_var, 10, 250, 240)
+            ("height", "Hub Height: {value:.1f} m", self.height_var, 40, 160, 120, "Height from ground/sea level to the rotor hub."),
+            ("top_diam", "Top Diameter: {value:.2f} m", self.top_diameter_var, 1, 8, 65, "Diameter of the tower at the top."),
+            ("bottom_diam", "Base Diameter: {value:.2f} m", self.bottom_diameter_var, 1, 12, 100, "Diameter of the tower at the base."),
+            ("wall_thickness", "Wall Thickness: {value:.1f} mm", self.wall_thickness_var, 10, 250, 240, "Thickness of the tower steel wall.")
         ]
-        for key, title, var, min_v, max_v, steps in tower_sliders:
-            slider = LabeledSlider(self.tower_box, title, var, min_v, max_v, steps, self.on_slider_move)
+        for key, title, var, min_v, max_v, steps, tooltip in tower_sliders:
+            slider = LabeledSlider(self.tower_box, title, var, min_v, max_v, steps, self.on_slider_move, tooltip_text=tooltip)
             pb = 5 if key == "wall_thickness" else 1
             slider.pack(fill="x", padx=10, pady=(0, pb))
             self.sliders[key] = slider
@@ -377,6 +383,7 @@ class ConsolePanel(ctk.CTkFrame):
 
         lbl = ctk.CTkLabel(d_tab, text="Gearbox Technology", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
         lbl.pack(anchor="w", padx=5, pady=(10, 2))
+        ToolTip(lbl, "Select the type of mechanical gearbox to step up rotational speed from the rotor to the generator.", small=True)
         self._tracked_widgets.append(lbl)
         self.combo_gearbox = ctk.CTkOptionMenu(
             d_tab, 
@@ -392,6 +399,7 @@ class ConsolePanel(ctk.CTkFrame):
 
         lbl = ctk.CTkLabel(d_tab, text="Generator Type", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
         lbl.pack(anchor="w", padx=5, pady=(10, 2))
+        ToolTip(lbl, "Select the electrical generator technology used to convert mechanical power into electrical power.", small=True)
         self._tracked_widgets.append(lbl)
         self.combo_generator = ctk.CTkOptionMenu(
             d_tab, 

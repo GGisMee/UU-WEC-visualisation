@@ -11,6 +11,7 @@ from wec_visualisation.gui.console import ConsolePanel
 from wec_visualisation.gui.canvas import CADCanvas
 from wec_visualisation.gui.analytics import AnalyticsPanel
 from wec_visualisation.gui.theme import Theme
+from wec_visualisation.gui.components import ToolTip
 
 
 def load_scale_factor():
@@ -214,7 +215,9 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.runs_card = ctk.CTkFrame(right_header, fg_color=Theme.BG_INPUT.value, width=140, height=60, border_width=1, border_color=Theme.BORDER.value)
         self.runs_card.pack(side="left", padx=5)
         self.runs_card.pack_propagate(False)
-        ctk.CTkLabel(self.runs_card, text="R&D RUNS REMAINING", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=14, pady=0, padx=0).pack(pady=(10, 2))
+        lbl_runs_title = ctk.CTkLabel(self.runs_card, text="R&D RUNS REMAINING", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=14, pady=0, padx=0)
+        lbl_runs_title.pack(pady=(10, 2))
+        ToolTip(lbl_runs_title, "Number of simulation attempts left to successfully meet all mission constraints.", small=True)
         self.lbl_runs = ctk.CTkLabel(self.runs_card, text="∞ / ∞", font=Theme.fonts.TITLE, text_color=Theme.SUCCESS.value, height=22, pady=0, padx=0)
         self.lbl_runs.pack(pady=(0, 10))
 

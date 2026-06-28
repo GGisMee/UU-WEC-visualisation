@@ -13,7 +13,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from wec_visualisation.models.simulation import SimulationResult
 from wec_visualisation.gui.theme import Theme
-from wec_visualisation.gui.components import TextInfoBox
+from wec_visualisation.gui.components import TextInfoBox, ToolTip
 
 class AnalyticsPanel(ctk.CTkFrame):
     def __init__(self, parent, on_simulate_click):
@@ -76,23 +76,24 @@ class AnalyticsPanel(ctk.CTkFrame):
 
         self.audit_rows = {}
         audit_defs = [
-            ("hub_wind", "Hub Average Wind Speed", "- m/s"),
-            ("swept_area", "Rotor Swept Area", "- m²"),
-            ("rated_power", "Turbine Rated Power", "- kW"),
-            ("cap_factor", "Drivetrain Capacity Factor", "- %"),
-            ("thrust_load", "Operational Aerodynamic Load", "- kN"),
-            ("storm_load", "Storm Load (Survival)", "- kN"),
-            ("breaking", "Breaking Utilization", "-"),
-            ("slenderness", "Tower Slenderness Ratio (H/2R)", "-"),
-            ("buckling", "Buckling Utilization", "-"),
+            ("hub_wind", "Hub Average Wind Speed", "- m/s", "Average wind speed at the hub height."),
+            ("swept_area", "Rotor Swept Area", "- m²", "Total area swept by the rotor blades."),
+            ("rated_power", "Turbine Rated Power", "- kW", "Maximum electrical power output."),
+            ("cap_factor", "Drivetrain Capacity Factor", "- %", "Ratio of actual energy output to maximum possible energy output."),
+            ("thrust_load", "Operational Aerodynamic Load", "- kN", "Force exerted by the wind at nacelle during operation."),
+            ("storm_load", "Storm Load (Survival)", "- kN", "Maximum aerodynamic force at necelle during extreme survival conditions."),
+            ("breaking", "Breaking Utilization", "-", "Ratio of maximum bending moment to the tower's breaking moment capacity."),
+            ("slenderness", "Tower Slenderness Ratio (H/2R)", "-", "Ratio of tower height to base diameter, affecting structural stability."),
+            ("buckling", "Buckling Utilization", "-", "Ratio of maximum compressive stress to the tower's buckling capacity."),
         ]
         
-        for key, label, init_val in audit_defs:
+        for key, label, init_val, tooltip in audit_defs:
             row = ctk.CTkFrame(self.audit_scroll, fg_color=Theme.BG_SURFACE.value)
             row.pack(fill="x", pady=4, padx=5)
             
             lbl = ctk.CTkLabel(row, text=label, font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value)
             lbl.pack(side="left")
+            ToolTip(lbl, tooltip, small=True)
             self._tracked_widgets.append(lbl)
             val_lbl = ctk.CTkLabel(row, text=init_val, font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
             val_lbl.pack(side="right")
@@ -127,17 +128,17 @@ class AnalyticsPanel(ctk.CTkFrame):
 
         self.finance_report_rows = {}
         finance_defs = [
-            ("capex_dev", "Development Expenditure (DEVEX)", "- k€"),
-            ("capex_turb", "Turbine Rotor Assembly Cost", "- k€"),
-            ("capex_driv", "Drivetrain & Nacelle Cost", "- k€"),
-            ("capex_tow", "Steel Tower Structure Cost", "- k€"),
-            ("capex_found", "Concrete Foundation & Site Cost", "- k€"),
-            ("capex_install", "Installation Logistics Cost", "- k€"),
-            ("capex_tot", "TOTAL CAPITAL COST (CAPEX)", "- k€", True),
-            ("opex", "Annual Operating Costs (OPEX)", "- k€/yr"),
-            ("revenue", "Net Annual Yield Revenue", "- k€/yr"),
-            ("irr", "Internal Rate of Return (IRR)", "- %"),
-            ("margin", "Lifetime Profit Margin", "- %", True),
+            ("capex_dev", "Development Expenditure (DEVEX)", "- k€", "Upfront costs for site assessment, permitting, and engineering.", False),
+            ("capex_turb", "Turbine Rotor Assembly Cost", "- k€", "Cost of the rotor blades and hub assembly.", False),
+            ("capex_driv", "Drivetrain & Nacelle Cost", "- k€", "Cost of the generator, gearbox, and nacelle.", False),
+            ("capex_tow", "Steel Tower Structure Cost", "- k€", "Cost of manufacturing the steel tower.", False),
+            ("capex_found", "Concrete Foundation & Site Cost", "- k€", "Cost of foundation materials and site preparation.", False),
+            ("capex_install", "Installation Logistics Cost", "- k€", "Logistics and installation vessel costs.", False),
+            ("capex_tot", "TOTAL CAPITAL COST (CAPEX)", "- k€", "Total upfront capital expenditure.", True),
+            ("opex", "Annual Operating Costs (OPEX)", "- k€/yr", "Ongoing costs for operations and maintenance.", False),
+            ("revenue", "Net Annual Yield Revenue", "- k€/yr", "Income generated from selling electricity.", False),
+            ("irr", "Internal Rate of Return (IRR)", "- %", "Annualized effective compounded return rate.", False),
+            ("margin", "Lifetime Profit Margin", "- %", "Overall profitability ratio over the turbine's lifetime.", True),
         ]
 
         color_mapping = {
@@ -150,8 +151,7 @@ class AnalyticsPanel(ctk.CTkFrame):
         }
 
         for item in finance_defs:
-            is_bold = len(item) == 4
-            key, label, init_val = item[0], item[1], item[2]
+            key, label, init_val, tooltip, is_bold = item
             
             row = ctk.CTkFrame(self.finance_scroll, fg_color=Theme.BG_SURFACE.value)
             row.pack(fill="x", pady=4, padx=5)
@@ -165,6 +165,7 @@ class AnalyticsPanel(ctk.CTkFrame):
             
             lbl = ctk.CTkLabel(row, text=label, font=lbl_weight, text_color=lbl_color)
             lbl.pack(side="left")
+            ToolTip(lbl, tooltip, small=True)
             self._tracked_widgets.append(lbl)
             val_lbl = ctk.CTkLabel(row, text=init_val, font=Theme.fonts.BODY_BOLD, text_color=Theme.INFO.value if is_bold else Theme.TEXT_MAIN.value)
             val_lbl.pack(side="right")
