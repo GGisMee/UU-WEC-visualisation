@@ -16,7 +16,7 @@ from wec_visualisation.gui.theme import Theme
 from wec_visualisation.gui.components import TextInfoBox, ToolTip
 
 class AnalyticsPanel(ctk.CTkFrame):
-    def __init__(self, parent, on_simulate_click):
+    def __init__(self, parent, on_simulate_click, lang_manager=None):
         super().__init__(
             parent, 
             width=420, 
@@ -25,6 +25,7 @@ class AnalyticsPanel(ctk.CTkFrame):
             border_color=Theme.BORDER.value
         )
         self.on_simulate = on_simulate_click
+        self.lang_manager = lang_manager
         self.last_result = None
         self._tracked_widgets = []
 
@@ -75,6 +76,8 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.audit_scroll.pack(fill="both", expand=True)
 
         self.audit_rows = {}
+        self.audit_labels = {}
+        self.audit_tooltips = {}
         audit_defs = [
             ("hub_wind", "Hub Average Wind Speed", "- m/s", "Average wind speed at the hub height."),
             ("swept_area", "Rotor Swept Area", "- m²", "Total area swept by the rotor blades."),
@@ -93,8 +96,9 @@ class AnalyticsPanel(ctk.CTkFrame):
             
             lbl = ctk.CTkLabel(row, text=label, font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value)
             lbl.pack(side="left")
-            ToolTip(lbl, tooltip, small=True)
+            self.audit_tooltips[key] = ToolTip(lbl, tooltip, small=True)
             self._tracked_widgets.append(lbl)
+            self.audit_labels[key] = lbl
             val_lbl = ctk.CTkLabel(row, text=init_val, font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
             val_lbl.pack(side="right")
             self.audit_rows[key] = val_lbl
@@ -105,9 +109,9 @@ class AnalyticsPanel(ctk.CTkFrame):
             "• High solidity blades increase storm torque significantly, requiring thicker tower walls.\n"
             "• Increasing hub height yields higher wind speeds (Wind Shear) but raises gravity bending loads."
         )
-        info_guidelines = TextInfoBox(self.audit_scroll, "DESIGN GUIDELINES", height=85)
-        info_guidelines.pack(fill="x", pady=10, padx=5)
-        info_guidelines.set_text(desc_guidelines)
+        self.info_guidelines = TextInfoBox(self.audit_scroll, "DESIGN GUIDELINES", height=85)
+        self.info_guidelines.pack(fill="x", pady=10, padx=5)
+        self.info_guidelines.set_text(desc_guidelines)
 
         # ==========================================
         # TAB 3: FINANCIAL REPORT
@@ -116,9 +120,9 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.finance_scroll.pack(fill="both", expand=True)
 
         # Cost breakdown bar chart area
-        lbl = ctk.CTkLabel(self.finance_scroll, text="CAPEX COST ALLOCATION BREAKDOWN", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value)
-        lbl.pack(anchor="w", padx=5, pady=(5, 2))
-        self._tracked_widgets.append(lbl)
+        self.lbl_capex_breakdown = ctk.CTkLabel(self.finance_scroll, text="CAPEX COST ALLOCATION BREAKDOWN", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value)
+        self.lbl_capex_breakdown.pack(anchor="w", padx=5, pady=(5, 2))
+        self._tracked_widgets.append(self.lbl_capex_breakdown)
         self.capex_frame = ctk.CTkFrame(self.finance_scroll, fg_color=Theme.BG_SURFACE.value, height=200)
         self.capex_frame.pack(fill="x", padx=5, pady=(0, 10))
         self.capex_frame.pack_propagate(False)
@@ -127,6 +131,8 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.capex_canvas.get_tk_widget().pack(fill="both", expand=True)
 
         self.finance_report_rows = {}
+        self.finance_labels = {}
+        self.finance_tooltips = {}
         finance_defs = [
             ("capex_dev", "Development Expenditure (DEVEX)", "- k€", "Upfront costs for site assessment, permitting, and engineering.", False),
             ("capex_turb", "Turbine Rotor Assembly Cost", "- k€", "Cost of the rotor blades and hub assembly.", False),
@@ -165,8 +171,9 @@ class AnalyticsPanel(ctk.CTkFrame):
             
             lbl = ctk.CTkLabel(row, text=label, font=lbl_weight, text_color=lbl_color)
             lbl.pack(side="left")
-            ToolTip(lbl, tooltip, small=True)
+            self.finance_tooltips[key] = ToolTip(lbl, tooltip, small=True)
             self._tracked_widgets.append(lbl)
+            self.finance_labels[key] = lbl
             val_lbl = ctk.CTkLabel(row, text=init_val, font=Theme.fonts.BODY_BOLD, text_color=Theme.INFO.value if is_bold else Theme.TEXT_MAIN.value)
             val_lbl.pack(side="right")
             self.finance_report_rows[key] = val_lbl
@@ -189,14 +196,14 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.loading_container = ctk.CTkFrame(self.loading_overlay, fg_color=Theme.BG_SURFACE.value)
         self.loading_container.place(relx=0.5, rely=0.45, anchor="center")
 
-        lbl = ctk.CTkLabel(
+        self.lbl_loading = ctk.CTkLabel(
             self.loading_container, 
             text="SIMULATION RUNNING", 
             font=Theme.fonts.SUBTITLE, 
             text_color=Theme.ACCENT.value
         )
-        lbl.pack(pady=5)
-        self._tracked_widgets.append(lbl)
+        self.lbl_loading.pack(pady=5)
+        self._tracked_widgets.append(self.lbl_loading)
         
         self.lbl_loading_status = ctk.CTkLabel(
             self.loading_container, 
@@ -311,7 +318,7 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.charts_fig.patch.set_facecolor(bg_color)
         ax = self.charts_fig.add_subplot(111)
         ax.set_facecolor(bg_color)
-        ax.text(0.5, 0.5, "[ Simulation Out of Date ]\nClick 'Run Simulation' to plot curves.",
+        ax.text(0.5, 0.5, self.lang_manager.get("analytics.lbl_chart_out_of_date", "[ Simulation Out of Date ]\nClick 'Run Simulation' to plot curves.") if getattr(self, 'lang_manager', None) else "[ Simulation Out of Date ]\nClick 'Run Simulation' to plot curves.",
                 ha='center', va='center', color=muted_color, fontweight='bold', fontsize=12)
         ax.axis('off')
         
@@ -363,11 +370,11 @@ class AnalyticsPanel(ctk.CTkFrame):
         max_v = 30.0 # Limit plot view for better readability since array goes up to 60
 
         ax1.plot(v_arr, prob_arr, color=info_color, linewidth=2)
-        ax1.set_title("Weibull Wind Speed Curve", color=info_color, fontweight='bold')
-        ax1.set_ylabel("Probability Density", color=muted_color)
+        ax1.set_title(self.lang_manager.get("analytics.lbl_weibull_title", "Weibull Wind Speed Curve") if getattr(self, 'lang_manager', None) else "Weibull Wind Speed Curve", color=info_color, fontweight='bold')
+        ax1.set_ylabel(self.lang_manager.get("analytics.lbl_weibull_ylabel", "Probability Density") if getattr(self, 'lang_manager', None) else "Probability Density", color=muted_color)
         
-        ax1.axvline(res.cut_in_speed, color=success_color, linestyle='--', alpha=0.8, label="Cut-in")
-        ax1.axvline(res.cut_out_speed, color=danger_color, linestyle='--', alpha=0.8, label="Cut-out")
+        ax1.axvline(res.cut_in_speed, color=success_color, linestyle='--', alpha=0.8, label=self.lang_manager.get("analytics.lbl_weibull_cutin", "Cut-in") if getattr(self, 'lang_manager', None) else "Cut-in")
+        ax1.axvline(res.cut_out_speed, color=danger_color, linestyle='--', alpha=0.8, label=self.lang_manager.get("analytics.lbl_weibull_cutout", "Cut-out") if getattr(self, 'lang_manager', None) else "Cut-out")
         ax1.legend(loc="upper right", facecolor=chart_bg, edgecolor=border_color, labelcolor=text_color)
         ax1.set_xlim(0, max_v)
         ax1.set_ylim(bottom=0)
@@ -375,9 +382,9 @@ class AnalyticsPanel(ctk.CTkFrame):
         # --- Plot 2: Power Curve ---
         p_arr = res.power_curve
         ax2.plot(v_arr, p_arr, color=accent_color, linewidth=2)
-        ax2.set_title("Turbine Power Curve (kW)", color=accent_color, fontweight='bold')
-        ax2.set_xlabel("Wind Speed (m/s)", color=muted_color)
-        ax2.set_ylabel("Power output (kW)", color=muted_color)
+        ax2.set_title(self.lang_manager.get("analytics.lbl_power_title", "Turbine Power Curve (kW)") if getattr(self, 'lang_manager', None) else "Turbine Power Curve (kW)", color=accent_color, fontweight='bold')
+        ax2.set_xlabel(self.lang_manager.get("analytics.lbl_power_xlabel", "Wind Speed (m/s)") if getattr(self, 'lang_manager', None) else "Wind Speed (m/s)", color=muted_color)
+        ax2.set_ylabel(self.lang_manager.get("analytics.lbl_power_ylabel", "Power output (kW)") if getattr(self, 'lang_manager', None) else "Power output (kW)", color=muted_color)
         ax2.set_xlim(0, max_v)
         ax2.set_ylim(bottom=0)
         
@@ -432,9 +439,57 @@ class AnalyticsPanel(ctk.CTkFrame):
         )
 
         # Center text showing the total CAPEX
-        ax.text(0, 0, f"TOTAL\n{tot:,.0f} k€", ha='center', va='center', 
+        ax.text(0, 0, f"{self.lang_manager.get('analytics.lbl_total', 'TOTAL') if getattr(self, 'lang_manager', None) else 'TOTAL'}\n{tot:,.0f} k€", ha='center', va='center', 
                 fontsize=11, fontweight='bold', color=Theme.TEXT_MAIN.value[idx])
 
         # Adjust subplots to ensure the pie chart fits
         self.capex_fig.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)
         self.capex_canvas.draw()
+    def update_language(self):
+        if not getattr(self, 'lang_manager', None):
+            return
+
+        self.lbl_title.configure(text=self.lang_manager.get("analytics.title", "ANALYTICS & RESULTS"))
+        
+        # Tabs
+        if hasattr(self.tabs, "_segmented_button") and hasattr(self.tabs._segmented_button, "_buttons_dict"):
+            bdict = self.tabs._segmented_button._buttons_dict
+            if "Performance Charts" in bdict: bdict["Performance Charts"].configure(text=self.lang_manager.get("analytics.tab_performance", "Performance Charts"))
+            if "Engineering Audit" in bdict: bdict["Engineering Audit"].configure(text=self.lang_manager.get("analytics.tab_audit", "Engineering Audit"))
+            if "Financial Report" in bdict: bdict["Financial Report"].configure(text=self.lang_manager.get("analytics.tab_finance", "Financial Report"))
+
+        # Audit Labels
+        audit_keys = ["hub_wind", "swept_area", "rated_power", "cap_factor", "thrust_load", "storm_load", "breaking", "slenderness", "buckling"]
+        for k in audit_keys:
+            if k in self.audit_labels:
+                self.audit_labels[k].configure(text=self.lang_manager.get(f"analytics.{k}_lbl"))
+            if k in self.audit_tooltips:
+                self.audit_tooltips[k].update_text(self.lang_manager.get(f"analytics.{k}_tooltip"))
+
+        self.info_guidelines.lbl_title.configure(text=self.lang_manager.get("analytics.lbl_design_guidelines", "DESIGN GUIDELINES"))
+        self.info_guidelines.set_text(self.lang_manager.get("analytics.desc_guidelines"))
+
+        # Finance Labels
+        self.lbl_capex_breakdown.configure(text=self.lang_manager.get("analytics.lbl_capex_breakdown", "CAPEX COST ALLOCATION BREAKDOWN"))
+        
+        fin_keys = ["capex_dev", "capex_turb", "capex_driv", "capex_tow", "capex_found", "capex_install", "capex_tot", "opex", "revenue", "irr", "margin"]
+        for k in fin_keys:
+            if k in self.finance_labels:
+                self.finance_labels[k].configure(text=self.lang_manager.get(f"analytics.{k}_lbl"))
+            if k in self.finance_tooltips:
+                self.finance_tooltips[k].update_text(self.lang_manager.get(f"analytics.{k}_tooltip"))
+
+        # Misc labels
+        self.lbl_warning.configure(text=self.lang_manager.get("analytics.lbl_warning", "⚠️ Inputs changed. Click 'Run Simulation' to recalculate results."))
+        self.lbl_loading.configure(text=self.lang_manager.get("analytics.lbl_loading", "SIMULATION RUNNING"))
+        
+        # We only update this if it's currently showing the default text, otherwise it could override a live loading status
+        if "Initializing" in self.lbl_loading_status.cget("text"):
+            self.lbl_loading_status.configure(text=self.lang_manager.get("analytics.lbl_loading_status", "Initializing wind aerodynamic grid..."))
+
+        # Redraw charts
+        if self.last_result:
+            self.draw_performance_curves()
+            self.redraw_capex_bar()
+        else:
+            self.clear_charts()

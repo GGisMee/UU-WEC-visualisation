@@ -94,7 +94,8 @@ class ConsolePanel(ctk.CTkFrame):
         on_change_callback: Callable,
         on_ssn_callback: Callable,
         on_mission_change_callback: Callable,
-        on_simulate_callback: Callable
+        on_simulate_callback: Callable,
+        lang_manager=None
     ):
         """
         Initialize the ConsolePanel.
@@ -128,6 +129,7 @@ class ConsolePanel(ctk.CTkFrame):
         self.on_ssn = on_ssn_callback
         self.on_mission_change_callback = on_mission_change_callback
         self.on_simulate = on_simulate_callback
+        self.lang_manager = lang_manager
         
         # Prevent auto-shrinking so panel stays exactly width=380
         self.pack_propagate(False)
@@ -187,15 +189,14 @@ class ConsolePanel(ctk.CTkFrame):
         self.mission_scroll.pack(fill="both", expand=True)
 
         # Select Active Mission label
-        lbl = ctk.CTkLabel(
+        self.lbl_select_mission = ctk.CTkLabel(
             self.mission_scroll, 
             text="Select Active Mission:", 
             font=Theme.fonts.BODY_BOLD, 
             text_color=Theme.TEXT_MAIN.value
         )
-        lbl.pack(anchor="w", padx=5, pady=(5, 2))
-        ToolTip(lbl, "Choose a predefined scenario to load its environmental parameters and design constraints.", small=True)
-        self._tracked_widgets.append(lbl)
+        self.lbl_select_mission.pack(anchor="w", padx=5, pady=(5, 2))
+        self.tooltip_select_mission = ToolTip(self.lbl_select_mission, "Choose a predefined scenario to load its environmental parameters and design constraints.", small=True)
         
         self.mission_menu = ctk.CTkOptionMenu(
             self.mission_scroll, 
@@ -256,22 +257,21 @@ class ConsolePanel(ctk.CTkFrame):
             
             lbl_t = ctk.CTkLabel(self.env_box, text=title, font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
             lbl_t.grid(row=row, column=col, padx=(10, 5), pady=(pady_top, pady_bot), sticky="w")
-            ToolTip(lbl_t, tooltip, small=True)
-            self._tracked_widgets.append(lbl_t)
+            self.env_labels[f"{key}_tooltip"] = ToolTip(lbl_t, tooltip, small=True)
+            self.env_labels[f"{key}_title"] = lbl_t
             
             lbl_v = ctk.CTkLabel(self.env_box, text="-", font=Theme.fonts.BODY, text_color=Theme.TEXT_MAIN.value)
             lbl_v.grid(row=row, column=col+1, padx=(0, 10), pady=(pady_top, pady_bot), sticky="w")
             self.env_labels[key] = lbl_v
 
         # Mission Constraints label
-        lbl = ctk.CTkLabel(
+        self.lbl_mission_constraints = ctk.CTkLabel(
             self.mission_scroll, 
             text="Mission Constraints:", 
             font=Theme.fonts.BODY_BOLD, 
             text_color=Theme.TEXT_MAIN.value
         )
-        lbl.pack(anchor="w", padx=5, pady=(5, 0))
-        self._tracked_widgets.append(lbl)
+        self.lbl_mission_constraints.pack(anchor="w", padx=5, pady=(5, 0))
         
         # Regular frame (since parent is already scrollable, avoiding nested scrollbars)
         self.constraints_scroll = ctk.CTkFrame(
@@ -287,9 +287,8 @@ class ConsolePanel(ctk.CTkFrame):
         # TAB 1: PHYSICAL SPECS
         # ==========================================
         # Designer Name
-        lbl = ctk.CTkLabel(p_tab, text="User Name", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value)
-        lbl.pack(anchor="w", padx=5, pady=(2, 0))
-        self._tracked_widgets.append(lbl)
+        self.lbl_user_name = ctk.CTkLabel(p_tab, text="User Name", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value)
+        self.lbl_user_name.pack(anchor="w", padx=5, pady=(2, 0))
         self.ent_name = ctk.CTkEntry(
             p_tab, 
             placeholder_text = "Forename Surname",
@@ -302,7 +301,8 @@ class ConsolePanel(ctk.CTkFrame):
         self.ent_name.pack(fill="x", padx=5, pady=(0, 2))
 
         # SSN Field
-        ctk.CTkLabel(p_tab, text="SSN", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value).pack(anchor="w", padx=5, pady=(2, 0))
+        self.lbl_ssn = ctk.CTkLabel(p_tab, text="SSN", font=Theme.fonts.BODY, text_color=Theme.TEXT_MUTED.value)
+        self.lbl_ssn.pack(anchor="w", padx=5, pady=(2, 0))
         self.ent_ssn = ctk.CTkEntry(
             p_tab, 
             placeholder_text = "YYYYMMDDXXXX",
@@ -334,14 +334,13 @@ class ConsolePanel(ctk.CTkFrame):
         )
         self.tower_box.pack(fill="x", padx=5, pady=(2, 5))
 
-        lbl = ctk.CTkLabel(
+        self.lbl_tower_geometry = ctk.CTkLabel(
             self.tower_box, 
             text="TOWER GEOMETRY", 
             font=Theme.fonts.HEADER, 
             text_color=Theme.ACCENT.value
         )
-        lbl.pack(anchor="w", padx=10, pady=(4, 2))
-        self._tracked_widgets.append(lbl)
+        self.lbl_tower_geometry.pack(anchor="w", padx=10, pady=(4, 2))
 
         tower_sliders = [
             ("height", "Hub Height: {value:.1f} m", self.height_var, 40, 160, 120, "Height from ground/sea level to the rotor hub."),
@@ -372,19 +371,17 @@ class ConsolePanel(ctk.CTkFrame):
         # ==========================================
         # TAB 2: DRIVETRAIN
         # ==========================================
-        lbl = ctk.CTkLabel(
+        self.lbl_power_conversion = ctk.CTkLabel(
             d_tab, 
             text="POWER CONVERSION SYSTEM", 
             font=Theme.fonts.HEADER, 
             text_color=Theme.TEXT_MUTED.value
         )
-        lbl.pack(anchor="w", padx=5, pady=(10, 5))
-        self._tracked_widgets.append(lbl)
+        self.lbl_power_conversion.pack(anchor="w", padx=5, pady=(10, 5))
 
-        lbl = ctk.CTkLabel(d_tab, text="Gearbox Technology", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
-        lbl.pack(anchor="w", padx=5, pady=(10, 2))
-        ToolTip(lbl, "Select the type of mechanical gearbox to step up rotational speed from the rotor to the generator.", small=True)
-        self._tracked_widgets.append(lbl)
+        self.lbl_gearbox = ctk.CTkLabel(d_tab, text="Gearbox Technology", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
+        self.lbl_gearbox.pack(anchor="w", padx=5, pady=(10, 2))
+        self.tooltip_gearbox = ToolTip(self.lbl_gearbox, "Select the type of mechanical gearbox to step up rotational speed from the rotor to the generator.", small=True)
         self.combo_gearbox = ctk.CTkOptionMenu(
             d_tab, 
             values=["None (Direct Drive)", "Medium-Speed", "High-Speed"],
@@ -397,10 +394,9 @@ class ConsolePanel(ctk.CTkFrame):
         )
         self.combo_gearbox.pack(fill="x", padx=5, pady=(0, 15))
 
-        lbl = ctk.CTkLabel(d_tab, text="Generator Type", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
-        lbl.pack(anchor="w", padx=5, pady=(10, 2))
-        ToolTip(lbl, "Select the electrical generator technology used to convert mechanical power into electrical power.", small=True)
-        self._tracked_widgets.append(lbl)
+        self.lbl_generator = ctk.CTkLabel(d_tab, text="Generator Type", font=Theme.fonts.BODY_BOLD, text_color=Theme.TEXT_MAIN.value)
+        self.lbl_generator.pack(anchor="w", padx=5, pady=(10, 2))
+        self.tooltip_generator = ToolTip(self.lbl_generator, "Select the electrical generator technology used to convert mechanical power into electrical power.", small=True)
         self.combo_generator = ctk.CTkOptionMenu(
             d_tab, 
             values=["Synchronous", "Asynchronous", "DFIG"],
@@ -499,7 +495,12 @@ class ConsolePanel(ctk.CTkFrame):
         """
         Update the informational description text for the selected drivetrain options.
         """
-        self.info_drivetrain.set_text(self.turbine.generator_gearbox_description)
+        if getattr(self, 'lang_manager', None):
+            key = f"drivetrain_{self.turbine.gearbox.name}_{self.turbine.generator.name}"
+            desc = self.lang_manager.get(f"descriptions.{key}", self.turbine.generator_gearbox_description)
+        else:
+            desc = self.turbine.generator_gearbox_description
+        self.info_drivetrain.set_text(desc)
 
     def update_env_view(self):
         """
@@ -520,7 +521,11 @@ class ConsolePanel(ctk.CTkFrame):
             wind_hub = 0.0
 
         # Update environment labels in the compact grid
-        site_type = "Offshore" if env.is_offshore else "Onshore"
+        
+        val_offshore = self.lang_manager.get("console.val_offshore", "Offshore") if getattr(self, 'lang_manager', None) else "Offshore"
+        val_onshore = self.lang_manager.get("console.val_onshore", "Onshore") if getattr(self, 'lang_manager', None) else "Onshore"
+        
+        site_type = val_offshore if env.is_offshore else val_onshore
         self.env_labels["site"].configure(text=f"{site_type}")
         
         self.env_labels["price"].configure(
@@ -529,8 +534,10 @@ class ConsolePanel(ctk.CTkFrame):
         self.env_labels["wind"].configure(
             text=f"{env.avg_wind_10:.1f} m/s" if env.avg_wind_10 else "- m/s"
         )
+        
+        val_years_template = self.lang_manager.get("console.val_years", "{value} years") if getattr(self, 'lang_manager', None) else "{value} years"
         self.env_labels["lifetime"].configure(
-            text=f"{self.turbine.lifetime} years"
+            text=val_years_template.format(value=self.turbine.lifetime)
         )
         self.env_labels["gust"].configure(
             text=f"{env.survival_gust:.1f} m/s" if env.survival_gust else "- m/s"
@@ -551,7 +558,14 @@ class ConsolePanel(ctk.CTkFrame):
         """
         self.mission_menu.set(mission.name)
 
-        self.info_mission.set_text(mission.description)
+        if getattr(self, 'lang_manager', None):
+            # Mission name mapping e.g., "The Arctic Gale" -> "the_arctic_gale"
+            key = f"mission_{mission.name.lower().replace(' ', '_')}"
+            desc = self.lang_manager.get(f"descriptions.{key}", mission.description)
+        else:
+            desc = mission.description
+            
+        self.info_mission.set_text(desc)
 
         # Update the environment view for the current active mission
         self.update_env_view()
@@ -561,15 +575,14 @@ class ConsolePanel(ctk.CTkFrame):
             child.destroy()
 
         if not mission.constraints:
-            lbl = ctk.CTkLabel(
+            self.lbl_no_constraints = ctk.CTkLabel(
                 self.constraints_scroll,
-                text="No constraints for Sandbox mode.\nExplore parameters freely!",
+                text=self.lang_manager.get("console.lbl_no_constraints", "No constraints for Sandbox mode.\nExplore parameters freely!") if self.lang_manager else "No constraints for Sandbox mode.\nExplore parameters freely!",
                 font=Theme.fonts.BODY,
                 text_color=Theme.TEXT_MUTED.value,
                 justify="center"
             )
-            lbl.pack(pady=20, fill="x")
-            self._tracked_widgets.append(lbl)
+            self.lbl_no_constraints.pack(pady=20, fill="x")
             return
 
         if report is None:
@@ -615,3 +628,68 @@ class ConsolePanel(ctk.CTkFrame):
         
         for slider in self.sliders.values():
             slider.configure_slider(state=state)
+    def update_language(self):
+        if not self.lang_manager:
+            return
+            
+        self.lbl_title.configure(text=self.lang_manager.get("console.title"))
+        self.lbl_select_mission.configure(text=self.lang_manager.get("console.lbl_select_mission"))
+        self.tooltip_select_mission.update_text(self.lang_manager.get("tooltips.select_mission"))
+        self.info_mission.lbl_title.configure(text=self.lang_manager.get("console.lbl_mission_desc"))
+        self.lbl_mission_constraints.configure(text=self.lang_manager.get("console.lbl_mission_constraints"))
+        
+        # update tabs
+        if hasattr(self.tabs, "_segmented_button") and hasattr(self.tabs._segmented_button, "_buttons_dict"):
+            bdict = self.tabs._segmented_button._buttons_dict
+            if "Mission" in bdict: bdict["Mission"].configure(text=self.lang_manager.get("tabs.mission", "Mission"))
+            if "Physical Specs" in bdict: bdict["Physical Specs"].configure(text=self.lang_manager.get("tabs.physical_specs", "Physical Specs"))
+            if "Drivetrain" in bdict: bdict["Drivetrain"].configure(text=self.lang_manager.get("tabs.drivetrain", "Drivetrain"))
+
+        # Update environment labels & tooltips
+        env_keys = ["site", "price", "wind", "lifetime", "gust", "downtime", "roughness", "weibull"]
+        env_toml_keys = ["lbl_site_type", "lbl_elec_price", "lbl_wind", "lbl_lifetime", "lbl_gust", "lbl_downtime", "lbl_roughness", "lbl_weibull"]
+        for k, tk_ in zip(env_keys, env_toml_keys):
+            if f"{k}_title" in self.env_labels:
+                self.env_labels[f"{k}_title"].configure(text=self.lang_manager.get(f"console.{tk_}"))
+            if f"{k}_tooltip" in self.env_labels:
+                t_key = "site_type" if k=="site" else ("elec_price" if k=="price" else k)
+                self.env_labels[f"{k}_tooltip"].update_text(self.lang_manager.get(f"tooltips.{t_key}"))
+
+        self.lbl_user_name.configure(text=self.lang_manager.get("console.lbl_user_name"))
+        self.ent_name.configure(placeholder_text=self.lang_manager.get("console.placeholder_user_name"))
+        self.lbl_ssn.configure(text=self.lang_manager.get("console.lbl_ssn"))
+        self.ent_ssn.configure(placeholder_text=self.lang_manager.get("console.placeholder_ssn"))
+        
+        self.lbl_tower_geometry.configure(text=self.lang_manager.get("console.lbl_tower_geometry"))
+        
+        self.btn_simulate.configure(text=self.lang_manager.get("console.btn_simulate"))
+        
+        self.lbl_power_conversion.configure(text=self.lang_manager.get("console.lbl_power_conversion"))
+        self.lbl_gearbox.configure(text=self.lang_manager.get("console.lbl_gearbox"))
+        self.tooltip_gearbox.update_text(self.lang_manager.get("tooltips.gearbox"))
+        self.lbl_generator.configure(text=self.lang_manager.get("console.lbl_generator"))
+        self.tooltip_generator.update_text(self.lang_manager.get("tooltips.generator"))
+        self.info_drivetrain.lbl_title.configure(text=self.lang_manager.get("console.lbl_drivetrain_desc"))
+        
+        # update sliders
+        s_keys = ["rotor_diameter", "solidity", "height", "top_diam", "bottom_diam", "wall_thickness"]
+        s_toml = ["slider_rotor_diameter", "slider_solidity", "slider_hub_height", "slider_top_diam", "slider_bottom_diam", "slider_wall_thickness"]
+        s_tt = ["rotor_diameter", "solidity", "hub_height", "top_diam", "bottom_diam", "wall_thickness"]
+        for k, tm, tt in zip(s_keys, s_toml, s_tt):
+            if k in self.sliders:
+                self.sliders[k].update_label_template(self.lang_manager.get(f"console.{tm}"))
+                self.sliders[k].update_tooltip(self.lang_manager.get(f"tooltips.{tt}"))
+
+        if hasattr(self, "lbl_no_constraints"):
+            self.lbl_no_constraints.configure(text=self.lang_manager.get("console.lbl_no_constraints", "No constraints for Sandbox mode.\nExplore parameters freely!"))
+            
+        self.update_env_view()
+        self.update_drivetrain_desc()
+        
+        # Update active mission description
+        mission_name = self.mission_menu.get()
+        if mission_name:
+            key = f"mission_{mission_name.lower().replace(' ', '_')}"
+            desc = self.lang_manager.get(f"descriptions.{key}")
+            if desc and not desc.startswith("descriptions."):
+                self.info_mission.set_text(desc)

@@ -2,7 +2,9 @@
 import os
 import customtkinter as ctk
 import tkinter as tk
+from PIL import Image
 from wec_visualisation.models.turbine import WindTurbine, Generator, Gearbox
+from wec_visualisation.gui.language import LanguageManager
 from wec_visualisation.models.environment import SiteEnvironment, DefaultEnvironments, SSNGenerator
 from wec_visualisation.models.simulation import SimulationEngine
 from wec_visualisation.models.simulation import PresetConfigurations
@@ -14,39 +16,13 @@ from wec_visualisation.gui.theme import Theme
 from wec_visualisation.gui.components import ToolTip
 
 
-def load_scale_factor():
-    try:
-        dir_path = os.path.dirname(os.path.abspath(__file__))
-        scale_path = os.path.join(dir_path, "scale.txt")
-        if not os.path.exists(scale_path):
-            scale_path = os.path.join(dir_path, "..", "Code", "prototypes", "scale.txt")
-        if os.path.exists(scale_path):
-            with open(scale_path, "r") as f:
-                return float(f.read().strip())
-    except Exception:
-        pass
-        
-    import platform
-    if platform.system() == "Linux":
-        try:
-            import tkinter as tk
-            temp_root = tk.Tk()
-            temp_root.withdraw()
-            dpi = temp_root.winfo_fpixels('1i')
-            temp_root.destroy()
-            scale = dpi / 96.0
-            return max(1.0, min(scale, 3.0))
-        except Exception:
-            pass
-
-    return 1.0  # Fallback to 1.0 and let OS native scaling handle it
 
 class UnifiedSimulatorApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
         # --- SCALING & LOOK SETUP ---
-        self.scale_factor = load_scale_factor()
+        self.scale_factor = 2
         ctk.set_widget_scaling(self.scale_factor)
         ctk.set_window_scaling(self.scale_factor)
         
@@ -63,6 +39,9 @@ class UnifiedSimulatorApp(ctk.CTk):
         ctk.set_appearance_mode("system")
 
         # --- STATE INITIALIZATION ---
+        self.language_var = ctk.StringVar(value="english")
+        self.lang_manager = LanguageManager(default_lang="english")
+        
         self.turbine = WindTurbine(
             rotor_diameter=95.0, 
             height=105.0, 
@@ -105,19 +84,22 @@ class UnifiedSimulatorApp(ctk.CTk):
             on_change_callback=self.on_inputs_changed,
             on_ssn_callback=self.on_ssn_changed,
             on_mission_change_callback=self.on_mission_change,
-            on_simulate_callback=self.run_simulation
+            on_simulate_callback=self.run_simulation,
+            lang_manager=self.lang_manager
         )
         self.paned_window.add(self.console, minsize=380, stretch="never")
 
         self.cad_canvas = CADCanvas(
             self.paned_window, 
-            self.turbine
+            self.turbine,
+            lang_manager=self.lang_manager
         )
         self.paned_window.add(self.cad_canvas, minsize=400, stretch="always")
 
         self.analytics = AnalyticsPanel(
             self.paned_window,
-            on_simulate_click=self.run_simulation
+            on_simulate_click=self.run_simulation,
+            lang_manager=self.lang_manager
         )
         self.paned_window.add(self.analytics, minsize=420, stretch="never")
 
@@ -145,14 +127,15 @@ class UnifiedSimulatorApp(ctk.CTk):
         mission_text_frame = ctk.CTkFrame(left_header, fg_color="transparent")
         mission_text_frame.pack(side="left")
         
-        ctk.CTkLabel(
+        self.lbl_active_mission_title = ctk.CTkLabel(
             mission_text_frame, 
             text="ACTIVE MISSION", 
             font=Theme.fonts.HEADER, 
             text_color=Theme.TEXT_MUTED.value,
             padx=0,
             height=12
-        ).pack(anchor="w")
+        )
+        self.lbl_active_mission_title.pack(anchor="w")
         
         self.lbl_active_mission = ctk.CTkLabel(
             mission_text_frame, 
@@ -172,7 +155,8 @@ class UnifiedSimulatorApp(ctk.CTk):
         # UI Scaling Dropdown
         scale_frame = ctk.CTkFrame(right_header, fg_color="transparent")
         scale_frame.pack(side="left", padx=(0, 15))
-        ctk.CTkLabel(scale_frame, text="ZOOM", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value).pack(anchor="w")
+        self.lbl_zoom = ctk.CTkLabel(scale_frame, text="ZOOM", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value)
+        self.lbl_zoom.pack(anchor="w")
         self.scale_menu = ctk.CTkOptionMenu(
             scale_frame,
             values=["75%", "100%", "125%", "150%", "200%", "250%", "300%"],
@@ -195,7 +179,8 @@ class UnifiedSimulatorApp(ctk.CTk):
         # Theme Selector Dropdown
         theme_frame = ctk.CTkFrame(right_header, fg_color="transparent")
         theme_frame.pack(side="left", padx=(0, 15))
-        ctk.CTkLabel(theme_frame, text="THEME", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value).pack(anchor="w")
+        self.lbl_theme = ctk.CTkLabel(theme_frame, text="THEME", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value)
+        self.lbl_theme.pack(anchor="w")
         self.theme_menu = ctk.CTkOptionMenu(
             theme_frame,
             values=["Dark", "Light", "System"],
@@ -211,13 +196,41 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.theme_menu.pack(anchor="w")
         self.theme_menu.set("System")
 
+        # Language Toggle
+        lang_frame = ctk.CTkFrame(right_header, fg_color="transparent")
+        lang_frame.pack(side="left", padx=(0, 15))
+        self.lbl_lang = ctk.CTkLabel(lang_frame, text="LANG", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value)
+        self.lbl_lang.pack(anchor="w")
+        
+        flag_name = self.lang_manager.get("flag_icon")
+        if flag_name:
+            icon_path = self.lang_manager.get_asset_path(os.path.join("assets", "icons", str(flag_name)))
+            self.current_flag_img = ctk.CTkImage(
+                light_image=Image.open(icon_path),
+                size=(16, 16)
+            )
+        else:
+            self.current_flag_img = None
+
+        self.btn_language = ctk.CTkButton(
+            lang_frame,
+            text="",
+            image=self.current_flag_img,
+            command=self.toggle_language,
+            width=30,
+            height=24,
+            fg_color=Theme.BG_INPUT.value,
+            hover_color=Theme.BUTTON_HOVER.value,
+        )
+        self.btn_language.pack(anchor="w")
+
         # 1. R&D Runs Remaining Scorecard
         self.runs_card = ctk.CTkFrame(right_header, fg_color=Theme.BG_INPUT.value, width=140, height=60, border_width=1, border_color=Theme.BORDER.value)
         self.runs_card.pack(side="left", padx=5)
         self.runs_card.pack_propagate(False)
-        lbl_runs_title = ctk.CTkLabel(self.runs_card, text="R&D RUNS REMAINING", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=14, pady=0, padx=0)
-        lbl_runs_title.pack(pady=(10, 2))
-        ToolTip(lbl_runs_title, "Number of simulation attempts left to successfully meet all mission constraints.", small=True)
+        self.lbl_runs_title = ctk.CTkLabel(self.runs_card, text="R&D RUNS REMAINING", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=14, pady=0, padx=0)
+        self.lbl_runs_title.pack(pady=(10, 2))
+        self.runs_tooltip = ToolTip(self.lbl_runs_title, "Number of simulation attempts left to successfully meet all mission constraints.", small=True)
         self.lbl_runs = ctk.CTkLabel(self.runs_card, text="∞ / ∞", font=Theme.fonts.TITLE, text_color=Theme.SUCCESS.value, height=22, pady=0, padx=0)
         self.lbl_runs.pack(pady=(0, 10))
 
@@ -225,7 +238,8 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.constraints_card = ctk.CTkFrame(right_header, fg_color=Theme.BG_INPUT.value, width=140, height=60, border_width=1, border_color=Theme.BORDER.value)
         self.constraints_card.pack(side="left", padx=5)
         self.constraints_card.pack_propagate(False)
-        ctk.CTkLabel(self.constraints_card, text="CONSTRAINTS MET", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=14, pady=0, padx=0).pack(pady=(10, 2))
+        self.lbl_constraints_title = ctk.CTkLabel(self.constraints_card, text="CONSTRAINTS MET", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=14, pady=0, padx=0)
+        self.lbl_constraints_title.pack(pady=(10, 2))
         self.lbl_constraints_met = ctk.CTkLabel(self.constraints_card, text="N/A", font=Theme.fonts.TITLE, text_color=Theme.TEXT_MUTED.value, height=22, pady=0, padx=0)
         self.lbl_constraints_met.pack(pady=(0, 10))
 
@@ -233,11 +247,64 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.profit_card = ctk.CTkFrame(right_header, fg_color=Theme.BG_INPUT.value, width=140, height=60, border_width=1, border_color=Theme.BORDER.value)
         self.profit_card.pack(side="left", padx=5)
         self.profit_card.pack_propagate(False)
-        ctk.CTkLabel(self.profit_card, text="LIFETIME PROFIT", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=14, pady=0, padx=0).pack(pady=(10, 2))
+        self.lbl_profit_title = ctk.CTkLabel(self.profit_card, text="LIFETIME PROFIT", font=Theme.fonts.HEADER, text_color=Theme.TEXT_MUTED.value, height=14, pady=0, padx=0)
+        self.lbl_profit_title.pack(pady=(10, 2))
         self.lbl_profit = ctk.CTkLabel(self.profit_card, text="- k€", font=Theme.fonts.TITLE, text_color=Theme.TEXT_MUTED.value, height=22, pady=0, padx=0)
         self.lbl_profit.pack(pady=(0, 10))
 
 
+
+    def toggle_language(self):
+        if self.language_var.get() == "english":
+            self.language_var.set("swedish")
+            self.lang_manager.load_language("swedish")
+        else:
+            self.language_var.set("english")
+            self.lang_manager.load_language("english")
+        self.update_language()
+
+    def update_flag_button(self):
+        flag_name = self.lang_manager.get("flag_icon")
+        if flag_name:
+            icon_path = self.lang_manager.get_asset_path(os.path.join("assets", "icons", str(flag_name)))
+            self.current_flag_img = ctk.CTkImage(
+                light_image=Image.open(icon_path),
+                size=(16, 16)
+            )
+            self.btn_language.configure(image=self.current_flag_img)
+
+    def update_language(self):
+        self.update_flag_button()
+        
+        # Update header labels
+        self.lbl_active_mission_title.configure(text=self.lang_manager.get("header.lbl_active_mission"))
+        self.lbl_zoom.configure(text=self.lang_manager.get("header.lbl_zoom"))
+        self.lbl_theme.configure(text=self.lang_manager.get("header.lbl_theme"))
+        self.lbl_lang.configure(text=self.lang_manager.get("header.lbl_lang"))
+        
+        self.lbl_runs_title.configure(text=self.lang_manager.get("header.lbl_runs"))
+        if hasattr(self, 'runs_tooltip'):
+            self.runs_tooltip.update_text(self.lang_manager.get("tooltips.runs", "Number of simulation attempts left to successfully meet all mission constraints."))
+            
+        self.lbl_constraints_title.configure(text=self.lang_manager.get("header.lbl_constraints"))
+        self.lbl_profit_title.configure(text=self.lang_manager.get("header.lbl_profit"))
+        
+        # Update Theme Dropdown Option values
+        themes = self.lang_manager.get("themes", {})
+        if isinstance(themes, dict):
+            self.theme_menu.configure(values=[str(themes.get(k, k)) for k in ["Dark", "Light", "System"]])
+            self._current_theme_eng = getattr(self, '_current_theme_eng', "System")
+            self.theme_menu.set(str(themes.get(self._current_theme_eng, self._current_theme_eng)))
+            
+        # Propagate to console
+        if hasattr(self, "console"):
+            self.console.update_language()
+            
+        if hasattr(self, "cad_canvas"):
+            self.cad_canvas.update_language()
+            
+        if hasattr(self, "analytics"):
+            self.analytics.update_language()
 
     # ==========================================
     # CONTROLLER EVENT HANDLING
@@ -292,7 +359,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.apply_scale(new_scale)
         
     def reset_scale(self):
-        self.apply_scale(load_scale_factor())
+        self.apply_scale(2)
 
     def on_mousewheel_scale(self, event):
         if event.delta > 0:

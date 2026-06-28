@@ -7,7 +7,7 @@ from wec_visualisation.models.turbine import WindTurbine
 from wec_visualisation.gui.theme import Theme
 
 class CADCanvas(ctk.CTkFrame):
-    def __init__(self, parent, turbine: WindTurbine):
+    def __init__(self, parent, turbine: WindTurbine, lang_manager=None):
         super().__init__(
             parent, 
             fg_color=Theme.BG_SURFACE.value, 
@@ -15,6 +15,7 @@ class CADCanvas(ctk.CTkFrame):
             border_color=Theme.BORDER.value
         )
         self.turbine = turbine
+        self.lang_manager = lang_manager
         self.blade_angle = 0.0
         self.animation_running = True
         self.is_unsafe = False
@@ -230,3 +231,8 @@ class CADCanvas(ctk.CTkFrame):
 
     def set_animation(self, running: bool):
         self.animation_running = running
+
+    def update_language(self):
+        if not self.lang_manager:
+            return
+        self.lbl_title.configure(text=self.lang_manager.get("canvas.title", "LIVE BLUEPRINT"))
