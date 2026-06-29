@@ -161,3 +161,21 @@ irr_lbl = "Internränta (IRR)"
 irr_tooltip = "Annualiserad effektiv sammansatt avkastningsränta."
 margin_lbl = "Livstidsvinstmarginal"
 margin_tooltip = "Total lönsamhetskvot över turbinens livslängd."
+
+[export]
+no_results = "Inga simuleringsresultat att exportera. Vänligen kör en simulering först."
+success = "Resultaten exporterades framgångsrikt till"
+failed = "Misslyckades att exportera:"
+
+[dialog]
+invalid_ssn_title = "Ogiltigt personnummer"
+invalid_ssn_msg = "Du måste ange ett giltigt 12-siffrigt personnummer innan du kan köra en simulering."
+out_of_budget_title = "FoU-budget överskriden"
+out_of_budget_msg = "Du har använt alla 6 simuleringskörningar för detta uppdrag.\nVänligen välj ett nytt uppdrag eller starta om."
+mission_success_title = "Uppdrag slutfört!"
+mission_success_msg = "Grattis! Du har framgångsrikt designat ett vindkraftverk som uppfyller alla krav.\n\n"
+mission_failed_title = "Uppdrag misslyckades"
+mission_failed_msg = "Du fick slut på simuleringsförsök utan att uppfylla kraven.\n\n"
+tip_arctic = "TIPS: De böjande stormkrafterna är för höga. Prova att minska rotorsoliditeten eller rotordiametern för att minska vindens träffyta och belastning."
+tip_breeze = "TIPS: För att öka effekten vid låga vindhastigheter behöver du en större rotordiameter. För att hålla dig inom budget, håll navhöjden låg och välj en kostnadseffektiv drivlina."
+tip_community = "TIPS: För att hålla strukturen säker på land, undvik extrema höjder och stora rotordiametrar. Optimera rotordiametern något för maximal inkomst vid låga stormbelastningar."

@@ -161,3 +161,21 @@ irr_lbl = "Internal Rate of Return (IRR)"
 irr_tooltip = "Annualized effective compounded return rate."
 margin_lbl = "Lifetime Profit Margin"
 margin_tooltip = "Overall profitability ratio over the turbine's lifetime."
+
+[export]
+no_results = "No simulation results to export. Please run a simulation first."
+success = "Results exported successfully to"
+failed = "Failed to Export:"
+
+[dialog]
+invalid_ssn_title = "Invalid SSN"
+invalid_ssn_msg = "You must enter a valid 12-digit SSN before running a simulation."
+out_of_budget_title = "Out of R&D Budget"
+out_of_budget_msg = "You have used all 6 simulation runs for this mission.\nPlease select a new mission or restart."
+mission_success_title = "Mission Accomplished!"
+mission_success_msg = "Congratulations! You successfully designed a WEC that meets all criteria.\n\n"
+mission_failed_title = "Mission Failed"
+mission_failed_msg = "You ran out of simulation runs without meeting the criteria.\n\n"
+tip_arctic = "TIP: The storm bending moments are too high. Try reducing Rotor Solidity or Rotor Diameter to decrease wind surface area and load."
+tip_breeze = "TIP: To increase power in low-wind regimes, you need a larger Rotor Diameter. To stay under budget, keep the Hub Height compact and choose a cost-effective Drivetrain."
+tip_community = "TIP: To keep structure safe onshore, avoid extreme heights and large rotor diameters. Optimize rotor diameter slightly for maximum revenue at low storm loads."

@@ -271,11 +271,13 @@ class ToolTip:
 
 class ToastNotification:
     """
-    A transient tooltip-style notification that appears centered and auto-hides.
+    A unified, modern, borderless notification/dialog box.
+    If duration is > 0, it auto-hides. If duration=0, it shows a Close button and acts as a modal dialog.
     """
-    def __init__(self, parent, text: str, is_err: bool = False, duration: int = 3000):
+    def __init__(self, parent, text: str, title: str = "", is_err: bool = False, duration: int = 3000):
         self.parent = parent
         self.text = text
+        self.title_text = title
         self.duration = duration
         self.is_err = is_err
         
@@ -283,31 +285,65 @@ class ToastNotification:
         self.window.wm_overrideredirect(True)
         self.window.attributes("-topmost", True)
         
+        if duration == 0:
+            self.window.transient(parent)
+            self.window.after(100, self.window.focus_set)
+            self.window.after(150, self.window.grab_set)
+        
         # Border color based on status
         border_color = Theme.DANGER.value if is_err else Theme.SUCCESS.value
         
         frame = ctk.CTkFrame(self.window, fg_color=Theme.BOX_BG.value, corner_radius=8, border_width=2, border_color=border_color)
         frame.pack(fill="both", expand=True)
         
+        if self.title_text:
+            title_color = Theme.DANGER.value if is_err else Theme.SUCCESS.value
+            lbl_title = ctk.CTkLabel(frame, text=self.title_text.upper(), font=Theme.fonts.SUBTITLE, text_color=title_color)
+            lbl_title.pack(padx=20, pady=(15, 5))
+            
         label = ctk.CTkLabel(
             frame, 
             text=self.text, 
             justify='center',
             text_color=Theme.TEXT_MAIN.value,
-            font=Theme.fonts.BODY_BOLD,
+            font=Theme.fonts.BODY_BOLD if not self.title_text else Theme.fonts.BODY,
             wraplength=350
         )
-        label.pack(padx=20, pady=15)
+        label.pack(padx=20, pady=(15 if not self.title_text else 5, 15))
         
-        # Position in center of parent window
-        self.window.update_idletasks()
-        w = self.window.winfo_reqwidth()
-        h = self.window.winfo_reqheight()
+        if duration == 0:
+            btn = ctk.CTkButton(
+                frame, 
+                text="Close", 
+                width=100, 
+                height=28, 
+                fg_color="transparent", 
+                border_width=1,
+                border_color=Theme.BORDER.value, 
+                text_color=Theme.TEXT_MAIN.value,
+                hover_color=Theme.BUTTON_HOVER.value,
+                command=self.window.destroy
+            )
+            btn.pack(pady=(5, 15))
         
+        # Hide window while calculating geometry to avoid flicker
+        self.window.attributes("-alpha", 0.0)
+        self.window.update()
+        
+        w = self.window.winfo_width()
+        h = self.window.winfo_height()
+        
+        # Fallback if window hasn't drawn properly
+        if w <= 1:
+            w = self.window.winfo_reqwidth()
+        if h <= 1:
+            h = self.window.winfo_reqheight()
+            
         x = parent.winfo_rootx() + (parent.winfo_width() - w) // 2
         y = parent.winfo_rooty() + (parent.winfo_height() - h) // 2
         
         self.window.geometry(f"+{x}+{y}")
+        self.window.attributes("-alpha", 1.0)
         
-        # Add a fade out effect or just destroy
-        self.window.after(duration, self.window.destroy)
+        if duration > 0:
+            self.window.after(duration, self.window.destroy)

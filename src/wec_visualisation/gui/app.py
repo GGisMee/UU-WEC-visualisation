@@ -13,7 +13,7 @@ from wec_visualisation.gui.console import ConsolePanel
 from wec_visualisation.gui.canvas import CADCanvas
 from wec_visualisation.gui.analytics import AnalyticsPanel
 from wec_visualisation.gui.theme import Theme
-from wec_visualisation.gui.components import ToolTip
+from wec_visualisation.gui.components import ToolTip, ToastNotification
 
 
 
@@ -347,7 +347,17 @@ class UnifiedSimulatorApp(ctk.CTk):
 
     def on_theme_change(self, choice: str):
         """Called when appearance mode selection changes in dropdown."""
-        ctk.set_appearance_mode(choice.lower())
+        # Find english key since choice might be translated
+        themes = self.lang_manager.get("themes", {})
+        eng_choice = choice
+        if isinstance(themes, dict):
+            for k, v in themes.items():
+                if v == choice:
+                    eng_choice = k
+                    break
+        
+        self._current_theme_eng = eng_choice
+        ctk.set_appearance_mode(eng_choice.lower())
         # Let CustomTkinter propagate color updates before updating canvas drawings
         self.after(50, self.update_theme_drawings)
 
@@ -448,15 +458,17 @@ class UnifiedSimulatorApp(ctk.CTk):
     def run_simulation(self):
         ssn = self.console.ssn_var.get()
         if not SSNGenerator.validate(ssn):
-            self.show_dialog("Invalid SSN", "You must enter a valid 12-digit SSN before running a simulation.", is_err=True)
+            ToastNotification(self, str(self.lang_manager.get("dialog.invalid_ssn_msg")), title=str(self.lang_manager.get("dialog.invalid_ssn_title")), is_err=True, duration=0)
             return
 
         # Check budget runs remaining
         if self.runs_remaining is not None and self.runs_remaining <= 0:
-            self.show_dialog(
-                "Out of R&D Budget", 
-                "You have used all 6 simulation runs for this mission.\nPlease select a new mission or restart.", 
-                is_err=True
+            ToastNotification(
+                self, 
+                str(self.lang_manager.get("dialog.out_of_budget_msg")),
+                title=str(self.lang_manager.get("dialog.out_of_budget_title")), 
+                is_err=True,
+                duration=0
             )
             return
 
@@ -520,62 +532,28 @@ class UnifiedSimulatorApp(ctk.CTk):
 
         if report.success:
             details = "\n".join([f"• {e.actual_value_text}" for e in report.evaluations])
-            self.show_dialog(
-                "Mission Accomplished!", 
-                f"Congratulations! You successfully designed a WEC that meets all criteria.\n\n"
-                f"{details}"
-            )
+            ToastNotification(self, f"{self.lang_manager.get('dialog.mission_success_msg')}{details}", title=str(self.lang_manager.get("dialog.mission_success_title")), duration=0)
         elif self.runs_remaining == 0:
             tip = ""
             if self.active_mission.name == "The Arctic Gale":
-                tip = "TIP: The storm bending moments are too high. Try reducing Rotor Solidity or Rotor Diameter to decrease wind surface area and load."
+                tip = str(self.lang_manager.get("dialog.tip_arctic"))
             elif self.active_mission.name == "The Gentle Breeze":
-                tip = "TIP: To increase power in low-wind regimes, you need a larger Rotor Diameter. To stay under budget, keep the Hub Height compact and choose a cost-effective Drivetrain."
+                tip = str(self.lang_manager.get("dialog.tip_breeze"))
             elif self.active_mission.name == "The Community Cooperative":
-                tip = "TIP: To keep structure safe onshore, avoid extreme heights and large rotor diameters. Optimize rotor diameter slightly for maximum revenue at low storm loads."
+                tip = str(self.lang_manager.get("dialog.tip_community"))
                 
-            self.show_dialog(
-                "Mission Failed", 
-                f"You ran out of simulation runs without meeting the criteria.\n\n{tip}", 
-                is_err=True
+            ToastNotification(
+                self, 
+                f"{self.lang_manager.get('dialog.mission_failed_msg')}{tip}",
+                title=str(self.lang_manager.get("dialog.mission_failed_title")), 
+                is_err=True,
+                duration=0
             )
 
-    def show_dialog(self, title, message, is_err=False):
-        dialog = ctk.CTkToplevel(self)
-        dialog.title(title)
-        dialog.geometry("420x240")
-        dialog.configure(fg_color=Theme.BG_SURFACE.value)
-        
-        # Modal configuration
-        dialog.transient(self)
-        
-        # Delay grab_set and focus_set to prevent blank/white window bugs on some OS
-        dialog.after(100, dialog.focus_set)
-        dialog.after(150, dialog.grab_set)
-
-        title_color = Theme.DANGER.value if is_err else Theme.SUCCESS.value
-        ctk.CTkLabel(dialog, text=title.upper(), font=Theme.fonts.SUBTITLE, text_color=title_color).pack(pady=(15, 10))
-        
-        tb = ctk.CTkTextbox(dialog, fg_color="transparent", text_color=Theme.TEXT_MAIN.value, font=Theme.fonts.BODY, wrap="word", width=380, height=120)  # type: ignore
-        tb.pack(padx=15, pady=5)
-        tb.insert("0.0", message)
-        tb.configure(state="disabled")
-
-        ctk.CTkButton(
-            dialog, 
-            text="Close", 
-            width=120, 
-            height=28, 
-            fg_color=Theme.BUTTON_BG.value, 
-            text_color=Theme.TEXT_MAIN.value, 
-            hover_color=Theme.BUTTON_HOVER.value, 
-            command=dialog.destroy
-        ).pack(pady=(5, 15))
 
     def export_results(self):
-        from wec_visualisation.gui.components import ToastNotification
         if not self.last_sim_result:
-            ToastNotification(self, "No simulation results to export. Please run a simulation first.", is_err=True)
+            ToastNotification(self, str(self.lang_manager.get("export.no_results", "No simulation results to export. Please run a simulation first.")), is_err=True)
             return
 
         import tkinter.filedialog as fd
@@ -620,9 +598,9 @@ class UnifiedSimulatorApp(ctk.CTk):
             
         try:
             saver.save(path)
-            ToastNotification(self, f"Results exported successfully to\n{path}/simulation_results.zip", duration=4000)
+            ToastNotification(self, f"{self.lang_manager.get('export.success', 'Results exported successfully to')}\n{path}/simulation_results.zip", duration=4000)
         except Exception as e:
-            ToastNotification(self, f"Failed to Export:\n{str(e)}", is_err=True, duration=5000)
+            ToastNotification(self, f"{self.lang_manager.get('export.failed', 'Failed to Export:')}\n{str(e)}", is_err=True, duration=5000)
 
 if __name__ == "__main__":
     app = UnifiedSimulatorApp()
