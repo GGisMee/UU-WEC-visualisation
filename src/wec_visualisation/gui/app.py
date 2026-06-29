@@ -557,7 +557,7 @@ class UnifiedSimulatorApp(ctk.CTk):
             return
 
         import tkinter.filedialog as fd
-        from wec_visualisation.models.output import Saver
+        from wec_visualisation.models.export import Saver
         
         path = fd.askdirectory(title="Select Folder to Save Exported Results")
         if not path:
@@ -565,14 +565,64 @@ class UnifiedSimulatorApp(ctk.CTk):
 
         saver = Saver()
         
+        import datetime
+        now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        saver.toml.append("info.user_name", self.console.name_var.get())
+        saver.toml.append("info.ssn", self.console.ssn_var.get())
+        saver.toml.append("info.run_time", now_str)
+
         # 1. TOML
-        saver.toml.append("turbine.rotor_diameter", self.turbine.rotor_diameter)
-        saver.toml.append("turbine.height", self.turbine.height)
-        saver.toml.append("results.generated_energy", self.last_sim_result.generated_energy)
-        saver.toml.append("results.npv_profit", self.last_sim_result.npv_profit)
-        saver.toml.append("results.total_capex", self.last_sim_result.total_capex)
-        saver.toml.append("results.capacity_factor", self.last_sim_result.capacity_factor)
+        saver.toml.append("turbine.rotor_diameter", self.turbine.rotor_diameter, unit="m")
+        saver.toml.append("turbine.solidity", self.turbine.solidity, unit="%")
+        saver.toml.append("turbine.geometry.hub_height", self.turbine.height, unit="m")
+        saver.toml.append("turbine.geometry.top_diameter", self.turbine.top_diameter, unit="m")
+        saver.toml.append("turbine.geometry.base_diameter", self.turbine.bottom_diameter, unit="m")
+        saver.toml.append("turbine.geometry.wall_thickness", self.turbine.wall_thickness, unit="m")
+        saver.toml.append("turbine.gearbox", self.turbine.gearbox.value)
+        saver.toml.append("turbine.generator", self.turbine.generator.value)
+        saver.toml.append("turbine.lifetime", self.turbine.lifetime, unit="y")
         
+        saver.toml.append("mission.name", self.active_mission.name)
+        saver.toml.append("mission.environment.site_type", "offshore" if self.environment.is_offshore else "onshore")
+        saver.toml.append("mission.environment.avg_wind_10", self.environment.avg_wind_10, unit="m/s")
+        saver.toml.append("mission.environment.roughness", self.environment.roughness, unit="mm")
+        saver.toml.append("mission.environment.survival_gust", self.environment.survival_gust, unit="m/s")
+        saver.toml.append("mission.environment.k_factor", self.environment.k_factor)
+        saver.toml.append("mission.environment.electricity_price", self.environment.electricity_price, unit="€/MWh")
+        saver.toml.append("mission.environment.green_certificate", self.environment.green_certificate, unit="€/MWh")
+        saver.toml.append("mission.environment.inflation", self.environment.inflation, unit="%")
+        saver.toml.append("mission.environment.interest", self.environment.interest, unit="%")
+
+        saver.toml.append("results.generated_energy", self.last_sim_result.generated_energy, unit="MWh")
+        saver.toml.append("results.npv_profit", self.last_sim_result.npv_profit, unit="k€")
+        saver.toml.append("results.total_capex", self.last_sim_result.total_capex, unit="k€")
+        saver.toml.append("results.capacity_factor", self.last_sim_result.capacity_factor, unit="%")
+        
+        # Additional Wind & Power Results
+        saver.toml.append("results.wind_nacelle", self.last_sim_result.wind_nacelle, unit="m/s")
+        saver.toml.append("results.weibull_C", self.last_sim_result.weibull_C)
+        saver.toml.append("results.weibull_k", self.last_sim_result.weibull_k)
+        saver.toml.append("results.rated_wind_speed", self.last_sim_result.rated_wind_speed, unit="m/s")
+        saver.toml.append("results.cut_in_speed", self.last_sim_result.cut_in_speed, unit="m/s")
+        saver.toml.append("results.cut_out_speed", self.last_sim_result.cut_out_speed, unit="m/s")
+        saver.toml.append("results.rated_power", self.last_sim_result.rated_power, unit="kW")
+        
+        # Forces & Structural Integrity
+        saver.toml.append("results.aerodynamical_load", self.last_sim_result.aerodynamical_load, unit="kN")
+        saver.toml.append("results.storm_load", self.last_sim_result.storm_load, unit="kN")
+        saver.toml.append("results.slenderness_ratio", self.last_sim_result.slenderness_ratio)
+        saver.toml.append("results.breaking_utilization", self.last_sim_result.breaking_utilization)
+        saver.toml.append("results.buckling_utilization", self.last_sim_result.buckling_utilization)
+        saver.toml.append("results.rna_mass", self.last_sim_result.rna_mass, unit="kg")
+        
+        # Financial Report
+        saver.toml.append("results.annual_opex", self.last_sim_result.annual_opex, unit="k€/y")
+        saver.toml.append("results.annual_revenue", self.last_sim_result.annual_revenue, unit="k€/y")
+        saver.toml.append("results.IRR", self.last_sim_result.IRR, unit="%")
+        saver.toml.append("results.margin", self.last_sim_result.margin, unit="%")
+        saver.toml.append("results.payback_years", self.last_sim_result.payback_years, unit="y")
+        for key, val in self.last_sim_result.capex_components.items():
+            saver.toml.append(f"results.capex_{key}", val, unit="k€")
         # 2. CSV
         if hasattr(self.last_sim_result, 'wind_speeds') and hasattr(self.last_sim_result, 'power_curve'):
             saver.csv.append(

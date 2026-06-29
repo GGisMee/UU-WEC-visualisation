@@ -31,8 +31,10 @@ class TomlSave(FileSaver):
     def __init__(self):
         """Saves datapoints for later exportation to json"""
         self.data_dict = {}
+        self.units = {}
         self.significant_digits = 5
-    def append(self, key: str, value: Any) -> None:
+        
+    def append(self, key: str, value: Any, unit: str | None = None) -> None:
         if not key:
             raise ValueError("Expected non empty key. For example: 'config.strength'")
 
@@ -49,6 +51,8 @@ class TomlSave(FileSaver):
             current = current.setdefault(subkey, {})
         
         current[final_key] = formatted_value
+        if unit:
+            self.units[key] = unit
 
     def save(self, path: Path|str = '.', name: str | None = None) -> bool:
         if len(self.data_dict.keys()) == 0:
@@ -57,12 +61,32 @@ class TomlSave(FileSaver):
             filepath = Path(path) / name
         else:
             filepath = _find_working_filename(path, "data", suffix='toml') 
-        with open(filepath, 'wb') as f:
-            tomli_w.dump(self.data_dict, f)
+            
+        toml_str = tomli_w.dumps(self.data_dict)
+        lines = toml_str.splitlines()
+        
+        for full_key, unit in self.units.items():
+            parts = full_key.split('.')
+            final_key = parts[-1]
+            section = ".".join(parts[:-1])
+            
+            current_section = ""
+            for i, line in enumerate(lines):
+                line_stripped = line.strip()
+                if line_stripped.startswith('[') and line_stripped.endswith(']'):
+                    current_section = line_stripped[1:-1]
+                elif current_section == section:
+                    if line_stripped.startswith(final_key + " =") or line_stripped.startswith('"' + final_key + '" ='):
+                        lines[i] = line + f" # [{unit}]"
+                        break
+                        
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write("\n".join(lines) + "\n")
         return True
 
     def clear(self):
         self.data_dict = {}
+        self.units = {}
 
 class PlotSave(FileSaver):
     def __init__(self) -> None:
