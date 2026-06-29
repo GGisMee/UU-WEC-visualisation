@@ -6,7 +6,7 @@ from typing import Protocol, Callable, Any
 from matplotlib.figure import Figure
 
 
-def _find_working_filename(path:str, name:str,suffix:str) -> Path:
+def _find_working_filename(path: Path | str, name: str, suffix: str) -> Path:
     """Finds name/path_i where i is number"""
     base_path = Path(path)
     
@@ -23,7 +23,7 @@ def _find_working_filename(path:str, name:str,suffix:str) -> Path:
 
 class FileSaver(Protocol):
     append: Callable[..., None]
-    def save(self, path: str, name: str | None = None) -> bool: ...
+    def save(self, path: Path | str, name: str | None = None) -> bool: ...
     def clear(self) -> None: ...
 
 
@@ -42,9 +42,9 @@ class TomlSave(FileSaver):
         else:
             formatted_value = value
 
-        *path, final_key = key.split('.')
+        *path_parts, final_key = key.split('.')
         current = self.data_dict
-        for subkey in path: # Iterate deeper in nested dict
+        for subkey in path_parts: # Iterate deeper in nested dict
             # if key not there, create it
             current = current.setdefault(subkey, {})
         
@@ -56,7 +56,7 @@ class TomlSave(FileSaver):
         if name:
             filepath = Path(path) / name
         else:
-            filepath = _find_working_filename(path, name, suffix='.toml') # type: ignore
+            filepath = _find_working_filename(path, "data", suffix='toml') 
         with open(filepath, 'wb') as f:
             tomli_w.dump(self.data_dict, f)
         return True

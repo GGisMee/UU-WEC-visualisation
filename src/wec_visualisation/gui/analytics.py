@@ -16,6 +16,11 @@ from wec_visualisation.gui.theme import Theme
 from wec_visualisation.gui.components import TextInfoBox, ToolTip
 
 class AnalyticsPanel(ctk.CTkFrame):
+    def _lang(self, key: str, default: str = "") -> str:
+        lm = getattr(self, 'lang_manager', None)
+        return str(lm.get(key, default)) if lm else default
+
+
     def __init__(self, parent, on_simulate_click, on_export_click=None, lang_manager=None):
         super().__init__(
             parent, 
@@ -337,7 +342,7 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.charts_fig.patch.set_facecolor(bg_color)
         ax = self.charts_fig.add_subplot(111)
         ax.set_facecolor(bg_color)
-        ax.text(0.5, 0.5, self.lang_manager.get("analytics.lbl_chart_out_of_date", "[ Simulation Out of Date ]\nClick 'Simulate' to plot curves.") if getattr(self, 'lang_manager', None) else "[ Simulation Out of Date ]\nClick 'Simulate' to plot curves.",
+        ax.text(0.5, 0.5, self._lang("analytics.lbl_chart_out_of_date", "[ Simulation Out of Date ]\nClick 'Simulate' to plot curves."),
                 ha='center', va='center', color=muted_color, fontweight='bold', fontsize=12)
         ax.axis('off')
         
@@ -389,11 +394,11 @@ class AnalyticsPanel(ctk.CTkFrame):
         max_v = 30.0 # Limit plot view for better readability since array goes up to 60
 
         ax1.plot(v_arr, prob_arr, color=info_color, linewidth=2)
-        ax1.set_title(self.lang_manager.get("analytics.lbl_weibull_title", "Weibull Wind Speed Curve") if getattr(self, 'lang_manager', None) else "Weibull Wind Speed Curve", color=info_color, fontweight='bold')
-        ax1.set_ylabel(self.lang_manager.get("analytics.lbl_weibull_ylabel", "Probability Density") if getattr(self, 'lang_manager', None) else "Probability Density", color=muted_color)
+        ax1.set_title(self._lang("analytics.lbl_weibull_title", "Weibull Wind Speed Curve"), color=info_color, fontweight='bold')
+        ax1.set_ylabel(self._lang("analytics.lbl_weibull_ylabel", "Probability Density"), color=muted_color)
         
-        ax1.axvline(res.cut_in_speed, color=success_color, linestyle='--', alpha=0.8, label=self.lang_manager.get("analytics.lbl_weibull_cutin", "Cut-in") if getattr(self, 'lang_manager', None) else "Cut-in")
-        ax1.axvline(res.cut_out_speed, color=danger_color, linestyle='--', alpha=0.8, label=self.lang_manager.get("analytics.lbl_weibull_cutout", "Cut-out") if getattr(self, 'lang_manager', None) else "Cut-out")
+        ax1.axvline(res.cut_in_speed, color=success_color, linestyle='--', alpha=0.8, label=self._lang("analytics.lbl_weibull_cutin", "Cut-in"))
+        ax1.axvline(res.cut_out_speed, color=danger_color, linestyle='--', alpha=0.8, label=self._lang("analytics.lbl_weibull_cutout", "Cut-out"))
         ax1.legend(loc="upper right", facecolor=chart_bg, edgecolor=border_color, labelcolor=text_color)
         ax1.set_xlim(0, max_v)
         ax1.set_ylim(bottom=0)
@@ -401,9 +406,9 @@ class AnalyticsPanel(ctk.CTkFrame):
         # --- Plot 2: Power Curve ---
         p_arr = res.power_curve
         ax2.plot(v_arr, p_arr, color=accent_color, linewidth=2)
-        ax2.set_title(self.lang_manager.get("analytics.lbl_power_title", "Turbine Power Curve (kW)") if getattr(self, 'lang_manager', None) else "Turbine Power Curve (kW)", color=accent_color, fontweight='bold')
-        ax2.set_xlabel(self.lang_manager.get("analytics.lbl_power_xlabel", "Wind Speed (m/s)") if getattr(self, 'lang_manager', None) else "Wind Speed (m/s)", color=muted_color)
-        ax2.set_ylabel(self.lang_manager.get("analytics.lbl_power_ylabel", "Power output (kW)") if getattr(self, 'lang_manager', None) else "Power output (kW)", color=muted_color)
+        ax2.set_title(self._lang("analytics.lbl_power_title", "Turbine Power Curve (kW)") if getattr(self, 'lang_manager', None) else "Turbine Power Curve (kW)", color=accent_color, fontweight='bold')
+        ax2.set_xlabel(self._lang("analytics.lbl_power_xlabel", "Wind Speed (m/s)") if getattr(self, 'lang_manager', None) else "Wind Speed (m/s)", color=muted_color)
+        ax2.set_ylabel(self._lang("analytics.lbl_power_ylabel", "Power output (kW)") if getattr(self, 'lang_manager', None) else "Power output (kW)", color=muted_color)
         ax2.set_xlim(0, max_v)
         ax2.set_ylim(bottom=0)
         
@@ -458,7 +463,7 @@ class AnalyticsPanel(ctk.CTkFrame):
         )
 
         # Center text showing the total CAPEX
-        ax.text(0, 0, f"{self.lang_manager.get('analytics.lbl_total', 'TOTAL') if getattr(self, 'lang_manager', None) else 'TOTAL'}\n{tot:,.0f} k€", ha='center', va='center', 
+        ax.text(0, 0, f"{self._lang('analytics.lbl_total', 'TOTAL')}\n{tot:,.0f} k€", ha='center', va='center', 
                 fontsize=11, fontweight='bold', color=Theme.TEXT_MAIN.value[idx])
 
         # Adjust subplots to ensure the pie chart fits
@@ -468,44 +473,44 @@ class AnalyticsPanel(ctk.CTkFrame):
         if not getattr(self, 'lang_manager', None):
             return
 
-        self.lbl_title.configure(text=self.lang_manager.get("analytics.title", "ANALYTICS & RESULTS"))
-        self.btn_export.configure(text=self.lang_manager.get("analytics.export", "Export"))
+        self.lbl_title.configure(text=self._lang("analytics.title", "ANALYTICS & RESULTS"))
+        self.btn_export.configure(text=self._lang("analytics.export", "Export"))
         
         # Tabs
         if hasattr(self.tabs, "_segmented_button") and hasattr(self.tabs._segmented_button, "_buttons_dict"):
             bdict = self.tabs._segmented_button._buttons_dict
-            if "Performance Charts" in bdict: bdict["Performance Charts"].configure(text=self.lang_manager.get("analytics.tab_performance", "Performance Charts"))
-            if "Engineering Audit" in bdict: bdict["Engineering Audit"].configure(text=self.lang_manager.get("analytics.tab_audit", "Engineering Audit"))
-            if "Financial Report" in bdict: bdict["Financial Report"].configure(text=self.lang_manager.get("analytics.tab_finance", "Financial Report"))
+            if "Performance Charts" in bdict: bdict["Performance Charts"].configure(text=self._lang("analytics.tab_performance", "Performance Charts"))
+            if "Engineering Audit" in bdict: bdict["Engineering Audit"].configure(text=self._lang("analytics.tab_audit", "Engineering Audit"))
+            if "Financial Report" in bdict: bdict["Financial Report"].configure(text=self._lang("analytics.tab_finance", "Financial Report"))
 
         # Audit Labels
         audit_keys = ["hub_wind", "swept_area", "rated_power", "cap_factor", "thrust_load", "storm_load", "breaking", "slenderness", "buckling"]
         for k in audit_keys:
             if k in self.audit_labels:
-                self.audit_labels[k].configure(text=self.lang_manager.get(f"analytics.{k}_lbl"))
+                self.audit_labels[k].configure(text=self._lang(f"analytics.{k}_lbl"))
             if k in self.audit_tooltips:
-                self.audit_tooltips[k].update_text(self.lang_manager.get(f"analytics.{k}_tooltip"))
+                self.audit_tooltips[k].update_text(self._lang(f"analytics.{k}_tooltip"))
 
-        self.info_guidelines.lbl_title.configure(text=self.lang_manager.get("analytics.lbl_design_guidelines", "DESIGN GUIDELINES"))
-        self.info_guidelines.set_text(self.lang_manager.get("analytics.desc_guidelines"))
+        self.info_guidelines.lbl_title.configure(text=self._lang("analytics.lbl_design_guidelines", "DESIGN GUIDELINES"))
+        self.info_guidelines.set_text(self._lang("analytics.desc_guidelines"))
 
         # Finance Labels
-        self.lbl_capex_breakdown.configure(text=self.lang_manager.get("analytics.lbl_capex_breakdown", "CAPEX COST ALLOCATION BREAKDOWN"))
+        self.lbl_capex_breakdown.configure(text=self._lang("analytics.lbl_capex_breakdown", "CAPEX COST ALLOCATION BREAKDOWN"))
         
         fin_keys = ["capex_dev", "capex_turb", "capex_driv", "capex_tow", "capex_found", "capex_install", "capex_tot", "opex", "revenue", "irr", "margin"]
         for k in fin_keys:
             if k in self.finance_labels:
-                self.finance_labels[k].configure(text=self.lang_manager.get(f"analytics.{k}_lbl"))
+                self.finance_labels[k].configure(text=self._lang(f"analytics.{k}_lbl"))
             if k in self.finance_tooltips:
-                self.finance_tooltips[k].update_text(self.lang_manager.get(f"analytics.{k}_tooltip"))
+                self.finance_tooltips[k].update_text(self._lang(f"analytics.{k}_tooltip"))
 
         # Misc labels
-        self.lbl_warning.configure(text=self.lang_manager.get("analytics.lbl_warning", "⚠️ Inputs changed. Click 'Simulate' to recalculate results."))
-        self.lbl_loading.configure(text=self.lang_manager.get("analytics.lbl_loading", "SIMULATION RUNNING"))
+        self.lbl_warning.configure(text=self._lang("analytics.lbl_warning", "⚠️ Inputs changed. Click 'Simulate' to recalculate results."))
+        self.lbl_loading.configure(text=self._lang("analytics.lbl_loading", "SIMULATION RUNNING"))
         
         # We only update this if it's currently showing the default text, otherwise it could override a live loading status
         if "Initializing" in self.lbl_loading_status.cget("text"):
-            self.lbl_loading_status.configure(text=self.lang_manager.get("analytics.lbl_loading_status", "Initializing wind aerodynamic grid..."))
+            self.lbl_loading_status.configure(text=self._lang("analytics.lbl_loading_status", "Initializing wind aerodynamic grid..."))
 
         # Redraw charts
         if self.last_result:

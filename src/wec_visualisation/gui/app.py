@@ -99,6 +99,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         self.analytics = AnalyticsPanel(
             self.paned_window,
             on_simulate_click=self.run_simulation,
+            on_export_click=self.export_results,
             lang_manager=self.lang_manager
         )
         self.paned_window.add(self.analytics, minsize=420, stretch="never")
@@ -284,7 +285,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         
         self.lbl_runs_title.configure(text=self.lang_manager.get("header.lbl_runs"))
         if hasattr(self, 'runs_tooltip'):
-            self.runs_tooltip.update_text(self.lang_manager.get("tooltips.runs", "Number of simulation attempts left to successfully meet all mission constraints."))
+            self.runs_tooltip.update_text(str(self.lang_manager.get("tooltips.runs", "Number of simulation attempts left to successfully meet all mission constraints.")))
             
         self.lbl_constraints_title.configure(text=self.lang_manager.get("header.lbl_constraints"))
         self.lbl_profit_title.configure(text=self.lang_manager.get("header.lbl_profit"))
@@ -572,9 +573,9 @@ class UnifiedSimulatorApp(ctk.CTk):
         ).pack(pady=(5, 15))
 
     def export_results(self):
+        from wec_visualisation.gui.components import ToastNotification
         if not self.last_sim_result:
-            from tkinter import messagebox
-            messagebox.showinfo("Export Error", "No simulation results to export. Please run a simulation first.")
+            ToastNotification(self, "No simulation results to export. Please run a simulation first.", is_err=True)
             return
 
         import tkinter.filedialog as fd
@@ -589,7 +590,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         # 1. TOML
         saver.toml.append("turbine.rotor_diameter", self.turbine.rotor_diameter)
         saver.toml.append("turbine.height", self.turbine.height)
-        saver.toml.append("results.energy_output", self.last_sim_result.energy_output)
+        saver.toml.append("results.generated_energy", self.last_sim_result.generated_energy)
         saver.toml.append("results.npv_profit", self.last_sim_result.npv_profit)
         saver.toml.append("results.total_capex", self.last_sim_result.total_capex)
         saver.toml.append("results.capacity_factor", self.last_sim_result.capacity_factor)
@@ -603,7 +604,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         
         # 3. PDF and Plots
         saver.pdf.append("heading", "Wind Turbine Simulation Report")
-        saver.pdf.append("text", f"Energy Output: {self.last_sim_result.energy_output:.2f} GWh")
+        saver.pdf.append("text", f"Energy Output: {self.last_sim_result.generated_energy:.2f} GWh")
         saver.pdf.append("text", f"NPV Profit: {self.last_sim_result.npv_profit:.2f} k€")
         saver.pdf.append("text", f"Capacity Factor: {self.last_sim_result.capacity_factor*100:.1f}%")
         
@@ -619,11 +620,9 @@ class UnifiedSimulatorApp(ctk.CTk):
             
         try:
             saver.save(path)
-            from tkinter import messagebox
-            messagebox.showinfo("Export Success", f"Results exported successfully to {path}/simulation_results.zip")
+            ToastNotification(self, f"Results exported successfully to\n{path}/simulation_results.zip", duration=4000)
         except Exception as e:
-            from tkinter import messagebox
-            messagebox.showerror("Export Error", f"Failed to Export: {str(e)}")
+            ToastNotification(self, f"Failed to Export:\n{str(e)}", is_err=True, duration=5000)
 
 if __name__ == "__main__":
     app = UnifiedSimulatorApp()

@@ -268,3 +268,46 @@ class ToolTip:
         self.tooltip_window = None
         if tw:
             tw.destroy()
+
+class ToastNotification:
+    """
+    A transient tooltip-style notification that appears centered and auto-hides.
+    """
+    def __init__(self, parent, text: str, is_err: bool = False, duration: int = 3000):
+        self.parent = parent
+        self.text = text
+        self.duration = duration
+        self.is_err = is_err
+        
+        self.window = ctk.CTkToplevel(parent)
+        self.window.wm_overrideredirect(True)
+        self.window.attributes("-topmost", True)
+        
+        # Border color based on status
+        border_color = Theme.DANGER.value if is_err else Theme.SUCCESS.value
+        
+        frame = ctk.CTkFrame(self.window, fg_color=Theme.BOX_BG.value, corner_radius=8, border_width=2, border_color=border_color)
+        frame.pack(fill="both", expand=True)
+        
+        label = ctk.CTkLabel(
+            frame, 
+            text=self.text, 
+            justify='center',
+            text_color=Theme.TEXT_MAIN.value,
+            font=Theme.fonts.BODY_BOLD,
+            wraplength=350
+        )
+        label.pack(padx=20, pady=15)
+        
+        # Position in center of parent window
+        self.window.update_idletasks()
+        w = self.window.winfo_reqwidth()
+        h = self.window.winfo_reqheight()
+        
+        x = parent.winfo_rootx() + (parent.winfo_width() - w) // 2
+        y = parent.winfo_rooty() + (parent.winfo_height() - h) // 2
+        
+        self.window.geometry(f"+{x}+{y}")
+        
+        # Add a fade out effect or just destroy
+        self.window.after(duration, self.window.destroy)
