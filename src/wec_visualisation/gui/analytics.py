@@ -172,11 +172,11 @@ class AnalyticsPanel(ctk.CTkFrame):
         ]
 
         color_mapping = {
-            "capex_dev": Theme.BORDER,
+            "capex_dev": Theme.DANGER,
             "capex_turb": Theme.INFO,
             "capex_driv": Theme.SUCCESS,
             "capex_tow": Theme.ACCENT,
-            "capex_found": Theme.CONCRETE,
+            "capex_found": Theme.PURPLE,
             "capex_install": Theme.ALERT
         }
 
@@ -439,8 +439,8 @@ class AnalyticsPanel(ctk.CTkFrame):
 
         if isinstance(caps, dict):
             keys = ["devex", "rotor", "drivetrain", "tower", "foundation", "installation"]
-            colors = [Theme.BORDER.value[idx], Theme.INFO.value[idx], Theme.SUCCESS.value[idx],
-                      Theme.ACCENT.value[idx], Theme.CONCRETE.value[idx], Theme.ALERT.value[idx]]
+            colors = [Theme.DANGER.value[idx], Theme.INFO.value[idx], Theme.SUCCESS.value[idx],
+                      Theme.ACCENT.value[idx], Theme.PURPLE.value[idx], Theme.ALERT.value[idx]]
             values = [caps.get(k, 0.0) for k in keys]
         else:
             values = caps
@@ -474,7 +474,7 @@ class AnalyticsPanel(ctk.CTkFrame):
             return
 
         self.lbl_title.configure(text=self._lang("analytics.title", "ANALYTICS & RESULTS"))
-        self.btn_export.configure(text=self._lang("analytics.export", "Export"))
+        self.btn_export.configure(text=self._lang("analytics.btn_export", "Export"))
         
         # Tabs
         if hasattr(self.tabs, "_segmented_button") and hasattr(self.tabs._segmented_button, "_buttons_dict"):

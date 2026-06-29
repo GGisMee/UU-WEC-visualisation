@@ -66,6 +66,7 @@ class FusionTheme(Enum):
     ALERT_BG = ("#FEF3C7", "#332B12")
     DANGER = ("#E11D48", "#FF3E6C")
     INFO = ("#00A3C4", "#00D2FF")
+    PURPLE = ("#8B5CF6", "#A78BFA")
     
     # Slider Styles
     SLIDER_BG = ("#F0F0F0", "#202630")
@@ -118,6 +119,7 @@ class Futuristic(Enum):
     ALERT_BG = ("#FEF3C7", "#332B12")
     DANGER = ("#E11D48", "#FF3E6C")
     INFO = ("#00A3C4", "#00D2FF")
+    PURPLE = ("#8B5CF6", "#A78BFA")
     
     # Slider Styles
     SLIDER_BG = ("#E2E8F0", "#2D3748")

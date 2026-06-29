@@ -14,6 +14,10 @@ class ConstraintEvaluation:
     target_text: str
     passed: bool
     actual_value_text: str
+    tooltip: str = ""
+    raw_val: str = ""
+    raw_msg_key: str = ""
+    target_val: float = 0.0
 
 @dataclass
 class Constraint:
@@ -24,6 +28,7 @@ class Constraint:
     unit: str                  # E.g. "M€"  
     display_text: tuple[str, str]          # E.g ("Failed, too high:", "CAPEX well managed:")
     value_getter: Callable[[WindTurbine, SimulationResult], float] # Function to get actual value
+    tooltip: str = ""
     
     def evaluate(self, turbine: WindTurbine, result: SimulationResult) -> ConstraintEvaluation:
         val = self.value_getter(turbine, result)
@@ -45,7 +50,11 @@ class Constraint:
             constraint_name=self.constraint_name,
             target_text=f"{self.check} {self.target} {self.unit}".strip(),
             passed=passed,
-            actual_value_text=f"{formatted_val}{unit_suffix} ({text_prefix})"
+            actual_value_text=f"{formatted_val}{unit_suffix} ({text_prefix})",
+            tooltip=self.tooltip,
+            raw_val=f"{formatted_val}{unit_suffix}",
+            raw_msg_key=self.display_text[1] if passed else self.display_text[0],
+            target_val=self.target
         )
         
 @dataclass
@@ -104,19 +113,22 @@ class DefaultMissions(Enum):
                             constraint_name="Buckling Utilization",
                             check="<=", target=1.0, unit="",
                             display_text=("Buckling risk", "Structure OK"),
-                            value_getter=lambda turbine, result: result.buckling_utilization
+                            value_getter=lambda turbine, result: result.buckling_utilization,
+                            tooltip="Must not exceed a buckling utilization factor of 1.0 to prevent structural collapse."
                         ),
                         Constraint(
                             constraint_name="Breaking Utilization",
                             check="<=", target=1.0, unit="",
                             display_text=("Breaking risk", "Structure OK"),
-                            value_getter=lambda turbine, result: result.breaking_utilization
+                            value_getter=lambda turbine, result: result.breaking_utilization,
+                            tooltip="Must not exceed a breaking utilization factor of 1.0 to prevent material failure."
                         ),
                         Constraint(
                             constraint_name="Profit Margin",
                             check=">=", target=10.0, unit="%",
                             display_text=("Margin too low", "Margin met"),
-                            value_getter=lambda turbine, result: result.margin * 100.0
+                            value_getter=lambda turbine, result: result.margin * 100.0,
+                            tooltip="Must achieve a profit margin of at least 10%."
                         )
                     ],
                     max_runs=6
@@ -132,19 +144,22 @@ class DefaultMissions(Enum):
                             constraint_name="Total Height",
                             check="<=", target=160.0, unit="m",
                             display_text=("Too high", "Height OK"),
-                            value_getter=lambda turbine, result: turbine.height + (turbine.rotor_diameter / 2)
+                            value_getter=lambda turbine, result: turbine.height + (turbine.rotor_diameter / 2),
+                            tooltip="Total height (tower + rotor radius) must be at most 160m due to zoning laws."
                         ),
                         Constraint(
                             constraint_name="Annual Production",
                             check=">=", target=1800.0, unit="MWh",
                             display_text=("Low production", "Production OK"),
-                            value_getter=lambda turbine, result: result.generated_energy
+                            value_getter=lambda turbine, result: result.generated_energy,
+                            tooltip="Annual energy production must be at least 1800 MWh."
                         ),
                         Constraint(
                             constraint_name="Total CAPEX",
                             check="<", target=5000.0, unit="k€",
                             display_text=("Budget exceeded", "Within budget"),
-                            value_getter=lambda turbine, result: result.total_capex
+                            value_getter=lambda turbine, result: result.total_capex,
+                            tooltip="Total Capital Expenditure must be less than 5000 k€."
                         )
                     ],
                     max_runs=6
@@ -160,13 +175,15 @@ class DefaultMissions(Enum):
                             constraint_name="Profit Margin",
                             check=">=", target=5.0, unit="%",
                             display_text=("Low profit margin", "Margin OK"),
-                            value_getter=lambda turbine, result: result.margin * 100.0
+                            value_getter=lambda turbine, result: result.margin * 100.0,
+                            tooltip="Must achieve a profit margin of at least 5%."
                         ),
                         Constraint(
                             constraint_name="Buckling Utilization",
                             check="<=", target=1.0, unit="",
                             display_text=("Buckling risk", "Structure OK"),
-                            value_getter=lambda turbine, result: result.buckling_utilization
+                            value_getter=lambda turbine, result: result.buckling_utilization,
+                            tooltip="Must not exceed a buckling utilization factor of 1.0."
                         )
                     ],
                     max_runs=6

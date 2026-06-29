@@ -179,3 +179,36 @@ mission_failed_msg = "You ran out of simulation runs without meeting the criteri
 tip_arctic = "TIP: The storm bending moments are too high. Try reducing Rotor Solidity or Rotor Diameter to decrease wind surface area and load."
 tip_breeze = "TIP: To increase power in low-wind regimes, you need a larger Rotor Diameter. To stay under budget, keep the Hub Height compact and choose a cost-effective Drivetrain."
 tip_community = "TIP: To keep structure safe onshore, avoid extreme heights and large rotor diameters. Optimize rotor diameter slightly for maximum revenue at low storm loads."
+
+[constraints]
+lbl_req = "Req: {target}"
+lbl_buckling_utilization = "Buckling Utilization"
+tooltip_buckling_utilization = "Must not exceed a buckling utilization factor of 1.0 to prevent structural collapse."
+msg_buckling_risk = "Buckling risk"
+msg_structure_ok = "Structure OK"
+
+lbl_breaking_utilization = "Breaking Utilization"
+tooltip_breaking_utilization = "Must not exceed a breaking utilization factor of 1.0 to prevent material failure."
+msg_breaking_risk = "Breaking risk"
+
+lbl_profit_margin = "Profit Margin"
+tooltip_profit_margin = "Must achieve a profit margin of at least {target}%."
+msg_margin_too_low = "Margin too low"
+msg_margin_met = "Margin met"
+msg_low_profit_margin = "Low profit margin"
+msg_margin_ok = "Margin OK"
+
+lbl_total_height = "Total Height"
+tooltip_total_height = "Total height (tower + rotor radius) must be at most 160m due to zoning laws."
+msg_too_high = "Too high"
+msg_height_ok = "Height OK"
+
+lbl_annual_production = "Annual Production"
+tooltip_annual_production = "Annual energy production must be at least 1800 MWh."
+msg_low_production = "Low production"
+msg_production_ok = "Production OK"
+
+lbl_total_capex = "Total CAPEX"
+tooltip_total_capex = "Total Capital Expenditure must be less than 5000 k€."
+msg_budget_exceeded = "Budget exceeded"
+msg_within_budget = "Within budget"

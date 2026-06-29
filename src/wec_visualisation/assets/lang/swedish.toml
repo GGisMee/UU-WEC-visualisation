@@ -96,7 +96,7 @@ title = "LIVE-RITNING"
 
 [analytics]
 title = "ANALYTIK & RESULTAT"
-btn_export = "EXPORTERA RESULTAT"
+btn_export = "Exportera"
 tab_performance = "Prestandadiagram"
 tab_audit = "Teknisk Granskning"
 tab_finance = "Ekonomisk Rapport"
@@ -179,3 +179,36 @@ mission_failed_msg = "Du fick slut på simuleringsförsök utan att uppfylla kra
 tip_arctic = "TIPS: De böjande stormkrafterna är för höga. Prova att minska rotorsoliditeten eller rotordiametern för att minska vindens träffyta och belastning."
 tip_breeze = "TIPS: För att öka effekten vid låga vindhastigheter behöver du en större rotordiameter. För att hålla dig inom budget, håll navhöjden låg och välj en kostnadseffektiv drivlina."
 tip_community = "TIPS: För att hålla strukturen säker på land, undvik extrema höjder och stora rotordiametrar. Optimera rotordiametern något för maximal inkomst vid låga stormbelastningar."
+
+[constraints]
+lbl_req = "Krav: {target}"
+lbl_buckling_utilization = "Knäckningsutnyttjande"
+tooltip_buckling_utilization = "Får inte överstiga ett knäckningsutnyttjande på 1,0 för att förhindra strukturell kollaps."
+msg_buckling_risk = "Risk för knäckning"
+msg_structure_ok = "Struktur OK"
+
+lbl_breaking_utilization = "Brottutnyttjande"
+tooltip_breaking_utilization = "Får inte överstiga ett brottutnyttjande på 1,0 för att förhindra materialbrott."
+msg_breaking_risk = "Risk för brott"
+
+lbl_profit_margin = "Vinstmarginal"
+tooltip_profit_margin = "Måste uppnå en vinstmarginal på minst {target}%."
+msg_margin_too_low = "Marginal för låg"
+msg_margin_met = "Marginal uppnådd"
+msg_low_profit_margin = "Låg vinstmarginal"
+msg_margin_ok = "Marginal OK"
+
+lbl_total_height = "Total höjd"
+tooltip_total_height = "Total höjd (torn + rotorradie) får vara högst 160 m på grund av detaljplanering."
+msg_too_high = "För hög"
+msg_height_ok = "Höjd OK"
+
+lbl_annual_production = "Årlig Produktion"
+tooltip_annual_production = "Den årliga energiproduktionen måste vara minst 1800 MWh."
+msg_low_production = "Låg produktion"
+msg_production_ok = "Produktion OK"
+
+lbl_total_capex = "Total CAPEX"
+tooltip_total_capex = "Den totala kapitalkostnaden (CAPEX) måste vara lägre än 5000 k€."
+msg_budget_exceeded = "Budget överskriden"
+msg_within_budget = "Inom budget"

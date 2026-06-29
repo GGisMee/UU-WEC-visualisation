@@ -3,7 +3,7 @@ import customtkinter as ctk
 import tkinter as tk
 import math
 from typing import Callable
-from wec_visualisation.models.mission import Mission
+from wec_visualisation.models.mission import Mission, Constraint, ConstraintEvaluation
 from wec_visualisation.models.turbine import WindTurbine
 from wec_visualisation.models.environment import SiteEnvironment, SSNGenerator
 from wec_visualisation.gui.theme import Theme
@@ -16,9 +16,14 @@ class ConstraintRow(ctk.CTkFrame):
     - Constraint name (left)
     - Target requirement and/or actual evaluated value (right)
     """
-    def __init__(self, parent, constraint_name: str, target_text: str, passed: bool | None, actual_text: str | None = None):
+    def __init__(self, parent, constraint: Constraint | None = None, eval_res: ConstraintEvaluation | None = None, lang_manager=None):
         super().__init__(parent, fg_color=Theme.BG_SURFACE.value)
+        self.constraint = constraint
+        self.eval_res = eval_res
+        self.lang_manager = lang_manager
         
+        passed = eval_res.passed if eval_res else None
+
         # Status Symbol (✓, ✗, —)
         if passed is None:
             symbol = "—"
@@ -43,7 +48,7 @@ class ConstraintRow(ctk.CTkFrame):
         # Constraint Name (Left-aligned)
         self.lbl_name = ctk.CTkLabel(
             self,
-            text=constraint_name,
+            text="",
             font=Theme.fonts.BODY_BOLD,
             text_color=Theme.TEXT_MAIN.value,
             anchor="w",
@@ -52,19 +57,64 @@ class ConstraintRow(ctk.CTkFrame):
         self.lbl_name.pack(side="left", padx=5)
         
         # Detail / Result Text (Right-aligned)
-        detail_text = actual_text if actual_text else f"Req: {target_text}"
         self.lbl_details = ctk.CTkLabel(
             self,
-            text=detail_text,
+            text="",
             font=Theme.fonts.MUTED,
             text_color=Theme.TEXT_MUTED.value,
             anchor="e",
-            justify="right",
             padx=0
         )
-        self.lbl_details.pack(side="right", fill="x", expand=True, padx=(5, 0))
+        self.lbl_details.pack(side="right", fill="x", expand=True, padx=5)
 
+        self.tt = ToolTip(self, "", small=True)
+        self.lbl_status.bind("<Enter>", self.tt.enter)
+        self.lbl_status.bind("<Leave>", self.tt.leave)
+        self.lbl_status.bind("<Motion>", self.tt.motion)
+        
+        self.lbl_name.bind("<Enter>", self.tt.enter)
+        self.lbl_name.bind("<Leave>", self.tt.leave)
+        self.lbl_name.bind("<Motion>", self.tt.motion)
+        
+        self.lbl_details.bind("<Enter>", self.tt.enter)
+        self.lbl_details.bind("<Leave>", self.tt.leave)
+        self.lbl_details.bind("<Motion>", self.tt.motion)
 
+        self.update_language()
+
+    def update_language(self):
+        def _lang(key, default):
+            return str(self.lang_manager.get(key, default)) if self.lang_manager else default
+
+        if self.eval_res:
+            c_name = self.eval_res.constraint_name
+            raw_msg = self.eval_res.raw_msg_key
+            target = self.eval_res.target_val
+            tooltip_txt = self.eval_res.tooltip
+            raw_val = self.eval_res.raw_val
+            check = self.eval_res.target_text
+        else:
+            c_name = self.constraint.constraint_name
+            target = self.constraint.target
+            tooltip_txt = self.constraint.tooltip
+            raw_val = None
+            raw_msg = None
+            check = f"{self.constraint.check} {target} {self.constraint.unit}".strip()
+
+        key_name = c_name.lower().replace(" ", "_")
+        disp_name = _lang(f"constraints.lbl_{key_name}", c_name)
+        disp_tooltip = _lang(f"constraints.tooltip_{key_name}", tooltip_txt)
+        
+        self.lbl_name.configure(text=disp_name)
+        self.tt.update_text(disp_tooltip)
+
+        if self.eval_res:
+            msg_key = raw_msg.lower().replace(" ", "_")
+            disp_msg = _lang(f"constraints.msg_{msg_key}", raw_msg)
+            self.lbl_details.configure(text=f"{raw_val} ({disp_msg})")
+        else:
+            req_fmt = _lang("constraints.lbl_req", "Req: {target}")
+            self.lbl_details.configure(text=req_fmt.format(target=check))
 class ConsolePanel(ctk.CTkFrame):
     """
     A control console panel frame for the Wind Power Simulator.
@@ -580,6 +630,9 @@ class ConsolePanel(ctk.CTkFrame):
         # Clear existing constraints in the scroll container
         for child in self.constraints_scroll.winfo_children():
             child.destroy()
+        
+        self.lbl_no_constraints = None
+        self._tracked_widgets = []
 
         if not mission.constraints:
             self.lbl_no_constraints = ctk.CTkLabel(
@@ -597,9 +650,8 @@ class ConsolePanel(ctk.CTkFrame):
             for c in mission.constraints:
                 row = ConstraintRow(
                     self.constraints_scroll,
-                    constraint_name=c.constraint_name,
-                    target_text=f"{c.check} {c.target} {c.unit}",
-                    passed=None
+                    constraint=c,
+                    lang_manager=self.lang_manager
                 )
                 row.pack(fill="x", pady=1)
                 self._tracked_widgets.append(row)
@@ -608,10 +660,8 @@ class ConsolePanel(ctk.CTkFrame):
             for eval_res in report.evaluations:
                 row = ConstraintRow(
                     self.constraints_scroll,
-                    constraint_name=eval_res.constraint_name,
-                    target_text=eval_res.target_text,
-                    passed=eval_res.passed,
-                    actual_text=eval_res.actual_value_text
+                    eval_res=eval_res,
+                    lang_manager=self.lang_manager
                 )
                 row.pack(fill="x", pady=1)
                 self._tracked_widgets.append(row)
@@ -687,7 +737,7 @@ class ConsolePanel(ctk.CTkFrame):
                 self.sliders[k].update_label_template(self.lang_manager.get(f"console.{tm}"))
                 self.sliders[k].update_tooltip(self.lang_manager.get(f"tooltips.{tt}"))
 
-        if hasattr(self, "lbl_no_constraints"):
+        if getattr(self, "lbl_no_constraints", None) is not None:
             self.lbl_no_constraints.configure(text=self.lang_manager.get("console.lbl_no_constraints", "No constraints for Sandbox mode.\nExplore parameters freely!"))
             
         self.update_env_view()
@@ -700,3 +750,8 @@ class ConsolePanel(ctk.CTkFrame):
             desc = self.lang_manager.get(f"descriptions.{key}")
             if desc and not desc.startswith("descriptions."):
                 self.info_mission.set_text(desc)
+
+        # Update constraint rows
+        for widget in self._tracked_widgets:
+            if isinstance(widget, ConstraintRow):
+                widget.update_language()
