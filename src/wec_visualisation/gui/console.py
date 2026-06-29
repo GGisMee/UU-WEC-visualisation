@@ -160,14 +160,32 @@ class ConsolePanel(ctk.CTkFrame):
         """
         Create and arrange GUI widgets inside the tab views.
         """
-        # 1. Title Label
+        # 1. Header Frame
+        self.header_frame = ctk.CTkFrame(self, fg_color="transparent", height=36)
+        self.header_frame.pack(fill="x", padx=15, pady=(15, 5))
+
+        # Title Label inside Header Frame
         self.lbl_title = ctk.CTkLabel(
-            self, 
+            self.header_frame, 
             text="CONTROL CONSOLE", 
             font=Theme.fonts.TITLE, 
             text_color=Theme.TEXT_ACCENT.value
         )
-        self.lbl_title.pack(anchor="w", padx=15, pady=(15, 5))
+        self.lbl_title.pack(side="left")
+
+        # Simulate Button inside Header Frame, right-aligned
+        self.btn_simulate = ctk.CTkButton(
+            self.header_frame, 
+            text="Simulate", 
+            font=Theme.fonts.BODY_BOLD,
+            fg_color=Theme.BUTTON_BG.value, 
+            hover_color=Theme.BUTTON_HOVER.value,
+            text_color=Theme.TEXT_MAIN.value,
+            width=120,
+            height=28,
+            command=self.on_simulate
+        )
+        self.btn_simulate.pack(side="right")
 
         # 2. Main Tabs Widget
         self.tabs = ctk.CTkTabview(
@@ -354,18 +372,7 @@ class ConsolePanel(ctk.CTkFrame):
             slider.pack(fill="x", padx=10, pady=(0, pb))
             self.sliders[key] = slider
 
-        # Action Button
-        self.btn_simulate = ctk.CTkButton(
-            p_tab, 
-            text="RUN SIMULATION", 
-            font=Theme.fonts.BODY_BOLD, 
-            fg_color=Theme.BUTTON_BG.value, 
-            hover_color=Theme.BUTTON_HOVER.value,
-            text_color=Theme.TEXT_MAIN.value,
-            height=34,
-            command=self.on_simulate
-        )
-        self.btn_simulate.pack(fill="x", padx=5, pady=(20, 10))
+        # Action Button removed from tab (now in header)
 
 
         # ==========================================

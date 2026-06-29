@@ -480,7 +480,7 @@ class UnifiedSimulatorApp(ctk.CTk):
             color = Theme.SUCCESS.value if self.runs_remaining >= 4 else (Theme.ALERT.value if self.runs_remaining >= 2 else Theme.DANGER.value)
             self.lbl_runs.configure(text=f"{self.runs_remaining} / 6", text_color=color)
 
-        # 2. Run simulation calculations
+        # 2. Simulate calculations
         result = SimulationEngine.simulate(self.turbine, self.environment, PresetConfigurations.v0.value)
         self.last_sim_result = result
         self.simulation_out_of_date = False
@@ -568,6 +568,63 @@ class UnifiedSimulatorApp(ctk.CTk):
             fg_color=Theme.BUTTON_BG.value, 
             text_color=Theme.TEXT_MAIN.value, 
             hover_color=Theme.BUTTON_HOVER.value, 
-            command=dialog.destroy,
-            font=Theme.fonts.MUTED_BOLD
-        ).pack(pady=10)
+            command=dialog.destroy
+        ).pack(pady=(5, 15))
+
+    def export_results(self):
+        if not self.last_sim_result:
+            from tkinter import messagebox
+            messagebox.showinfo("Export Error", "No simulation results to export. Please run a simulation first.")
+            return
+
+        import tkinter.filedialog as fd
+        from wec_visualisation.models.output import Saver
+        
+        path = fd.askdirectory(title="Select Folder to Save Exported Results")
+        if not path:
+            return
+
+        saver = Saver()
+        
+        # 1. TOML
+        saver.toml.append("turbine.rotor_diameter", self.turbine.rotor_diameter)
+        saver.toml.append("turbine.height", self.turbine.height)
+        saver.toml.append("results.energy_output", self.last_sim_result.energy_output)
+        saver.toml.append("results.npv_profit", self.last_sim_result.npv_profit)
+        saver.toml.append("results.total_capex", self.last_sim_result.total_capex)
+        saver.toml.append("results.capacity_factor", self.last_sim_result.capacity_factor)
+        
+        # 2. CSV
+        if hasattr(self.last_sim_result, 'wind_speeds') and hasattr(self.last_sim_result, 'power_curve'):
+            saver.csv.append(
+                headers=["Wind Speed", "Power Curve"],
+                rows=[[ws, p] for ws, p in zip(self.last_sim_result.wind_speeds, self.last_sim_result.power_curve)]
+            )
+        
+        # 3. PDF and Plots
+        saver.pdf.append("heading", "Wind Turbine Simulation Report")
+        saver.pdf.append("text", f"Energy Output: {self.last_sim_result.energy_output:.2f} GWh")
+        saver.pdf.append("text", f"NPV Profit: {self.last_sim_result.npv_profit:.2f} k€")
+        saver.pdf.append("text", f"Capacity Factor: {self.last_sim_result.capacity_factor*100:.1f}%")
+        
+        if hasattr(self.analytics, 'charts_fig'):
+            saver.plots.append("performance_charts", self.analytics.charts_fig)
+            saver.pdf.append("heading", "Performance Charts")
+            saver.pdf.append("image", self.analytics.charts_fig)
+
+        if hasattr(self.analytics, 'capex_fig'):
+            saver.plots.append("capex_chart", self.analytics.capex_fig)
+            saver.pdf.append("heading", "CAPEX Distribution")
+            saver.pdf.append("image", self.analytics.capex_fig)
+            
+        try:
+            saver.save(path)
+            from tkinter import messagebox
+            messagebox.showinfo("Export Success", f"Results exported successfully to {path}/simulation_results.zip")
+        except Exception as e:
+            from tkinter import messagebox
+            messagebox.showerror("Export Error", f"Failed to Export: {str(e)}")
+
+if __name__ == "__main__":
+    app = UnifiedSimulatorApp()
+    app.mainloop()

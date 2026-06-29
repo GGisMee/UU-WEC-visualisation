@@ -16,7 +16,7 @@ from wec_visualisation.gui.theme import Theme
 from wec_visualisation.gui.components import TextInfoBox, ToolTip
 
 class AnalyticsPanel(ctk.CTkFrame):
-    def __init__(self, parent, on_simulate_click, lang_manager=None):
+    def __init__(self, parent, on_simulate_click, on_export_click=None, lang_manager=None):
         super().__init__(
             parent, 
             width=420, 
@@ -25,6 +25,7 @@ class AnalyticsPanel(ctk.CTkFrame):
             border_color=Theme.BORDER.value
         )
         self.on_simulate = on_simulate_click
+        self.on_export = on_export_click
         self.lang_manager = lang_manager
         self.last_result = None
         self._tracked_widgets = []
@@ -33,14 +34,32 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.pack_propagate(False)
         self.grid_propagate(False)
 
-        # Title Label
+        # 1. Header Frame
+        self.header_frame = ctk.CTkFrame(self, fg_color="transparent", height=36)
+        self.header_frame.pack(fill="x", padx=15, pady=(15, 5))
+
+        # Title Label inside Header Frame
         self.lbl_title = ctk.CTkLabel(
-            self, 
+            self.header_frame, 
             text="ANALYTICS & RESULTS", 
             font=Theme.fonts.SUBTITLE, 
             text_color=Theme.TEXT_ACCENT.value
         )
-        self.lbl_title.pack(anchor="w", padx=15, pady=(15, 5))
+        self.lbl_title.pack(side="left")
+
+        # Export Button inside Header Frame, right-aligned
+        self.btn_export = ctk.CTkButton(
+            self.header_frame, 
+            text="Export", 
+            font=Theme.fonts.BODY_BOLD,
+            fg_color=Theme.BUTTON_BG.value, 
+            hover_color=Theme.BUTTON_HOVER.value,
+            text_color=Theme.TEXT_MAIN.value,
+            width=120,
+            height=28,
+            command=self.on_export
+        )
+        self.btn_export.pack(side="right")
 
         # Main Tabview
         self.tabs = ctk.CTkTabview(
@@ -185,7 +204,7 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.warning_banner = ctk.CTkFrame(self, fg_color=Theme.ALERT_BG.value, height=32, corner_radius=0)
         self.lbl_warning = ctk.CTkLabel(
             self.warning_banner, 
-            text="⚠️ Inputs changed. Click 'Run Simulation' to recalculate results.",
+            text="⚠️ Inputs changed. Click 'Simulate' to recalculate results.",
             font=Theme.fonts.BODY_BOLD,
             text_color=Theme.ALERT.value
         )
@@ -318,7 +337,7 @@ class AnalyticsPanel(ctk.CTkFrame):
         self.charts_fig.patch.set_facecolor(bg_color)
         ax = self.charts_fig.add_subplot(111)
         ax.set_facecolor(bg_color)
-        ax.text(0.5, 0.5, self.lang_manager.get("analytics.lbl_chart_out_of_date", "[ Simulation Out of Date ]\nClick 'Run Simulation' to plot curves.") if getattr(self, 'lang_manager', None) else "[ Simulation Out of Date ]\nClick 'Run Simulation' to plot curves.",
+        ax.text(0.5, 0.5, self.lang_manager.get("analytics.lbl_chart_out_of_date", "[ Simulation Out of Date ]\nClick 'Simulate' to plot curves.") if getattr(self, 'lang_manager', None) else "[ Simulation Out of Date ]\nClick 'Simulate' to plot curves.",
                 ha='center', va='center', color=muted_color, fontweight='bold', fontsize=12)
         ax.axis('off')
         
@@ -450,6 +469,7 @@ class AnalyticsPanel(ctk.CTkFrame):
             return
 
         self.lbl_title.configure(text=self.lang_manager.get("analytics.title", "ANALYTICS & RESULTS"))
+        self.btn_export.configure(text=self.lang_manager.get("analytics.export", "Export"))
         
         # Tabs
         if hasattr(self.tabs, "_segmented_button") and hasattr(self.tabs._segmented_button, "_buttons_dict"):
@@ -480,7 +500,7 @@ class AnalyticsPanel(ctk.CTkFrame):
                 self.finance_tooltips[k].update_text(self.lang_manager.get(f"analytics.{k}_tooltip"))
 
         # Misc labels
-        self.lbl_warning.configure(text=self.lang_manager.get("analytics.lbl_warning", "⚠️ Inputs changed. Click 'Run Simulation' to recalculate results."))
+        self.lbl_warning.configure(text=self.lang_manager.get("analytics.lbl_warning", "⚠️ Inputs changed. Click 'Simulate' to recalculate results."))
         self.lbl_loading.configure(text=self.lang_manager.get("analytics.lbl_loading", "SIMULATION RUNNING"))
         
         # We only update this if it's currently showing the default text, otherwise it could override a live loading status

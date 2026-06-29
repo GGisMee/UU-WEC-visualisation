@@ -108,7 +108,7 @@ The UI is divided into a three-panel workspace in CustomTkinter using an **Event
    * Highlights the tower structure in red and displays an "UNSAFE" warning if the structural limits (breaking or buckling utilization) exceed 1.0.
 3. **Right Panel (`AnalyticsPanel` / `analytics.py`)**:
    * Displays a warning bar when inputs have changed to prompt a simulation rerun.
-   * Houses the "Run Simulation" button which runs a simulated progress status sequence to represent complex computations.
+   * Houses the "Simulate" button which runs a simulated progress status sequence to represent complex computations.
    * **Performance Charts**: Plots the wind Weibull distribution and the turbine's power curve (showing Cut-in and Cut-out margins).
    * **Engineering Audit**: Details mechanical forces, loads, and utilization ratios.
    * **Financial Report**: Lists itemized CAPEX costs, OPEX, annual revenues, IRR, and margins, alongside a horizontal color-coded CAPEX allocation bar.
