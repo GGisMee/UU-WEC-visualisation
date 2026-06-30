@@ -22,7 +22,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         super().__init__()
 
         # --- SCALING & LOOK SETUP ---
-        self.scale_factor = 2
+        self.scale_factor = 1
         ctk.set_widget_scaling(self.scale_factor)
         ctk.set_window_scaling(self.scale_factor)
         

@@ -17,6 +17,3 @@ STEEL_YIELD_STRESS = 235e6  # Pa, Breaking stress for steel
 # Default Economic Values
 DEFAULT_INSTALLATION_COST = 3500.0  # k€ (roads, grid connection, etc.)
 DEFAULT_FINANCIAL_FEES_RATE = 0.07  # 7% extra cost on CAPEX for loans/fees
-
-# TODO: Add scale and other dev parameters, possibly allow the user to change them via a settings page
-# TODO: Implement more of these

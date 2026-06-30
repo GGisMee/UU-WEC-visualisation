@@ -162,7 +162,6 @@ class PdfSave(FileSaver):
     def save(self, path: Path | str, name: str | None = None) -> bool:
         if not self.elements:
             return False
-        import matplotlib.pyplot as plt
         from matplotlib.backends.backend_pdf import PdfPages
         import matplotlib.image as mpimg
         import textwrap
@@ -177,8 +176,7 @@ class PdfSave(FileSaver):
         pages: list[Figure] = []
         
         def create_new_page():
-            fig = plt.figure(figsize=(8.27, 11.69))  # A4 Size
-            fig.clf()
+            fig = Figure(figsize=(8.27, 11.69))  # A4 Size
             ax = fig.add_axes((0.0, 0.0, 1.0, 1.0))
             ax.axis('off')
             return fig, ax
@@ -236,7 +234,7 @@ class PdfSave(FileSaver):
         with PdfPages(filepath) as pdf:
             for page_fig in pages:
                 pdf.savefig(page_fig, dpi=300)
-                plt.close(page_fig)
+                page_fig.clear()
         return True
 
     def clear(self):
