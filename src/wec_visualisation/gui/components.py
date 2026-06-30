@@ -322,7 +322,7 @@ class ToastNotification:
                 border_color=Theme.BORDER.value, 
                 text_color=Theme.TEXT_MAIN.value,
                 hover_color=Theme.BUTTON_HOVER.value,
-                command=self.window.destroy
+                command=self.close
             )
             btn.pack(pady=(5, 15))
         
@@ -347,3 +347,14 @@ class ToastNotification:
         
         if duration > 0:
             self.window.after(duration, self.window.destroy)
+
+    def close(self):
+        try:
+            self.window.grab_release()
+        except Exception:
+            pass
+        self.window.destroy()
+        try:
+            self.parent.focus_force()
+        except Exception:
+            pass
