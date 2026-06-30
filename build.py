@@ -9,6 +9,8 @@ import subprocess
 import shutil
 import sys
 
+sep = os.pathsep
+
 # 1. Obfuscate the code with PyArmor
 print("Obfuscating source code with PyArmor...")
 # Clean any previous obfuscation runs
@@ -36,11 +38,16 @@ for root, dirs, files in os.walk("src/wec_visualisation"):
 
 # Add critical third-party and standard library dependencies that PyInstaller misses
 hidden_imports.extend([
+    '--hidden-import', 'tomllib',
+    '--hidden-import', 'tomli_w',
     '--hidden-import', 'customtkinter',
     '--hidden-import', 'tkinter',
+    '--hidden-import', 'tkinter.filedialog',
     '--hidden-import', 'matplotlib',
     '--hidden-import', 'matplotlib.figure',
     '--hidden-import', 'matplotlib.backends.backend_tkagg',
+    '--hidden-import', 'matplotlib.backends.backend_pdf',
+    '--hidden-import', 'matplotlib.image',
     '--hidden-import', 'matplotlib.pyplot',
     '--hidden-import', 'numpy',
     '--hidden-import', 'numpy.polynomial',
@@ -48,18 +55,25 @@ hidden_imports.extend([
     '--hidden-import', 'scipy.interpolate',
     '--hidden-import', 'scipy.special',
     '--hidden-import', 'scipy.optimize',
+    '--hidden-import', 'PIL',
+    '--hidden-import', 'PIL.Image',
+    '--hidden-import', 'csv',
+    '--hidden-import', 'zipfile',
+    '--hidden-import', 'tempfile',
 ])
 
 pyinstaller_args = [
     'obfuscated_src/wec_visualisation/main.py',
-    '--name=WEC_Simulator',
+    '--name=WEC_Visualisation',
     '--onefile',
-    '--windowed',  # Prevent console window from appearing on Windows
-    f'--add-data={customtkinter_path}:customtkinter',  # Include CTk assets
+    '--windowed',
+    f'--add-data={customtkinter_path}{sep}customtkinter',
+    f'--add-data=src/wec_visualisation/assets{sep}assets',  # <-- ÄNDRAD HÄR
     '--paths=obfuscated_src',
     f'--hidden-import={runtime_pkg}',
     '--clean',
 ] + hidden_imports
+
 
 PyInstaller.__main__.run(pyinstaller_args)
 

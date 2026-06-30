@@ -2,11 +2,11 @@
 
 
 a = Analysis(
-    ['obfuscated_src/wec_visualisation/main.py'],
+    ['obfuscated_src\\wec_visualisation\\main.py'],
     pathex=['obfuscated_src'],
     binaries=[],
-    datas=[('/home/gustavg/Projects/uu_proj/.venv/lib/python3.14/site-packages/customtkinter', 'customtkinter')],
-    hiddenimports=['pyarmor_runtime_000000', 'wec_visualisation.config', 'wec_visualisation.main', 'wec_visualisation.gui.theme', 'wec_visualisation.gui.components', 'wec_visualisation.gui.console', 'wec_visualisation.gui.canvas', 'wec_visualisation.gui.app', 'wec_visualisation.gui.analytics', 'wec_visualisation.models.environment', 'wec_visualisation.models.turbine', 'wec_visualisation.models.simulation', 'wec_visualisation.models.mission', 'wec_visualisation.snippets.capture_efficiency', 'wec_visualisation.snippets.test_ctk_dpi', 'wec_visualisation.snippets.test_ctk_dyn_scale', 'wec_visualisation.snippets.test_ctk_gc', 'wec_visualisation.snippets.test_ctk', 'wec_visualisation.snippets.test_dpi', 'wec_visualisation.snippets.test_screen', 'customtkinter', 'tkinter', 'matplotlib', 'matplotlib.figure', 'matplotlib.backends.backend_tkagg', 'matplotlib.pyplot', 'numpy', 'numpy.polynomial', 'scipy', 'scipy.interpolate', 'scipy.special', 'scipy.optimize'],
+    datas=[('C:\\Users\\gusta\\Desktop\\UU-WEC-visualisation\\.venv\\Lib\\site-packages\\customtkinter', 'customtkinter')],
+    hiddenimports=['pyarmor_runtime_000000', 'wec_visualisation.config', 'wec_visualisation.main', 'wec_visualisation.gui.analytics', 'wec_visualisation.gui.app', 'wec_visualisation.gui.canvas', 'wec_visualisation.gui.components', 'wec_visualisation.gui.console', 'wec_visualisation.gui.language', 'wec_visualisation.gui.theme', 'wec_visualisation.models.environment', 'wec_visualisation.models.export', 'wec_visualisation.models.mission', 'wec_visualisation.models.simulation', 'wec_visualisation.models.turbine', 'wec_visualisation.snippets.capture_efficiency', 'customtkinter', 'tkinter', 'matplotlib', 'matplotlib.figure', 'matplotlib.backends.backend_tkagg', 'matplotlib.pyplot', 'numpy', 'numpy.polynomial', 'scipy', 'scipy.interpolate', 'scipy.special', 'scipy.optimize'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
