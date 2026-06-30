@@ -623,14 +623,7 @@ class UnifiedSimulatorApp(ctk.CTk):
         saver.toml.append("results.payback_years", self.last_sim_result.payback_years, unit="y")
         for key, val in self.last_sim_result.capex_components.items():
             saver.toml.append(f"results.capex_{key}", val, unit="k€")
-        # 2. CSV
-        if hasattr(self.last_sim_result, 'wind_speeds') and hasattr(self.last_sim_result, 'power_curve'):
-            saver.csv.append(
-                headers=["Wind Speed", "Power Curve"],
-                rows=[[ws, p] for ws, p in zip(self.last_sim_result.wind_speeds, self.last_sim_result.power_curve)]
-            )
-        
-        # 3. PDF and Plots
+        # 2. PDF and Plots
         saver.pdf.append("heading", "Wind Turbine Simulation Report")
         saver.pdf.append("text", f"Energy Output: {self.last_sim_result.generated_energy:.2f} GWh")
         saver.pdf.append("text", f"NPV Profit: {self.last_sim_result.npv_profit:.2f} k€")

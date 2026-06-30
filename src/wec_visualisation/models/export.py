@@ -117,37 +117,6 @@ class PlotSave(FileSaver):
         self.figures = {}
 
 
-class CsvSave(FileSaver):
-    def __init__(self) -> None:
-        self.rows: list[list[Any]] = []
-        self.headers: list[str] = []
-
-    def append(self, headers: list[str], rows: list[list[Any]]) -> None:
-        self.headers = headers
-        self.rows = rows
-
-    def save(self, path: Path | str, name: str | None = None) -> bool:
-        if not self.rows:
-            return False
-        import csv
-        final_name = name if name is not None else "data.csv"
-        if not final_name.endswith('.csv'):
-            final_name += '.csv'
-        filepath = Path(path) / final_name
-        filepath.parent.mkdir(parents=True, exist_ok=True)
-        
-        with open(filepath, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            if self.headers:
-                writer.writerow(self.headers)
-            writer.writerows(self.rows)
-        return True
-
-
-    def clear(self):
-        self.headers= []
-        self.rows = []
-
 class PdfSave(FileSaver):
     def __init__(self) -> None:
         self.elements: list[tuple[str, Any]] = []
@@ -245,7 +214,6 @@ class Saver:
     def __init__(self) -> None:
         self.toml = TomlSave()
         self.plots = PlotSave()
-        self.csv = CsvSave()
         self.pdf = PdfSave()
 
     def save(self, path: Path | str = '.') -> bool:
@@ -261,7 +229,6 @@ class Saver:
             # Save all results to the temporary directory
             self.toml.save(tmp_path, "results.toml")
             self.plots.save(tmp_path, "plots")
-            self.csv.save(tmp_path, "data.csv")
             self.pdf.save(tmp_path, "report.pdf")
             
             # Pack them into simulation_results.zip
@@ -282,16 +249,7 @@ if __name__ == '__main__':
     saver.toml.append('config.simulation.name', "UU-WEC Test")
     saver.toml.append('results.energy_output', 450.2)
     
-    # 2. Add CSV data
-    saver.csv.append(
-        headers=["time", "power"],
-        rows=[
-            [0.0, 12.5],
-            [1.0, 15.3]
-        ]
-    )
-    
-    # 3. Add plots and pdf pages
+    # 2. Add plots and pdf pages
     fig1, ax1 = plt.subplots()
     ax1.plot([0, 1], [12.5, 15.3])
     ax1.set_title("Power over Time")
