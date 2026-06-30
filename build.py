@@ -40,6 +40,7 @@ for root, dirs, files in os.walk("src/wec_visualisation"):
 hidden_imports.extend([
     '--hidden-import', 'tomllib',
     '--hidden-import', 'tomli_w',
+    '--hidden-import', 'PIL._tkinter_finder',
     '--hidden-import', 'customtkinter',
     '--hidden-import', 'tkinter',
     '--hidden-import', 'tkinter.filedialog',
