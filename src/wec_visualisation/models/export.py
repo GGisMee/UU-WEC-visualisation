@@ -110,7 +110,7 @@ class PlotSave(FileSaver):
         for fig_name, figure in self.figures.items():
             # Ensure correct extension (default to .png)
             filename = fig_name if fig_name.endswith(('.png', '.pdf', '.svg', '.jpg', '.jpeg')) else f"{fig_name}.png"
-            figure.savefig(target_dir / filename)
+            figure.savefig(target_dir / filename, bbox_inches='tight', dpi=300)
         return True
 
     def clear(self):
@@ -197,10 +197,10 @@ class PdfSave(FileSaver):
                     y_pos = 0.9
                 ax.text(margin_x, y_pos, content, fontsize=18, fontweight='bold', 
                         va='top', ha='left', transform=ax.transAxes)
-                y_pos -= 0.07
+                y_pos -= 0.04
                 
             elif elem_type == 'text':
-                wrapped_lines = textwrap.wrap(content, width=70)
+                wrapped_lines = textwrap.wrap(content, width=80)
                 for line in wrapped_lines:
                     if y_pos < 0.05:
                         fig, ax = create_new_page()
@@ -208,8 +208,8 @@ class PdfSave(FileSaver):
                         y_pos = 0.9
                     ax.text(margin_x, y_pos, line, fontsize=11, 
                             va='top', ha='left', transform=ax.transAxes)
-                    y_pos -= 0.03
-                y_pos -= 0.02
+                    y_pos -= 0.016
+                y_pos -= 0.012
                 
             elif elem_type == 'image':
                 if y_pos < 0.4:
@@ -223,7 +223,7 @@ class PdfSave(FileSaver):
                 
                 if hasattr(content, 'savefig') or isinstance(content, Figure):
                     buf = io.BytesIO()
-                    content.savefig(buf, format='png', bbox_inches='tight')
+                    content.savefig(buf, format='png', bbox_inches='tight', dpi=300)
                     buf.seek(0)
                     img = mpimg.imread(buf, format='png')
                     inset_ax.imshow(img)
@@ -235,7 +235,7 @@ class PdfSave(FileSaver):
         
         with PdfPages(filepath) as pdf:
             for page_fig in pages:
-                pdf.savefig(page_fig)
+                pdf.savefig(page_fig, dpi=300)
                 plt.close(page_fig)
         return True
 
